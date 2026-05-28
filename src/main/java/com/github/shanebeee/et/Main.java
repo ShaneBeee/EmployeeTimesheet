@@ -53,7 +53,10 @@ public class Main {
                 if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
                     desktop.setAboutHandler(e -> {
                         JOptionPane.showMessageDialog(frame,
-                            "Employee Timesheet\nVersion " + getAppVersion() + "\n\nProfessional time logging and invoicing.",
+                            "Employee Timesheet" +
+                                "\nVersion: " + getAppVersion() +
+                                "\nAuthor: ShaneBee" +
+                                "\n\nProfessional time logging and invoicing.",
                             "About Employee Timesheet",
                             JOptionPane.INFORMATION_MESSAGE,
                             new ImageIcon(UIUtils.createAppIcon(64)));
