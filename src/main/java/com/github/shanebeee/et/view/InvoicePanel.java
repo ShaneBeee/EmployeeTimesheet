@@ -97,7 +97,20 @@ public class InvoicePanel extends JPanel {
         form.add(endField, gbc);
 
         JButton btnGenerate = new JButton("Generate Invoice (PDF)");
+        btnGenerate.putClientProperty("JButton.buttonType", "roundRect");
+        btnGenerate.setBackground((Color) UIManager.get("App.accent"));
+        btnGenerate.setForeground(Color.WHITE);
+
         JButton btnSummary = new JButton("Export Monthly Summary (PDF)");
+        btnSummary.putClientProperty("JButton.buttonType", "roundRect");
+        btnSummary.setBackground((Color) UIManager.get("App.success"));
+        btnSummary.setForeground(Color.WHITE);
+
+        gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.insets = new Insets(15, 5, 5, 5);
+        form.add(btnGenerate, gbc);
 
         btnGenerate.addActionListener(e -> {
             try {
@@ -176,10 +189,6 @@ public class InvoicePanel extends JPanel {
             }
         });
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
-        buttonPanel.setOpaque(false);
-        buttonPanel.add(btnGenerate);
-        buttonPanel.add(btnSummary);
 
         JPanel formContainer = new JPanel(new BorderLayout());
         formContainer.setOpaque(false);
@@ -190,7 +199,11 @@ public class InvoicePanel extends JPanel {
         paramsTitle.setForeground(new Color(100, 116, 139));
         mainContent.add(paramsTitle, BorderLayout.NORTH);
         mainContent.add(formContainer, BorderLayout.CENTER);
-        mainContent.add(buttonPanel, BorderLayout.SOUTH);
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setOpaque(false);
+        bottomPanel.add(btnSummary);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         add(mainContent, BorderLayout.CENTER);
     }

@@ -17,6 +17,27 @@ public class Main {
         System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Employee Timesheet");
         System.setProperty("apple.laf.useScreenMenuBar", "true");
 
+        // Colors
+        UIManager.put("Button.arc", 999);
+        UIManager.put("Component.arc", 12);
+        UIManager.put("ProgressBar.arc", 999);
+        UIManager.put("TextComponent.arc", 12);
+
+        // Color palette (Professional, Vibrant)
+        Color accentColor = new Color(59, 130, 246); // Vibrant Blue (Tailwind Blue 500)
+        Color successColor = new Color(34, 197, 94); // Green 500
+        Color warningColor = new Color(245, 158, 11); // Orange 500
+        Color dangerColor = new Color(239, 68, 68); // Red 500
+
+        UIManager.put("Button.background", Color.WHITE);
+        UIManager.put("Button.foreground", new Color(30, 41, 59));
+        
+        // Define some helpful colors in UIManager for easy access
+        UIManager.put("App.accent", accentColor);
+        UIManager.put("App.success", successColor);
+        UIManager.put("App.warning", warningColor);
+        UIManager.put("App.danger", dangerColor);
+
         // Setup Look and Feel
         setupLaf();
 
@@ -59,7 +80,7 @@ public class Main {
         UIManager.put("TextComponent.arc", 12);
 
         // Color palette (Professional, Vibrant)
-        Color accentColor = new Color(59, 130, 246); // Vibrant Blue (Tailwind Blue 500)
+        Color accentColor = (Color) UIManager.get("App.accent");
         Color selectionColor = new Color(239, 246, 255); // Very light blue
         
         UIManager.put("Component.accentColor", accentColor);

@@ -90,6 +90,9 @@ public class SettingsPanel extends JPanel {
         appSettingsPanel.add(endField, gbc);
 
         JButton saveBtn = new JButton("Save Settings");
+        saveBtn.putClientProperty("JButton.buttonType", "roundRect");
+        saveBtn.setBackground((Color) UIManager.get("App.accent"));
+        saveBtn.setForeground(Color.WHITE);
 
         saveBtn.addActionListener(e -> {
             info.setFullName(nameField.getText());
@@ -110,19 +113,23 @@ public class SettingsPanel extends JPanel {
             }
         });
 
-        JLabel employeeTitle = new JLabel("Employee Information");
+        JLabel employeeTitle = new JLabel("Employee Information", SwingConstants.CENTER);
         employeeTitle.setFont(employeeTitle.getFont().deriveFont(Font.BOLD));
         employeeTitle.setForeground(new Color(100, 116, 139));
+        employeeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainContent.add(employeeTitle);
         mainContent.add(Box.createVerticalStrut(10));
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainContent.add(panel);
         mainContent.add(Box.createVerticalStrut(30));
         
-        JLabel appTitle = new JLabel("Application Settings");
+        JLabel appTitle = new JLabel("Application Settings", SwingConstants.CENTER);
         appTitle.setFont(appTitle.getFont().deriveFont(Font.BOLD));
         appTitle.setForeground(new Color(100, 116, 139));
+        appTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainContent.add(appTitle);
         mainContent.add(Box.createVerticalStrut(10));
+        appSettingsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainContent.add(appSettingsPanel);
         mainContent.add(Box.createVerticalGlue());
 

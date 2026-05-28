@@ -55,11 +55,22 @@ public class BossPanel extends JPanel {
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
         mainContent.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         btnPanel.setOpaque(false);
         JButton btnAdd = new JButton("Add Boss");
+        btnAdd.putClientProperty("JButton.buttonType", "roundRect");
+        btnAdd.setBackground((Color) UIManager.get("App.success"));
+        btnAdd.setForeground(Color.WHITE);
+
         JButton btnEdit = new JButton("Edit Boss");
+        btnEdit.putClientProperty("JButton.buttonType", "roundRect");
+        btnEdit.setBackground((Color) UIManager.get("App.warning"));
+        btnEdit.setForeground(Color.WHITE);
+
         JButton btnDelete = new JButton("Delete Boss");
+        btnDelete.putClientProperty("JButton.buttonType", "roundRect");
+        btnDelete.setBackground((Color) UIManager.get("App.danger"));
+        btnDelete.setForeground(Color.WHITE);
         
         btnPanel.add(btnAdd);
         btnPanel.add(btnEdit);
