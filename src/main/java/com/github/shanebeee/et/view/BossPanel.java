@@ -123,6 +123,7 @@ public class BossPanel extends JPanel {
         JTextField nameField = new JTextField(b.getName());
         JTextField companyField = new JTextField(b.getCompany());
         JTextField addressField = new JTextField(b.getAddress());
+        JTextField address2Field = new JTextField(b.getAddress2());
         JTextField phoneField = new JTextField(b.getPhoneNumber());
         JTextField emailField = new JTextField(b.getEmail());
         JTextField rateField = new JTextField(String.valueOf(b.getHourlyRate()));
@@ -146,34 +147,41 @@ public class BossPanel extends JPanel {
         panel.add(companyField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
-        panel.add(new JLabel("Address:"), gbc);
+        panel.add(new JLabel("Address 1:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(addressField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        panel.add(new JLabel("Address 2:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(address2Field, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0;
         panel.add(new JLabel("Phone:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(phoneField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0;
+        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.0;
         panel.add(new JLabel("Email:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(emailField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.0;
+        gbc.gridx = 0; gbc.gridy = 6; gbc.weightx = 0.0;
         panel.add(new JLabel("Hourly Rate:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(rateField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 6; gbc.weightx = 0.0;
+        gbc.gridx = 0; gbc.gridy = 7; gbc.weightx = 0.0;
         panel.add(new JLabel("Tax Rate (%):"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(taxField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 7; gbc.weightx = 0.0;
+        gbc.gridx = 0; gbc.gridy = 8; gbc.weightx = 0.0;
         panel.add(new JLabel("KM Rate:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(kmField, gbc);
+
+        panel.setPreferredSize(new java.awt.Dimension(500, panel.getPreferredSize().height));
 
         int result = JOptionPane.showConfirmDialog(this, panel, isNew ? "Add Boss" : "Edit Boss", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
@@ -181,6 +189,7 @@ public class BossPanel extends JPanel {
             b.setName(nameField.getText());
             b.setCompany(companyField.getText());
             b.setAddress(addressField.getText());
+            b.setAddress2(address2Field.getText());
             b.setPhoneNumber(phoneField.getText());
             b.setEmail(emailField.getText());
             try {

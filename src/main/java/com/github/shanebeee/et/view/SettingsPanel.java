@@ -46,6 +46,8 @@ public class SettingsPanel extends JPanel {
 
         JTextField nameField = new JTextField(info.getFullName());
         JTextField companyField = new JTextField(info.getCompany());
+        JTextField addressField = new JTextField(info.getAddress());
+        JTextField address2Field = new JTextField(info.getAddress2());
         JTextField phoneField = new JTextField(info.getPhoneNumber());
         JTextField emailField = new JTextField(info.getEmail());
 
@@ -60,11 +62,21 @@ public class SettingsPanel extends JPanel {
         panel.add(companyField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        panel.add(new JLabel("Address 1:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(addressField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        panel.add(new JLabel("Address 2:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(address2Field, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0;
         panel.add(new JLabel("Phone:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(phoneField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.0;
         panel.add(new JLabel("Email:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         panel.add(emailField, gbc);
@@ -77,15 +89,29 @@ public class SettingsPanel extends JPanel {
         ));
 
         JTextField startField = new JTextField(storage.getDefaultStartTime());
+        startField.setEditable(false);
+        startField.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                TimePickerPanel.showPicker(SettingsPanel.this, startField);
+            }
+        });
         JTextField endField = new JTextField(storage.getDefaultEndTime());
+        endField.setEditable(false);
+        endField.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                TimePickerPanel.showPicker(SettingsPanel.this, endField);
+            }
+        });
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
-        appSettingsPanel.add(new JLabel("Default Start Time (HH:mm):"), gbc);
+        appSettingsPanel.add(new JLabel("Default Start Time:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         appSettingsPanel.add(startField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
-        appSettingsPanel.add(new JLabel("Default End Time (HH:mm):"), gbc);
+        appSettingsPanel.add(new JLabel("Default End Time:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         appSettingsPanel.add(endField, gbc);
 
@@ -97,6 +123,8 @@ public class SettingsPanel extends JPanel {
         saveBtn.addActionListener(e -> {
             info.setFullName(nameField.getText());
             info.setCompany(companyField.getText());
+            info.setAddress(addressField.getText());
+            info.setAddress2(address2Field.getText());
             info.setPhoneNumber(phoneField.getText());
             info.setEmail(emailField.getText());
             storage.saveEmployeeInfo(info);

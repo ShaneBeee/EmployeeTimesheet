@@ -176,7 +176,7 @@ public class LogPanel extends JPanel {
             }
 
             if (l.getType() == LogEntry.EntryType.TIME) {
-                text = "TIME: " + l.getStartTime() + " - " + l.getEndTime();
+                text = "TIME: " + TimePickerPanel.formatTime(l.getStartTime()) + " - " + TimePickerPanel.formatTime(l.getEndTime());
             } else if (l.getType() == LogEntry.EntryType.KILOMETER) {
                 text = "KM: " + l.getKilometers() + " (" + bossLabel + ")";
             } else if (l.getType() == LogEntry.EntryType.EXTRA) {

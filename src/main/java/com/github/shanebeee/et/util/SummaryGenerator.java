@@ -3,12 +3,17 @@ package com.github.shanebeee.et.util;
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.LogEntry;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.Border;
+import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.layout.properties.VerticalAlignment;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -20,20 +25,42 @@ public class SummaryGenerator {
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf);
 
-        document.add(new Paragraph("MONTHLY INVOICE SUMMARY").setFontSize(24).setBold());
-        document.add(new Paragraph("Month: " + yearMonth));
-        document.add(new Paragraph("\nEMPLOYEE:"));
-        document.add(new Paragraph(safe(employee.getFullName())));
-        document.add(new Paragraph(safe(employee.getCompany())));
+        // Header Table
+        Table headerTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
+        headerTable.setWidth(UnitValue.createPercentValue(100));
+        headerTable.setMarginBottom(20);
 
-        Table table = new Table(UnitValue.createPointArray(new float[]{150, 150, 80, 80, 100, 100}));
+        Cell titleCell = new Cell().add(new Paragraph("MONTHLY SUMMARY")
+                .setFontSize(30)
+                .setBold()
+                .setFontColor(ColorConstants.DARK_GRAY))
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+        headerTable.addCell(titleCell);
+
+        Cell infoCell = new Cell().add(new Paragraph("Month: " + yearMonth)
+                .setTextAlignment(TextAlignment.RIGHT))
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+        headerTable.addCell(infoCell);
+        document.add(headerTable);
+
+        // Employee Info Section
+        document.add(new Paragraph("EMPLOYEE:").setBold().setFontColor(ColorConstants.GRAY));
+        document.add(new Paragraph(safe(employee.getFullName())).setBold());
+        document.add(new Paragraph(safe(employee.getCompany())).setMarginBottom(20));
+
+        Table table = new Table(UnitValue.createPercentArray(new float[]{2, 3, 1, 1, 1, 1}));
         table.setWidth(UnitValue.createPercentValue(100));
-        table.addHeaderCell("Boss");
-        table.addHeaderCell("Description");
-        table.addHeaderCell("Units");
-        table.addHeaderCell("Rate");
-        table.addHeaderCell("Tax");
-        table.addHeaderCell("Total");
+        table.setMarginBottom(20);
+
+        // Styled Table Header
+        String[] headers = {"Boss", "Description", "Units", "Rate", "Tax", "Total"};
+        for (String header : headers) {
+            table.addHeaderCell(new Cell().add(new Paragraph(header).setBold().setFontColor(ColorConstants.WHITE))
+                    .setBackgroundColor(ColorConstants.DARK_GRAY)
+                    .setPadding(5));
+        }
 
         double grandSubtotal = 0;
         double grandTax = 0;
@@ -70,12 +97,12 @@ public class SummaryGenerator {
                         double tax = sub * (boss.getTaxRate() / 100.0);
                         double total = sub + tax;
 
-                        table.addCell(boss.getName());
-                        table.addCell(safe(log.getDescription()));
-                        table.addCell(String.format("%.2f", units));
-                        table.addCell(String.format("$%.2f", rate));
-                        table.addCell(String.format("$%.2f", tax));
-                        table.addCell(String.format("$%.2f", total));
+                        table.addCell(new Cell().add(new Paragraph(boss.getName())).setPadding(5));
+                        table.addCell(new Cell().add(new Paragraph(safe(log.getDescription()))).setPadding(5));
+                        table.addCell(new Cell().add(new Paragraph(String.format("%.2f", units))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", rate))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", tax))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", total))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
 
                         bossSubtotal += sub;
                         bossTax += tax;
@@ -98,12 +125,12 @@ public class SummaryGenerator {
                 double tax = sub * (boss.getTaxRate() / 100.0);
                 double total = sub + tax;
 
-                table.addCell(boss.getName());
-                table.addCell("Total Work Hours");
-                table.addCell(String.format("%.2f", totalHours));
-                table.addCell(String.format("$%.2f", rate));
-                table.addCell(String.format("$%.2f", tax));
-                table.addCell(String.format("$%.2f", total));
+                table.addCell(new Cell().add(new Paragraph(boss.getName())).setPadding(5));
+                table.addCell(new Cell().add(new Paragraph("Total Work Hours")).setPadding(5));
+                table.addCell(new Cell().add(new Paragraph(String.format("%.2f", totalHours))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", rate))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", tax))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", total))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
 
                 bossSubtotal += sub;
                 bossTax += tax;
@@ -115,12 +142,12 @@ public class SummaryGenerator {
                 double tax = sub * (boss.getTaxRate() / 100.0);
                 double total = sub + tax;
 
-                table.addCell(boss.getName());
-                table.addCell("Total Kilometers");
-                table.addCell(String.format("%.2f", totalKm));
-                table.addCell(String.format("$%.2f", rate));
-                table.addCell(String.format("$%.2f", tax));
-                table.addCell(String.format("$%.2f", total));
+                table.addCell(new Cell().add(new Paragraph(boss.getName())).setPadding(5));
+                table.addCell(new Cell().add(new Paragraph("Total Kilometers")).setPadding(5));
+                table.addCell(new Cell().add(new Paragraph(String.format("%.2f", totalKm))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", rate))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", tax))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", total))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
 
                 bossSubtotal += sub;
                 bossTax += tax;
@@ -132,9 +159,21 @@ public class SummaryGenerator {
         }
 
         document.add(table);
-        document.add(new Paragraph("\nSubtotal: $" + String.format("%.2f", grandSubtotal)).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.RIGHT));
-        document.add(new Paragraph("Tax: $" + String.format("%.2f", grandTax)).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.RIGHT));
-        document.add(new Paragraph("TOTAL: $" + String.format("%.2f", grandTotal)).setBold().setFontSize(16).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.RIGHT));
+
+        Table totalsTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
+        totalsTable.setWidth(UnitValue.createPercentValue(40));
+        totalsTable.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.RIGHT);
+
+        totalsTable.addCell(new Cell().add(new Paragraph("Subtotal")).setBorder(Border.NO_BORDER).setPadding(2));
+        totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", grandSubtotal))).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT));
+
+        totalsTable.addCell(new Cell().add(new Paragraph("Tax")).setBorder(Border.NO_BORDER).setPadding(2));
+        totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", grandTax))).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT));
+
+        totalsTable.addCell(new Cell().add(new Paragraph("TOTAL")).setBorder(Border.NO_BORDER).setPadding(2).setBold().setFontSize(16));
+        totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", grandTotal))).setBorder(Border.NO_BORDER).setPadding(2).setBold().setFontSize(16).setTextAlignment(TextAlignment.RIGHT).setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(34, 197, 94)));
+
+        document.add(totalsTable);
 
         document.close();
     }

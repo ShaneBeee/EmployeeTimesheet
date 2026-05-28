@@ -13,7 +13,8 @@ public class TimePickerPanel extends JPanel {
     private boolean isAm;
     private boolean selectingHour = true;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-    private final Runnable onSelect;
+    private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+    private Runnable onSelect;
 
     public TimePickerPanel(String initialTime, Runnable onSelect) {
         this.onSelect = onSelect;
@@ -145,7 +146,15 @@ public class TimePickerPanel extends JPanel {
     }
 
     public String getDisplayTime() {
-        return String.format("%02d:%02d %s", hour, minute, isAm ? "AM" : "PM");
+        return LocalTime.of(hour % 12 == 0 ? (isAm ? 0 : 12) : (isAm ? hour : hour + 12), minute).format(displayFormatter);
+    }
+
+    public static String formatTime(String time24) {
+        try {
+            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("HH:mm")).format(DateTimeFormatter.ofPattern("hh:mm a"));
+        } catch (Exception e) {
+            return time24;
+        }
     }
 
     public String getTime() {
@@ -157,6 +166,12 @@ public class TimePickerPanel extends JPanel {
     public static void showPicker(Component parent, JTextField targetField) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(parent), "Select Time", true);
         TimePickerPanel picker = new TimePickerPanel(targetField.getText(), () -> {});
+        
+        JPanel previewPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel lblPreview = new JLabel("Selected: " + picker.getDisplayTime());
+        previewPanel.add(lblPreview);
+        picker.onSelect = () -> lblPreview.setText("Selected: " + picker.getDisplayTime());
+
         JButton btnOk = new JButton("OK");
         btnOk.addActionListener(e -> {
             targetField.setText(picker.getTime());
@@ -164,6 +179,7 @@ public class TimePickerPanel extends JPanel {
         });
         
         dialog.add(picker, BorderLayout.CENTER);
+        dialog.add(previewPanel, BorderLayout.NORTH);
         dialog.add(btnOk, BorderLayout.SOUTH);
         dialog.pack();
         dialog.setLocationRelativeTo(parent);

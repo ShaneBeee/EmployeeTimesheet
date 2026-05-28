@@ -25,6 +25,10 @@ public class InvoicePanel extends JPanel {
         initUI();
     }
 
+    private JComboBox<Boss> bossCombo;
+    private JTextField startField;
+    private JTextField endField;
+
     private void initUI() {
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
@@ -51,7 +55,7 @@ public class InvoicePanel extends JPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.weightx = 1.0;
 
-        JComboBox<Boss> bossCombo = new JComboBox<>();
+        bossCombo = new JComboBox<>();
         List<Boss> bosses = storage.loadBosses();
         for (Boss b : bosses) bossCombo.addItem(b);
         bossCombo.setRenderer(new DefaultListCellRenderer() {
@@ -63,8 +67,8 @@ public class InvoicePanel extends JPanel {
             }
         });
 
-        JTextField startField = new JTextField(YearMonth.now().atDay(1).toString());
-        JTextField endField = new JTextField(YearMonth.now().atEndOfMonth().toString());
+        startField = new JTextField(YearMonth.now().atDay(1).toString());
+        endField = new JTextField(YearMonth.now().atEndOfMonth().toString());
 
         startField.setEditable(false);
         endField.setEditable(false);
@@ -101,6 +105,11 @@ public class InvoicePanel extends JPanel {
         btnGenerate.setBackground((Color) UIManager.get("App.accent"));
         btnGenerate.setForeground(Color.WHITE);
 
+        JButton btnItemized = new JButton("Generate Itemized Invoice (PDF)");
+        btnItemized.putClientProperty("JButton.buttonType", "roundRect");
+        btnItemized.setBackground((Color) UIManager.get("App.accent"));
+        btnItemized.setForeground(Color.WHITE);
+
         JButton btnSummary = new JButton("Export Monthly Summary (PDF)");
         btnSummary.putClientProperty("JButton.buttonType", "roundRect");
         btnSummary.setBackground((Color) UIManager.get("App.success"));
@@ -110,43 +119,14 @@ public class InvoicePanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(15, 5, 5, 5);
-        form.add(btnGenerate, gbc);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(btnGenerate);
+        buttonPanel.add(btnItemized);
+        form.add(buttonPanel, gbc);
 
-        btnGenerate.addActionListener(e -> {
-            try {
-                Boss boss = (Boss) bossCombo.getSelectedItem();
-                if (boss == null) return;
-                EmployeeInfo employee = storage.loadEmployeeInfo();
-                
-                LocalDate start = LocalDate.parse(startField.getText());
-                LocalDate end = LocalDate.parse(endField.getText());
-
-                // Collect logs for range
-                List<LogEntry> allLogs = new ArrayList<>();
-                LocalDate curr = start.withDayOfMonth(1);
-                while (!curr.isAfter(end)) {
-                    allLogs.addAll(storage.loadLogs(YearMonth.from(curr).toString()));
-                    curr = curr.plusMonths(1);
-                }
-
-                List<LogEntry> filteredLogs = allLogs.stream()
-                        .filter(l -> {
-                            LocalDate d = LocalDate.parse(l.getDate());
-                            return !d.isBefore(start) && !d.isAfter(end);
-                        })
-                        .toList();
-
-                int invNum = storage.getNextInvoiceNumber();
-                String path = storage.getInvoicePath(boss, invNum);
-                
-                InvoiceGenerator.generateInvoice(boss, employee, filteredLogs, start.toString(), end.toString(), invNum, path);
-                
-                JOptionPane.showMessageDialog(this, "Invoice generated at: " + path);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error generating invoice: " + ex.getMessage());
-            }
-        });
+        btnGenerate.addActionListener(e -> generate(false));
+        btnItemized.addActionListener(e -> generate(true));
 
         btnSummary.addActionListener(e -> {
             try {
@@ -206,5 +186,41 @@ public class InvoicePanel extends JPanel {
         add(bottomPanel, BorderLayout.SOUTH);
 
         add(mainContent, BorderLayout.CENTER);
+    }
+
+    private void generate(boolean itemized) {
+        try {
+            Boss boss = (Boss) bossCombo.getSelectedItem();
+            if (boss == null) return;
+            EmployeeInfo employee = storage.loadEmployeeInfo();
+
+            LocalDate start = LocalDate.parse(startField.getText());
+            LocalDate end = LocalDate.parse(endField.getText());
+
+            // Collect logs for range
+            List<LogEntry> allLogs = new ArrayList<>();
+            LocalDate curr = start.withDayOfMonth(1);
+            while (!curr.isAfter(end)) {
+                allLogs.addAll(storage.loadLogs(YearMonth.from(curr).toString()));
+                curr = curr.plusMonths(1);
+            }
+
+            List<LogEntry> filteredLogs = allLogs.stream()
+                    .filter(l -> {
+                        LocalDate d = LocalDate.parse(l.getDate());
+                        return !d.isBefore(start) && !d.isAfter(end);
+                    })
+                    .toList();
+
+            int invNum = storage.getNextInvoiceNumber();
+            String path = storage.getInvoicePath(boss, invNum);
+
+            InvoiceGenerator.generateInvoice(boss, employee, filteredLogs, start.toString(), end.toString(), invNum, path, itemized);
+
+            JOptionPane.showMessageDialog(this, (itemized ? "Itemized " : "") + "Invoice generated at: " + path);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error generating invoice: " + ex.getMessage());
+        }
     }
 }
