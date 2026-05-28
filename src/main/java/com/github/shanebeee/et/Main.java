@@ -1,17 +1,18 @@
 package com.github.shanebeee.et;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import com.formdev.flatlaf.extras.FlatInspector;
-import com.formdev.flatlaf.extras.FlatUIDefaultsInspector;
-import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.UIUtils;
 import com.github.shanebeee.et.view.MainFrame;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Desktop;
+import java.awt.Font;
+import java.awt.Taskbar;
 
 public class Main {
-    public static void main(String[] args) {
+
+    static void main(String[] args) {
         // Set application name for macOS - MUST BE SET BEFORE AWT/SWING LOADS
         System.setProperty("apple.awt.application.name", "Employee Timesheet");
         System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Employee Timesheet");
@@ -31,7 +32,7 @@ public class Main {
 
         UIManager.put("Button.background", Color.WHITE);
         UIManager.put("Button.foreground", new Color(30, 41, 59));
-        
+
         // Define some helpful colors in UIManager for easy access
         UIManager.put("App.accent", accentColor);
         UIManager.put("App.success", successColor);
@@ -52,10 +53,10 @@ public class Main {
                 if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
                     desktop.setAboutHandler(e -> {
                         JOptionPane.showMessageDialog(frame,
-                                "Employee Timesheet\nVersion 1.0.0\n\nProfessional time logging and invoicing.",
-                                "About Employee Timesheet",
-                                JOptionPane.INFORMATION_MESSAGE,
-                                new ImageIcon(UIUtils.createAppIcon(64)));
+                            "Employee Timesheet\nVersion 1.0.0\n\nProfessional time logging and invoicing.",
+                            "About Employee Timesheet",
+                            JOptionPane.INFORMATION_MESSAGE,
+                            new ImageIcon(UIUtils.createAppIcon(64)));
                     });
                 }
             }
@@ -82,7 +83,7 @@ public class Main {
         // Color palette (Professional, Vibrant)
         Color accentColor = (Color) UIManager.get("App.accent");
         Color selectionColor = new Color(239, 246, 255); // Very light blue
-        
+
         UIManager.put("Component.accentColor", accentColor);
         UIManager.put("Component.focusColor", new Color(191, 219, 254)); // Light blue focus
         UIManager.put("Button.focusedBorderColor", accentColor);
@@ -92,36 +93,37 @@ public class Main {
         UIManager.put("List.selectionForeground", new Color(30, 64, 175));
         UIManager.put("Table.selectionBackground", selectionColor);
         UIManager.put("Table.selectionForeground", new Color(30, 64, 175));
-        
+
         // Input fields styling
         UIManager.put("TextField.background", Color.WHITE);
         UIManager.put("TextField.borderColor", new Color(226, 232, 240));
         UIManager.put("ComboBox.background", Color.WHITE);
         UIManager.put("ComboBox.selectionBackground", selectionColor);
-        
+
         // Panel backgrounds
         UIManager.put("Panel.background", Color.WHITE);
         UIManager.put("MainContent.background", new Color(241, 245, 249)); // Slightly darker gray (Slate 100)
-        
+
         // TabbedPane styling (if used in future)
         UIManager.put("TabbedPane.selectedBackground", Color.WHITE);
-        
+
         // Table styling
         UIManager.put("TableHeader.background", new Color(248, 250, 252));
         UIManager.put("TableHeader.separatorColor", new Color(226, 232, 240));
         UIManager.put("TableHeader.bottomSeparatorColor", new Color(226, 232, 240));
         UIManager.put("TableHeader.font", UIManager.getFont("Label.font").deriveFont(Font.BOLD));
-        
+
         // macOS title bar
         UIManager.put("TitlePane.background", new Color(64, 64, 64)); // Dark gray
         UIManager.put("TitlePane.foreground", Color.WHITE);
         UIManager.put("TitlePane.buttonHoverBackground", new Color(80, 80, 80));
         UIManager.put("TitlePane.buttonPressedBackground", new Color(100, 100, 100));
-        
+
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception ex) {
             System.err.println("Failed to initialize FlatLaf");
         }
     }
+
 }

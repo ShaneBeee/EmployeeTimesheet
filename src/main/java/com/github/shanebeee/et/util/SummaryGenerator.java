@@ -20,6 +20,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 public class SummaryGenerator {
+
     public static void generateMonthlySummary(List<Boss> bosses, EmployeeInfo employee, List<LogEntry> logs, String yearMonth, String outputPath) throws Exception {
         PdfWriter writer = new PdfWriter(outputPath);
         PdfDocument pdf = new PdfDocument(writer);
@@ -34,14 +35,14 @@ public class SummaryGenerator {
                 .setFontSize(30)
                 .setBold()
                 .setFontColor(ColorConstants.DARK_GRAY))
-                .setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+            .setBorder(Border.NO_BORDER)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE);
         headerTable.addCell(titleCell);
 
         Cell infoCell = new Cell().add(new Paragraph("Month: " + yearMonth)
                 .setTextAlignment(TextAlignment.RIGHT))
-                .setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+            .setBorder(Border.NO_BORDER)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE);
         headerTable.addCell(infoCell);
         document.add(headerTable);
 
@@ -58,8 +59,8 @@ public class SummaryGenerator {
         String[] headers = {"Boss", "Description", "Units", "Rate", "Tax", "Total"};
         for (String header : headers) {
             table.addHeaderCell(new Cell().add(new Paragraph(header).setBold().setFontColor(ColorConstants.WHITE))
-                    .setBackgroundColor(ColorConstants.DARK_GRAY)
-                    .setPadding(5));
+                .setBackgroundColor(ColorConstants.DARK_GRAY)
+                .setPadding(5));
         }
 
         double grandSubtotal = 0;
@@ -181,4 +182,5 @@ public class SummaryGenerator {
     private static String safe(String str) {
         return str == null ? "" : str;
     }
+
 }

@@ -1,7 +1,7 @@
 package com.github.shanebeee.et.util;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Image;
 import java.io.IOException;
 import java.net.URL;
 
@@ -21,4 +21,5 @@ public class UIUtils {
         // Fallback if image fails to load
         return null;
     }
+
 }

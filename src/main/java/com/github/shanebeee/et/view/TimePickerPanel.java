@@ -1,19 +1,31 @@
 package com.github.shanebeee.et.view;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.FontMetrics;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class TimePickerPanel extends JPanel {
+
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+    private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("hh:mm a");
     private int hour;
     private int minute;
     private boolean isAm;
     private boolean selectingHour = true;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-    private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("hh:mm a");
     private Runnable onSelect;
 
     public TimePickerPanel(String initialTime, Runnable onSelect) {
@@ -46,8 +58,16 @@ public class TimePickerPanel extends JPanel {
         amPmGroup.add(btnAm);
         amPmGroup.add(btnPm);
 
-        btnAm.addActionListener(e -> { isAm = true; repaint(); lblTime.setText(getDisplayTime()); });
-        btnPm.addActionListener(e -> { isAm = false; repaint(); lblTime.setText(getDisplayTime()); });
+        btnAm.addActionListener(e -> {
+            isAm = true;
+            repaint();
+            lblTime.setText(getDisplayTime());
+        });
+        btnPm.addActionListener(e -> {
+            isAm = false;
+            repaint();
+            lblTime.setText(getDisplayTime());
+        });
 
         amPmPanel.add(btnAm);
         amPmPanel.add(btnPm);
@@ -78,7 +98,7 @@ public class TimePickerPanel extends JPanel {
                     double angle = Math.toRadians(i * 30 - 90);
                     int x = (int) (centerX + (radius - 20) * Math.cos(angle));
                     int y = (int) (centerY + (radius - 20) * Math.sin(angle));
-                    
+
                     String text = String.valueOf(val);
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString(text, x - fm.stringWidth(text) / 2, y + fm.getAscent() / 2 - 2);
@@ -95,7 +115,7 @@ public class TimePickerPanel extends JPanel {
                 g2.drawLine(centerX, centerY, handX, handY);
                 g2.fillOval(centerX - 4, centerY - 4, 8, 8);
                 g2.fillOval(handX - 10, handY - 10, 20, 20);
-                
+
                 g2.setColor(Color.WHITE);
                 String valText = String.valueOf(selectingHour ? (hour == 0 ? 12 : hour) : minute);
                 FontMetrics fm = g2.getFontMetrics();
@@ -129,6 +149,38 @@ public class TimePickerPanel extends JPanel {
         add(btnToggle, BorderLayout.SOUTH);
     }
 
+    public static String formatTime(String time24) {
+        try {
+            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("HH:mm")).format(DateTimeFormatter.ofPattern("hh:mm a"));
+        } catch (Exception e) {
+            return time24;
+        }
+    }
+
+    public static void showPicker(Component parent, JTextField targetField) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(parent), "Select Time", true);
+        TimePickerPanel picker = new TimePickerPanel(targetField.getText(), () -> {
+        });
+
+        JPanel previewPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel lblPreview = new JLabel("Selected: " + picker.getDisplayTime());
+        previewPanel.add(lblPreview);
+        picker.onSelect = () -> lblPreview.setText("Selected: " + picker.getDisplayTime());
+
+        JButton btnOk = new JButton("OK");
+        btnOk.addActionListener(e -> {
+            targetField.setText(picker.getTime());
+            dialog.dispose();
+        });
+
+        dialog.add(picker, BorderLayout.CENTER);
+        dialog.add(previewPanel, BorderLayout.NORTH);
+        dialog.add(btnOk, BorderLayout.SOUTH);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
+
     private void updateTimeFromMouse(int x, int y, JPanel clockFace) {
         int centerX = clockFace.getWidth() / 2;
         int centerY = clockFace.getHeight() / 2;
@@ -149,40 +201,10 @@ public class TimePickerPanel extends JPanel {
         return LocalTime.of(hour % 12 == 0 ? (isAm ? 0 : 12) : (isAm ? hour : hour + 12), minute).format(displayFormatter);
     }
 
-    public static String formatTime(String time24) {
-        try {
-            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("HH:mm")).format(DateTimeFormatter.ofPattern("hh:mm a"));
-        } catch (Exception e) {
-            return time24;
-        }
-    }
-
     public String getTime() {
         int h24 = hour % 12;
         if (!isAm) h24 += 12;
         return String.format("%02d:%02d", h24, minute);
     }
 
-    public static void showPicker(Component parent, JTextField targetField) {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(parent), "Select Time", true);
-        TimePickerPanel picker = new TimePickerPanel(targetField.getText(), () -> {});
-        
-        JPanel previewPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel lblPreview = new JLabel("Selected: " + picker.getDisplayTime());
-        previewPanel.add(lblPreview);
-        picker.onSelect = () -> lblPreview.setText("Selected: " + picker.getDisplayTime());
-
-        JButton btnOk = new JButton("OK");
-        btnOk.addActionListener(e -> {
-            targetField.setText(picker.getTime());
-            dialog.dispose();
-        });
-        
-        dialog.add(picker, BorderLayout.CENTER);
-        dialog.add(previewPanel, BorderLayout.NORTH);
-        dialog.add(btnOk, BorderLayout.SOUTH);
-        dialog.pack();
-        dialog.setLocationRelativeTo(parent);
-        dialog.setVisible(true);
-    }
 }

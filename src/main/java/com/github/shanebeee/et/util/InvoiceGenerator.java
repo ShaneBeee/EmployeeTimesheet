@@ -15,12 +15,12 @@ import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
 
-import java.io.File;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.List;
 
 public class InvoiceGenerator {
+
     public static void generateInvoice(Boss boss, EmployeeInfo employee, List<LogEntry> logs, String startDate, String endDate, int invoiceNum, String outputPath, boolean itemized) throws Exception {
         PdfWriter writer = new PdfWriter(outputPath);
         PdfDocument pdf = new PdfDocument(writer);
@@ -35,16 +35,16 @@ public class InvoiceGenerator {
                 .setFontSize(30)
                 .setBold()
                 .setFontColor(ColorConstants.DARK_GRAY))
-                .setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+            .setBorder(Border.NO_BORDER)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE);
         headerTable.addCell(titleCell);
 
         Cell infoCell = new Cell().add(new Paragraph("Invoice #: " + invoiceNum)
                 .setTextAlignment(TextAlignment.RIGHT))
-                .add(new Paragraph("Date Range: " + startDate + " to " + endDate)
+            .add(new Paragraph("Date Range: " + startDate + " to " + endDate)
                 .setTextAlignment(TextAlignment.RIGHT))
-                .setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+            .setBorder(Border.NO_BORDER)
+            .setVerticalAlignment(VerticalAlignment.MIDDLE);
         headerTable.addCell(infoCell);
         document.add(headerTable);
 
@@ -54,23 +54,23 @@ public class InvoiceGenerator {
         addrTable.setMarginBottom(30);
 
         Cell fromCell = new Cell().add(new Paragraph("FROM:").setBold().setFontColor(ColorConstants.GRAY))
-                .add(new Paragraph(safe(employee.getFullName())).setBold())
-                .add(new Paragraph(safe(employee.getCompany())))
-                .add(new Paragraph(safe(employee.getAddress())))
-                .add(new Paragraph(safe(employee.getAddress2())))
-                .add(new Paragraph(safe(employee.getEmail())))
-                .add(new Paragraph(safe(employee.getPhoneNumber())))
-                .setBorder(Border.NO_BORDER);
+            .add(new Paragraph(safe(employee.getFullName())).setBold())
+            .add(new Paragraph(safe(employee.getCompany())))
+            .add(new Paragraph(safe(employee.getAddress())))
+            .add(new Paragraph(safe(employee.getAddress2())))
+            .add(new Paragraph(safe(employee.getEmail())))
+            .add(new Paragraph(safe(employee.getPhoneNumber())))
+            .setBorder(Border.NO_BORDER);
         addrTable.addCell(fromCell);
 
         Cell toCell = new Cell().add(new Paragraph("TO:").setBold().setFontColor(ColorConstants.GRAY))
-                .add(new Paragraph(safe(boss.getName())).setBold())
-                .add(new Paragraph(safe(boss.getCompany())))
-                .add(new Paragraph(safe(boss.getAddress())))
-                .add(new Paragraph(safe(boss.getAddress2())))
-                .add(new Paragraph(safe(boss.getEmail())))
-                .add(new Paragraph(safe(boss.getPhoneNumber())))
-                .setBorder(Border.NO_BORDER);
+            .add(new Paragraph(safe(boss.getName())).setBold())
+            .add(new Paragraph(safe(boss.getCompany())))
+            .add(new Paragraph(safe(boss.getAddress())))
+            .add(new Paragraph(safe(boss.getAddress2())))
+            .add(new Paragraph(safe(boss.getEmail())))
+            .add(new Paragraph(safe(boss.getPhoneNumber())))
+            .setBorder(Border.NO_BORDER);
         addrTable.addCell(toCell);
         document.add(addrTable);
 
@@ -82,8 +82,8 @@ public class InvoiceGenerator {
         String[] headers = itemized ? new String[]{"Date", "Description", "Units", "Rate", "Total"} : new String[]{"Description", "Units", "Rate", "Total"};
         for (String header : headers) {
             table.addHeaderCell(new Cell().add(new Paragraph(header).setBold().setFontColor(ColorConstants.WHITE))
-                    .setBackgroundColor(ColorConstants.DARK_GRAY)
-                    .setPadding(5));
+                .setBackgroundColor(ColorConstants.DARK_GRAY)
+                .setPadding(5));
         }
 
         double totalHours = 0;
@@ -224,4 +224,5 @@ public class InvoiceGenerator {
     private static String safe(String str) {
         return str == null ? "" : str;
     }
+
 }

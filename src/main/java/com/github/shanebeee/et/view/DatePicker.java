@@ -1,12 +1,21 @@
 package com.github.shanebeee.et.view;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.Window;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 
 public class DatePicker extends JDialog {
+
     private LocalDate selectedDate;
     private YearMonth currentMonth;
     private JPanel calendarGrid;
@@ -17,7 +26,7 @@ public class DatePicker extends JDialog {
         super(parent, "Select Date", true);
         this.selectedDate = initialDate != null ? initialDate : LocalDate.now();
         this.currentMonth = YearMonth.from(selectedDate);
-        
+
         setLayout(new BorderLayout());
         setSize(350, 400);
         setResizable(false);
@@ -25,6 +34,23 @@ public class DatePicker extends JDialog {
         initUI();
         refreshCalendar();
         setLocationRelativeTo(parent);
+    }
+
+    public static void showPicker(Component parent, JTextField targetField) {
+        Window window = SwingUtilities.getWindowAncestor(parent);
+        LocalDate initialDate;
+        try {
+            initialDate = LocalDate.parse(targetField.getText());
+        } catch (Exception e) {
+            initialDate = LocalDate.now();
+        }
+
+        DatePicker picker = new DatePicker((Frame) window, initialDate);
+        picker.setVisible(true);
+        LocalDate result = picker.getSelectedDate();
+        if (result != null) {
+            targetField.setText(result.toString());
+        }
     }
 
     private void initUI() {
@@ -83,7 +109,7 @@ public class DatePicker extends JDialog {
             LocalDate date = currentMonth.atDay(day);
             JButton dayBtn = new JButton(String.valueOf(day));
             dayBtn.setMargin(new Insets(2, 2, 2, 2));
-            
+
             if (date.equals(selectedDate)) {
                 dayBtn.setBackground(UIManager.getColor("Component.accentColor"));
                 dayBtn.setForeground(Color.WHITE);
@@ -109,20 +135,4 @@ public class DatePicker extends JDialog {
         return confirmed ? selectedDate : null;
     }
 
-    public static void showPicker(Component parent, JTextField targetField) {
-        Window window = SwingUtilities.getWindowAncestor(parent);
-        LocalDate initialDate;
-        try {
-            initialDate = LocalDate.parse(targetField.getText());
-        } catch (Exception e) {
-            initialDate = LocalDate.now();
-        }
-
-        DatePicker picker = new DatePicker((Frame) window, initialDate);
-        picker.setVisible(true);
-        LocalDate result = picker.getSelectedDate();
-        if (result != null) {
-            targetField.setText(result.toString());
-        }
-    }
 }

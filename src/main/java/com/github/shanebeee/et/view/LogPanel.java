@@ -5,7 +5,20 @@ import com.github.shanebeee.et.model.LogEntry;
 import com.github.shanebeee.et.storage.DataStorage;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -15,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 public class LogPanel extends JPanel {
+
     private final DataStorage storage;
     private YearMonth currentMonth;
     private JPanel calendarGrid;
@@ -103,9 +117,9 @@ public class LogPanel extends JPanel {
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
+
                     long count = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
-                    
+
                     if (count > 0) {
                         g2.setColor(UIManager.getColor("Component.accentColor"));
                         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
@@ -115,13 +129,13 @@ public class LogPanel extends JPanel {
                         g2.setColor(new Color(226, 232, 240));
                         g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
                     }
-                    
+
                     if (date.equals(LocalDate.now())) {
                         g2.setColor(UIManager.getColor("Component.accentColor"));
                         g2.setStroke(new BasicStroke(2));
                         g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 12, 12);
                     }
-                    
+
                     g2.dispose();
                     super.paintComponent(g);
                 }
@@ -130,7 +144,7 @@ public class LogPanel extends JPanel {
             dayBtn.setContentAreaFilled(false);
             dayBtn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             dayBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            
+
             // Check if there are logs for this day
             long count = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
             if (count > 0) {
@@ -169,10 +183,10 @@ public class LogPanel extends JPanel {
             if (l.getBossUuid() != null) {
                 String finalBossUuid = l.getBossUuid();
                 bossLabel = bosses.stream()
-                        .filter(b -> b.getId().equals(finalBossUuid) || b.getName().equals(finalBossUuid))
-                        .map(Boss::getName)
-                        .findFirst()
-                        .orElse("Unknown");
+                    .filter(b -> b.getId().equals(finalBossUuid) || b.getName().equals(finalBossUuid))
+                    .map(Boss::getName)
+                    .findFirst()
+                    .orElse("Unknown");
             }
 
             if (l.getType() == LogEntry.EntryType.TIME) {
@@ -275,7 +289,7 @@ public class LogPanel extends JPanel {
         }
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        
+
         // Type Selection
         JPanel typePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         typePanel.add(new JLabel("Entry Type:"));
@@ -295,13 +309,21 @@ public class LogPanel extends JPanel {
         startField.setEditable(false);
         endField.setEditable(false);
         startField.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) { TimePickerPanel.showPicker(LogPanel.this, startField); }
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                TimePickerPanel.showPicker(LogPanel.this, startField);
+            }
         });
         endField.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) { TimePickerPanel.showPicker(LogPanel.this, endField); }
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                TimePickerPanel.showPicker(LogPanel.this, endField);
+            }
         });
-        timeInputs.add(new JLabel("Start Time:")); timeInputs.add(startField);
-        timeInputs.add(new JLabel("End Time:")); timeInputs.add(endField);
+        timeInputs.add(new JLabel("Start Time:"));
+        timeInputs.add(startField);
+        timeInputs.add(new JLabel("End Time:"));
+        timeInputs.add(endField);
         timeCard.add(timeInputs, BorderLayout.NORTH);
 
         JPanel bossPercPanel = new JPanel(new GridLayout(0, 2, 5, 5));
@@ -327,7 +349,8 @@ public class LogPanel extends JPanel {
         JComboBox<Boss> kmBossCombo = new JComboBox<>();
         for (Boss b : bosses) kmBossCombo.addItem(b);
         kmBossCombo.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Boss b) setText(b.getName());
                 return this;
@@ -342,8 +365,10 @@ public class LogPanel extends JPanel {
             }
         }
         JTextField kmField = new JTextField(entry.getKilometers() != null ? String.valueOf(entry.getKilometers()) : "0.0");
-        kmCard.add(new JLabel("Select Boss:")); kmCard.add(kmBossCombo);
-        kmCard.add(new JLabel("Kilometers:")); kmCard.add(kmField);
+        kmCard.add(new JLabel("Select Boss:"));
+        kmCard.add(kmBossCombo);
+        kmCard.add(new JLabel("Kilometers:"));
+        kmCard.add(kmField);
         cards.add(kmCard, LogEntry.EntryType.KILOMETER.name());
 
         // --- EXTRA CARD ---
@@ -351,7 +376,8 @@ public class LogPanel extends JPanel {
         JComboBox<Boss> extraBossCombo = new JComboBox<>();
         for (Boss b : bosses) extraBossCombo.addItem(b);
         extraBossCombo.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Boss b) setText(b.getName());
                 return this;
@@ -368,10 +394,14 @@ public class LogPanel extends JPanel {
         JTextField descField = new JTextField(entry.getDescription() != null ? entry.getDescription() : "");
         JTextField unitsField = new JTextField(entry.getUnits() != null ? String.valueOf(entry.getUnits()) : "1.0");
         JTextField costField = new JTextField(entry.getCostPerUnit() != null ? String.valueOf(entry.getCostPerUnit()) : "0.0");
-        extraCard.add(new JLabel("Select Boss:")); extraCard.add(extraBossCombo);
-        extraCard.add(new JLabel("Description:")); extraCard.add(descField);
-        extraCard.add(new JLabel("Units:")); extraCard.add(unitsField);
-        extraCard.add(new JLabel("Cost Per Unit:")); extraCard.add(costField);
+        extraCard.add(new JLabel("Select Boss:"));
+        extraCard.add(extraBossCombo);
+        extraCard.add(new JLabel("Description:"));
+        extraCard.add(descField);
+        extraCard.add(new JLabel("Units:"));
+        extraCard.add(unitsField);
+        extraCard.add(new JLabel("Cost Per Unit:"));
+        extraCard.add(costField);
         cards.add(extraCard, LogEntry.EntryType.EXTRA.name());
 
         mainPanel.add(cards, BorderLayout.CENTER);
@@ -391,7 +421,9 @@ public class LogPanel extends JPanel {
                 for (Boss b : bosses) {
                     try {
                         percs.put(b.getId(), Double.parseDouble(percFields.get(b.getId()).getText()));
-                    } catch (NumberFormatException ex) { percs.put(b.getId(), 0.0); }
+                    } catch (NumberFormatException ex) {
+                        percs.put(b.getId(), 0.0);
+                    }
                 }
                 entry.setBossPercentages(percs);
                 entry.setBossUuid(null);
@@ -404,7 +436,9 @@ public class LogPanel extends JPanel {
                 entry.setBossUuid(b != null ? b.getId() : null);
                 try {
                     entry.setKilometers(Double.parseDouble(kmField.getText()));
-                } catch (NumberFormatException ex) { entry.setKilometers(0.0); }
+                } catch (NumberFormatException ex) {
+                    entry.setKilometers(0.0);
+                }
                 entry.setStartTime(null);
                 entry.setEndTime(null);
                 entry.setBossPercentages(null);
@@ -431,4 +465,5 @@ public class LogPanel extends JPanel {
         }
         return false;
     }
+
 }

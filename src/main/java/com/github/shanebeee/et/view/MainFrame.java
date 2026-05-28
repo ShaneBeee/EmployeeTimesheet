@@ -1,12 +1,24 @@
 package com.github.shanebeee.et.view;
 
-import javax.swing.*;
-import java.awt.*;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.UIUtils;
 
+import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+
 public class MainFrame extends JFrame {
+
     private final DataStorage storage;
     private JPanel contentPanel;
     private CardLayout cardLayout;
@@ -32,7 +44,7 @@ public class MainFrame extends JFrame {
         JPanel titleBar = new JPanel(new BorderLayout());
         titleBar.setBackground(new Color(64, 64, 64));
         titleBar.setPreferredSize(new Dimension(0, 30));
-        
+
         JLabel titleLabelText = new JLabel("Employee Timesheet", SwingConstants.CENTER);
         titleLabelText.setForeground(Color.WHITE);
         titleLabelText.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD));
@@ -44,8 +56,8 @@ public class MainFrame extends JFrame {
         sidebar.setPreferredSize(new Dimension(250, 0));
         sidebar.setBackground(new Color(248, 250, 252));
         sidebar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(226, 232, 240)),
-                BorderFactory.createEmptyBorder(0, 0, 0, 0)
+            BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
         ));
 
         JPanel sidebarContent = new JPanel();
@@ -109,10 +121,10 @@ public class MainFrame extends JFrame {
     private JPanel wrapInCard(JPanel panel) {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
-        
+
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
-        
+
         wrapper.add(panel, BorderLayout.CENTER);
 
         // Enhanced 3D Card Look
@@ -121,22 +133,22 @@ public class MainFrame extends JFrame {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
+
                 // Draw a subtle shadow
                 g2.setColor(new Color(0, 0, 0, 20));
                 g2.fillRoundRect(3, 3, getWidth() - 6, getHeight() - 6, 16, 16);
-                
+
                 g2.setColor(new Color(0, 0, 0, 15));
                 g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 16, 16);
-                
+
                 // Draw background
                 g2.setColor(Color.WHITE);
                 g2.fillRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 16, 16);
-                
+
                 // Draw border
                 g2.setColor(new Color(226, 232, 240));
                 g2.drawRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 16, 16);
-                
+
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -153,10 +165,10 @@ public class MainFrame extends JFrame {
         if (info.getFullName() == null || info.getFullName().trim().isEmpty()) {
             SwingUtilities.invokeLater(() -> {
                 int option = JOptionPane.showConfirmDialog(this,
-                        "Welcome to Employee Timesheet!\n\nIt looks like you haven't set up your employee information yet.\nWould you like to do that now?",
-                        "First Time Setup",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE);
+                    "Welcome to Employee Timesheet!\n\nIt looks like you haven't set up your employee information yet.\nWould you like to do that now?",
+                    "First Time Setup",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
 
                 if (option == JOptionPane.YES_OPTION) {
                     showPanel("SETTINGS");
@@ -176,10 +188,10 @@ public class MainFrame extends JFrame {
         if (bosses.isEmpty()) {
             SwingUtilities.invokeLater(() -> {
                 int option = JOptionPane.showConfirmDialog(this,
-                        "You don't have any bosses set up yet!\nWould you like to add one now?",
-                        "No Bosses Found",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE);
+                    "You don't have any bosses set up yet!\nWould you like to add one now?",
+                    "No Bosses Found",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
 
                 if (option == JOptionPane.YES_OPTION) {
                     showPanel("BOSSES");
@@ -212,7 +224,7 @@ public class MainFrame extends JFrame {
         btn.setFont(new Font("SansSerif", Font.PLAIN, 14));
         btn.setContentAreaFilled(false);
         btn.setOpaque(false);
-        
+
         btn.addActionListener(e -> {
             showPanel(cardName);
             updateNavButtons(btn);
@@ -234,4 +246,5 @@ public class MainFrame extends JFrame {
             }
         }
     }
+
 }

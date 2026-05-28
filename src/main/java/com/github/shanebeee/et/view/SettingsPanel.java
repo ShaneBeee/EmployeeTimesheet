@@ -4,9 +4,18 @@ import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.storage.DataStorage;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Window;
 
 public class SettingsPanel extends JPanel {
+
     private final DataStorage storage;
 
     public SettingsPanel(DataStorage storage) {
@@ -35,8 +44,8 @@ public class SettingsPanel extends JPanel {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -51,41 +60,59 @@ public class SettingsPanel extends JPanel {
         JTextField phoneField = new JTextField(info.getPhoneNumber());
         JTextField emailField = new JTextField(info.getEmail());
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Full Name:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(nameField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Company:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(companyField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Address 1:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(addressField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Address 2:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(address2Field, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Phone:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(phoneField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(emailField, gbc);
 
         JPanel appSettingsPanel = new JPanel(new GridBagLayout());
         appSettingsPanel.setOpaque(false);
         appSettingsPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         JTextField startField = new JTextField(storage.getDefaultStartTime());
@@ -105,14 +132,20 @@ public class SettingsPanel extends JPanel {
             }
         });
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.0;
         appSettingsPanel.add(new JLabel("Default Start Time:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         appSettingsPanel.add(startField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.0;
         appSettingsPanel.add(new JLabel("Default End Time:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         appSettingsPanel.add(endField, gbc);
 
         JButton saveBtn = new JButton("Save Settings");
@@ -150,7 +183,7 @@ public class SettingsPanel extends JPanel {
         panel.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainContent.add(panel);
         mainContent.add(Box.createVerticalStrut(30));
-        
+
         JLabel appTitle = new JLabel("Application Settings", SwingConstants.CENTER);
         appTitle.setFont(appTitle.getFont().deriveFont(Font.BOLD));
         appTitle.setForeground(new Color(100, 116, 139));
@@ -166,10 +199,11 @@ public class SettingsPanel extends JPanel {
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         add(scrollPane, BorderLayout.CENTER);
-        
+
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottomPanel.setOpaque(false);
         bottomPanel.add(saveBtn);
         add(bottomPanel, BorderLayout.SOUTH);
     }
+
 }

@@ -8,8 +8,14 @@ import com.github.shanebeee.et.util.InvoiceGenerator;
 import com.github.shanebeee.et.util.SummaryGenerator;
 
 import javax.swing.*;
-import java.awt.*;
-import java.io.File;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -17,17 +23,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InvoicePanel extends JPanel {
-    private final DataStorage storage;
 
+    private final DataStorage storage;
+    private JComboBox<Boss> bossCombo;
+    private JTextField startField;
+    private JTextField endField;
     public InvoicePanel(DataStorage storage) {
         this.storage = storage;
         setLayout(new BorderLayout());
         initUI();
     }
-
-    private JComboBox<Boss> bossCombo;
-    private JTextField startField;
-    private JTextField endField;
 
     private void initUI() {
         JPanel header = new JPanel(new BorderLayout());
@@ -46,8 +51,8 @@ public class InvoicePanel extends JPanel {
         JPanel form = new JPanel(new GridBagLayout());
         form.setOpaque(false);
         form.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -85,19 +90,28 @@ public class InvoicePanel extends JPanel {
             }
         });
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.0;
         form.add(new JLabel("Select Boss:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         form.add(bossCombo, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.0;
         form.add(new JLabel("Start Date:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         form.add(startField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.0;
         form.add(new JLabel("End Date:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         form.add(endField, gbc);
 
         JButton btnGenerate = new JButton("Generate Invoice (PDF)");
@@ -115,7 +129,9 @@ public class InvoicePanel extends JPanel {
         btnSummary.setBackground((Color) UIManager.get("App.success"));
         btnSummary.setForeground(Color.WHITE);
 
-        gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 0.0;
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        gbc.weightx = 0.0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.insets = new Insets(15, 5, 5, 5);
@@ -206,11 +222,11 @@ public class InvoicePanel extends JPanel {
             }
 
             List<LogEntry> filteredLogs = allLogs.stream()
-                    .filter(l -> {
-                        LocalDate d = LocalDate.parse(l.getDate());
-                        return !d.isBefore(start) && !d.isAfter(end);
-                    })
-                    .toList();
+                .filter(l -> {
+                    LocalDate d = LocalDate.parse(l.getDate());
+                    return !d.isBefore(start) && !d.isAfter(end);
+                })
+                .toList();
 
             int invNum = storage.getNextInvoiceNumber();
             String path = storage.getInvoicePath(boss, invNum);
@@ -223,4 +239,5 @@ public class InvoicePanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Error generating invoice: " + ex.getMessage());
         }
     }
+
 }

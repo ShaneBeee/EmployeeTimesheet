@@ -5,11 +5,18 @@ import com.github.shanebeee.et.storage.DataStorage;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.util.ArrayList;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.util.List;
 
 public class BossPanel extends JPanel {
+
     private final DataStorage storage;
     private final List<Boss> bosses;
     private JTable bossTable;
@@ -36,7 +43,9 @@ public class BossPanel extends JPanel {
         String[] columns = {"Name", "Company", "Phone", "Hourly Rate"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         bossTable = new JTable(tableModel);
         bossTable.setRowHeight(35);
@@ -50,7 +59,7 @@ public class BossPanel extends JPanel {
 
         JPanel mainContent = new JPanel(new BorderLayout(10, 10));
         mainContent.setOpaque(false);
-        
+
         JScrollPane scrollPane = new JScrollPane(bossTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
         mainContent.add(scrollPane, BorderLayout.CENTER);
@@ -71,14 +80,14 @@ public class BossPanel extends JPanel {
         btnDelete.putClientProperty("JButton.buttonType", "roundRect");
         btnDelete.setBackground((Color) UIManager.get("App.danger"));
         btnDelete.setForeground(Color.WHITE);
-        
+
         btnPanel.add(btnAdd);
         btnPanel.add(btnEdit);
         btnPanel.add(btnDelete);
         mainContent.add(btnPanel, BorderLayout.SOUTH);
-        
+
         add(mainContent, BorderLayout.CENTER);
-        
+
         bossTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -136,49 +145,76 @@ public class BossPanel extends JPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.weightx = 1.0;
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Name:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(nameField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Company:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(companyField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Address 1:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(addressField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Address 2:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(address2Field, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Phone:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(phoneField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(emailField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 6; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Hourly Rate:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(rateField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 7; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 7;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("Tax Rate (%):"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(taxField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 8; gbc.weightx = 0.0;
+        gbc.gridx = 0;
+        gbc.gridy = 8;
+        gbc.weightx = 0.0;
         panel.add(new JLabel("KM Rate:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
         panel.add(kmField, gbc);
 
         panel.setPreferredSize(new java.awt.Dimension(500, panel.getPreferredSize().height));
@@ -210,4 +246,5 @@ public class BossPanel extends JPanel {
             refreshTable();
         }
     }
+
 }

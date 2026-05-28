@@ -7,21 +7,26 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DataStorage {
+
     private static final String BASE_DIR = System.getProperty("user.home") + File.separator + "EmployeeTimesheet" + File.separator;
     private static final String SETTINGS_DIR = BASE_DIR + "settings/";
     private static final String BOSSES_FILE = SETTINGS_DIR + "bosses.json";
     private static final String EMPLOYEE_FILE = SETTINGS_DIR + "employee.json";
-    private static final String LOGS_DIR = BASE_DIR + "logs/";
     private static final String SETTINGS_FILE = SETTINGS_DIR + "settings.json";
+    private static final String LOGS_DIR = BASE_DIR + "logs/";
     private static final String INVOICES_DIR = BASE_DIR + "invoices/";
 
     private final Gson gson;
@@ -43,7 +48,8 @@ public class DataStorage {
 
     // Bosses
     public List<Boss> loadBosses() {
-        return loadList(BOSSES_FILE, new TypeToken<List<Boss>>(){}.getType());
+        return loadList(BOSSES_FILE, new TypeToken<List<Boss>>() {
+        }.getType());
     }
 
     public void saveBosses(List<Boss> bosses) {
@@ -63,7 +69,8 @@ public class DataStorage {
     // Logs
     public List<LogEntry> loadLogs(String yearMonth) { // yearMonth as "yyyy-MM"
         String file = LOGS_DIR + yearMonth + ".json";
-        return loadList(file, new TypeToken<List<LogEntry>>(){}.getType());
+        return loadList(file, new TypeToken<List<LogEntry>>() {
+        }.getType());
     }
 
     public void saveLogs(String yearMonth, List<LogEntry> logs) {
@@ -162,4 +169,5 @@ public class DataStorage {
         String defaultStartTime = "11:00";
         String defaultEndTime = "15:00";
     }
+
 }
