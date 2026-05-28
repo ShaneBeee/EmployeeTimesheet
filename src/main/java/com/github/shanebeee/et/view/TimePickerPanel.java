@@ -20,7 +20,6 @@ import java.time.format.DateTimeFormatter;
 
 public class TimePickerPanel extends JPanel {
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
     private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("hh:mm a");
     private int hour;
     private int minute;
@@ -31,7 +30,7 @@ public class TimePickerPanel extends JPanel {
     public TimePickerPanel(String initialTime, Runnable onSelect) {
         this.onSelect = onSelect;
         try {
-            LocalTime time = LocalTime.parse(initialTime, formatter);
+            LocalTime time = LocalTime.parse(initialTime, displayFormatter);
             int h = time.getHour();
             this.hour = h % 12;
             if (this.hour == 0) this.hour = 12;
@@ -151,7 +150,17 @@ public class TimePickerPanel extends JPanel {
 
     public static String formatTime(String time24) {
         try {
-            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("HH:mm")).format(DateTimeFormatter.ofPattern("hh:mm a"));
+            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("HH:mm"))
+                .format(DateTimeFormatter.ofPattern("hh:mm a"));
+        } catch (Exception e) {
+            return time24;
+        }
+    }
+
+    public static String unformatTime(String time24) {
+        try {
+            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("hh:mm a"))
+                .format(DateTimeFormatter.ofPattern("HH:mm"));
         } catch (Exception e) {
             return time24;
         }
@@ -169,7 +178,7 @@ public class TimePickerPanel extends JPanel {
 
         JButton btnOk = new JButton("OK");
         btnOk.addActionListener(e -> {
-            targetField.setText(picker.getTime());
+            targetField.setText(formatTime(picker.getTime()));
             dialog.dispose();
         });
 

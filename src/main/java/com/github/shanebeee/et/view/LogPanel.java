@@ -317,8 +317,8 @@ public class LogPanel extends JPanel {
         // --- TIME CARD ---
         JPanel timeCard = new JPanel(new BorderLayout());
         JPanel timeInputs = new JPanel(new GridLayout(0, 2, 5, 5));
-        JTextField startField = new JTextField(entry.getStartTime() != null ? entry.getStartTime() : storage.getDefaultStartTime());
-        JTextField endField = new JTextField(entry.getEndTime() != null ? entry.getEndTime() : storage.getDefaultEndTime());
+        JTextField startField = new JTextField(entry.getStartTime() != null ? TimePickerPanel.formatTime(entry.getStartTime()) : TimePickerPanel.formatTime(storage.getDefaultStartTime()));
+        JTextField endField = new JTextField(entry.getEndTime() != null ? TimePickerPanel.formatTime(entry.getEndTime()) : TimePickerPanel.formatTime(storage.getDefaultEndTime()));
         startField.setEditable(false);
         endField.setEditable(false);
         startField.addMouseListener(new MouseAdapter() {
@@ -428,8 +428,8 @@ public class LogPanel extends JPanel {
             entry.setType(selectedType);
 
             if (selectedType == LogEntry.EntryType.TIME) {
-                entry.setStartTime(startField.getText());
-                entry.setEndTime(endField.getText());
+                entry.setStartTime(TimePickerPanel.unformatTime(startField.getText()));
+                entry.setEndTime(TimePickerPanel.unformatTime(endField.getText()));
                 Map<String, Double> percs = new HashMap<>();
                 for (Boss b : bosses) {
                     try {

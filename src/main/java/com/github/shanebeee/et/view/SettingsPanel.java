@@ -13,6 +13,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class SettingsPanel extends JPanel {
 
@@ -115,19 +117,19 @@ public class SettingsPanel extends JPanel {
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        JTextField startField = new JTextField(storage.getDefaultStartTime());
+        JTextField startField = new JTextField(TimePickerPanel.formatTime(storage.getDefaultStartTime()));
         startField.setEditable(false);
-        startField.addMouseListener(new java.awt.event.MouseAdapter() {
+        startField.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 TimePickerPanel.showPicker(SettingsPanel.this, startField);
             }
         });
-        JTextField endField = new JTextField(storage.getDefaultEndTime());
+        JTextField endField = new JTextField(TimePickerPanel.formatTime(storage.getDefaultEndTime()));
         endField.setEditable(false);
-        endField.addMouseListener(new java.awt.event.MouseAdapter() {
+        endField.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 TimePickerPanel.showPicker(SettingsPanel.this, endField);
             }
         });
