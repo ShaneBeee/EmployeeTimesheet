@@ -9,6 +9,7 @@ version = "1.0.0"
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+        vendor = JvmVendorSpec.ORACLE
     }
 }
 
@@ -36,4 +37,26 @@ tasks.jar {
     }
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register<Exec>("jpackageMac") {
+    dependsOn(tasks.jar)
+
+    doFirst {
+        mkdir(layout.buildDirectory.dir("jpackage"))
+
+        val jarFile = tasks.jar.get().archiveFile.get().asFile
+
+        commandLine(
+            "jpackage",
+            "--type", "dmg",                      // or "app-image" for just the .app
+            "--input", jarFile.parent,
+            "--main-jar", jarFile.name,
+            "--main-class", "com.github.shanebeee.et.Main",
+            "--name", "EmployeeTracker",
+            "--app-version", project.version.toString(),
+            "--dest", layout.buildDirectory.dir("jpackage").get().asFile.absolutePath,
+             "--icon", "src/main/resources/images/1024.icns"
+        )
+    }
 }
