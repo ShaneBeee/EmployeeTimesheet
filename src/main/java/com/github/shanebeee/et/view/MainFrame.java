@@ -20,16 +20,33 @@ public class MainFrame extends JFrame {
         setSize(1000, 700);
         setLocationRelativeTo(null);
 
+        getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
+        getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+        getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
+
         initUI();
     }
 
     private void initUI() {
+        // Custom Title Bar
+        JPanel titleBar = new JPanel(new BorderLayout());
+        titleBar.setBackground(new Color(64, 64, 64));
+        titleBar.setPreferredSize(new Dimension(0, 30));
+        
+        JLabel titleLabelText = new JLabel("Employee Timesheet", SwingConstants.CENTER);
+        titleLabelText.setForeground(Color.WHITE);
+        titleLabelText.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD));
+        titleBar.add(titleLabelText, BorderLayout.CENTER);
+
         // Sidebar
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BorderLayout());
         sidebar.setPreferredSize(new Dimension(250, 0));
         sidebar.setBackground(new Color(248, 250, 252));
-        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(226, 232, 240)));
+        sidebar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(226, 232, 240)),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
 
         JPanel sidebarContent = new JPanel();
         sidebarContent.setLayout(new BoxLayout(sidebarContent, BoxLayout.Y_AXIS));
@@ -76,6 +93,7 @@ public class MainFrame extends JFrame {
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
+        add(titleBar, BorderLayout.NORTH);
 
         // Highlight first panel
         updateNavButtons(logsBtn);
@@ -88,23 +106,41 @@ public class MainFrame extends JFrame {
         wrapper.setOpaque(false);
         
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(226, 232, 240), 1, true),
-                BorderFactory.createEmptyBorder(30, 30, 30, 30)
-        ));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         
         wrapper.add(panel, BorderLayout.CENTER);
 
-        // Add a subtle shadow effect using a MatteBorder
-        JPanel shadowWrapper = new JPanel(new BorderLayout());
-        shadowWrapper.setOpaque(false);
-        shadowWrapper.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(0, 0, 5, 5),
-                BorderFactory.createMatteBorder(0, 0, 2, 2, new Color(0, 0, 0, 10))
-        ));
-        
-        shadowWrapper.add(wrapper, BorderLayout.CENTER);
-        return shadowWrapper;
+        // Enhanced 3D Card Look
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw a subtle shadow
+                g2.setColor(new Color(0, 0, 0, 20));
+                g2.fillRoundRect(3, 3, getWidth() - 6, getHeight() - 6, 16, 16);
+                
+                g2.setColor(new Color(0, 0, 0, 15));
+                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 16, 16);
+                
+                // Draw background
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 16, 16);
+                
+                // Draw border
+                g2.setColor(new Color(226, 232, 240));
+                g2.drawRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 16, 16);
+                
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 4));
+        card.add(wrapper);
+
+        return card;
     }
 
     private void checkFirstTimeSetup() {

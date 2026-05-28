@@ -80,7 +80,22 @@ public class Main {
         
         // Panel backgrounds
         UIManager.put("Panel.background", Color.WHITE);
-        UIManager.put("MainContent.background", new Color(248, 250, 252));
+        UIManager.put("MainContent.background", new Color(241, 245, 249)); // Slightly darker gray (Slate 100)
+        
+        // TabbedPane styling (if used in future)
+        UIManager.put("TabbedPane.selectedBackground", Color.WHITE);
+        
+        // Table styling
+        UIManager.put("TableHeader.background", new Color(248, 250, 252));
+        UIManager.put("TableHeader.separatorColor", new Color(226, 232, 240));
+        UIManager.put("TableHeader.bottomSeparatorColor", new Color(226, 232, 240));
+        UIManager.put("TableHeader.font", UIManager.getFont("Label.font").deriveFont(Font.BOLD));
+        
+        // macOS title bar
+        UIManager.put("TitlePane.background", new Color(64, 64, 64)); // Dark gray
+        UIManager.put("TitlePane.foreground", Color.WHITE);
+        UIManager.put("TitlePane.buttonHoverBackground", new Color(80, 80, 80));
+        UIManager.put("TitlePane.buttonPressedBackground", new Color(100, 100, 100));
         
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());

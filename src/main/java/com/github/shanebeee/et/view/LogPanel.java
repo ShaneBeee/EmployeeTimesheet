@@ -98,20 +98,47 @@ public class LogPanel extends JPanel {
         for (int day = 1; day <= daysInMonth; day++) {
             final int d = day;
             LocalDate date = currentMonth.atDay(day);
-            JButton dayBtn = new JButton(String.valueOf(day));
-            dayBtn.putClientProperty("JButton.buttonType", "square");
+            JButton dayBtn = new JButton(String.valueOf(day)) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    long count = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
+                    
+                    if (count > 0) {
+                        g2.setColor(UIManager.getColor("Component.accentColor"));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                    } else {
+                        g2.setColor(Color.WHITE);
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                        g2.setColor(new Color(226, 232, 240));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                    }
+                    
+                    if (date.equals(LocalDate.now())) {
+                        g2.setColor(UIManager.getColor("Component.accentColor"));
+                        g2.setStroke(new BasicStroke(2));
+                        g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 12, 12);
+                    }
+                    
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            dayBtn.setOpaque(false);
+            dayBtn.setContentAreaFilled(false);
+            dayBtn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            dayBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             
             // Check if there are logs for this day
             long count = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
             if (count > 0) {
-                dayBtn.setBackground(UIManager.getColor("Component.accentColor"));
                 dayBtn.setForeground(Color.WHITE);
                 String plural = count == 1 ? "log" : "logs";
                 dayBtn.setText("<html><center>" + day + "<br><small>(" + count + " " + plural + ")</small></center></html>");
-            }
-
-            if (date.equals(LocalDate.now())) {
-                dayBtn.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.accentColor"), 2));
+            } else {
+                dayBtn.setForeground(new Color(30, 41, 59));
             }
 
             dayBtn.addActionListener(e -> showDayLogs(date));
