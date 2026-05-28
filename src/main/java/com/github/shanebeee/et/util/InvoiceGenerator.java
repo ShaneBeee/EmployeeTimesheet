@@ -3,7 +3,9 @@ package com.github.shanebeee.et.util;
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.LogEntry;
+import com.github.shanebeee.et.view.TimePickerPanel;
 import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
@@ -11,6 +13,7 @@ import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
@@ -75,7 +78,7 @@ public class InvoiceGenerator {
         document.add(addrTable);
 
         Table table = new Table(itemized
-            ? UnitValue.createPercentArray(new float[]{2, 1, 1, 1, 1})
+            ? UnitValue.createPercentArray(new float[]{1, 3, 1, 1, 1})
             : UnitValue.createPercentArray(new float[]{4, 1, 1, 1}));
         table.setWidth(UnitValue.createPercentValue(100));
         table.setMarginBottom(20);
@@ -110,7 +113,7 @@ public class InvoiceGenerator {
 
                     if (itemized) {
                         table.addCell(new Cell().add(new Paragraph(log.getDate())).setPadding(5));
-                        String desc = "Time: " + com.github.shanebeee.et.view.TimePickerPanel.formatTime(log.getStartTime()) + " - " + com.github.shanebeee.et.view.TimePickerPanel.formatTime(log.getEndTime());
+                        String desc = "Time: " + TimePickerPanel.formatTime(log.getStartTime()) + " - " + TimePickerPanel.formatTime(log.getEndTime());
                         if (perc < 1.0) desc += String.format(" (%.0f%%)", perc * 100);
                         table.addCell(new Cell().add(new Paragraph(desc)).setPadding(5));
                         table.addCell(new Cell().add(new Paragraph(String.format("%.2f", billableHours))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
@@ -205,7 +208,7 @@ public class InvoiceGenerator {
 
         Table totalsTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
         totalsTable.setWidth(UnitValue.createPercentValue(40));
-        totalsTable.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.RIGHT);
+        totalsTable.setHorizontalAlignment(HorizontalAlignment.RIGHT);
 
         totalsTable.addCell(new Cell().add(new Paragraph("Subtotal")).setBorder(Border.NO_BORDER).setPadding(2));
         totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", subtotal))).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT));
@@ -214,15 +217,11 @@ public class InvoiceGenerator {
         totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", tax))).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT));
 
         totalsTable.addCell(new Cell().add(new Paragraph("TOTAL")).setBorder(Border.NO_BORDER).setPadding(2).setBold().setFontSize(16));
-        totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", total))).setBorder(Border.NO_BORDER).setPadding(2).setBold().setFontSize(16).setTextAlignment(TextAlignment.RIGHT).setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(59, 130, 246)));
+        totalsTable.addCell(new Cell().add(new Paragraph("$" + String.format("%.2f", total))).setBorder(Border.NO_BORDER).setPadding(2).setBold().setFontSize(16).setTextAlignment(TextAlignment.RIGHT).setFontColor(new DeviceRgb(59, 130, 246)));
 
         document.add(totalsTable);
 
         document.close();
-    }
-
-    public static void generateInvoice(Boss boss, EmployeeInfo employee, List<LogEntry> logs, String startDate, String endDate, int invoiceNum, String outputPath) throws Exception {
-        generateInvoice(boss, employee, logs, startDate, endDate, invoiceNum, outputPath, false);
     }
 
     private static String safe(String str) {
