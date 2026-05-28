@@ -53,7 +53,7 @@ public class Main {
                 if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
                     desktop.setAboutHandler(e -> {
                         JOptionPane.showMessageDialog(frame,
-                            "Employee Timesheet\nVersion 1.0.0\n\nProfessional time logging and invoicing.",
+                            "Employee Timesheet\nVersion " + getAppVersion() + "\n\nProfessional time logging and invoicing.",
                             "About Employee Timesheet",
                             JOptionPane.INFORMATION_MESSAGE,
                             new ImageIcon(UIUtils.createAppIcon(64)));
@@ -123,6 +123,17 @@ public class Main {
             UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception ex) {
             System.err.println("Failed to initialize FlatLaf");
+        }
+    }
+
+    private static String getAppVersion() {
+        try (var stream = Main.class.getResourceAsStream("/version.properties")) {
+            if (stream == null) return "unknown";
+            var props = new java.util.Properties();
+            props.load(stream);
+            return props.getProperty("version", "unknown");
+        } catch (Exception e) {
+            return "unknown";
         }
     }
 

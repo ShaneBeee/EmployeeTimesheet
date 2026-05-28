@@ -31,6 +31,22 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.13")
 }
 
+tasks.register("generateVersionProperties") {
+    val outputDir = layout.buildDirectory.dir("generated/resources")
+    outputs.dir(outputDir)
+
+    doFirst {
+        val file = outputDir.get().file("version.properties").asFile
+        file.parentFile.mkdirs()
+        file.writeText("version=${project.version}")
+    }
+}
+
+tasks.processResources {
+    dependsOn("generateVersionProperties")
+    from(layout.buildDirectory.dir("generated/resources"))
+}
+
 tasks.jar {
     manifest {
         attributes["Main-Class"] = "com.github.shanebeee.et.Main"
@@ -49,14 +65,14 @@ tasks.register<Exec>("jpackageMac") {
 
         commandLine(
             "jpackage",
-            "--type", "dmg",                      // or "app-image" for just the .app
+            "--type", "dmg",
             "--input", jarFile.parent,
             "--main-jar", jarFile.name,
             "--main-class", "com.github.shanebeee.et.Main",
             "--name", "EmployeeTracker",
             "--app-version", project.version.toString(),
             "--dest", layout.buildDirectory.dir("jpackage").get().asFile.absolutePath,
-             "--icon", "src/main/resources/images/1024.icns"
+            "--icon", "src/main/resources/images/1024.icns"
         )
     }
 }
