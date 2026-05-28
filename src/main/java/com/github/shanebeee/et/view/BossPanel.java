@@ -13,6 +13,9 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.time.LocalDate;
 import java.util.List;
 
 public class BossPanel extends JPanel {
@@ -88,9 +91,9 @@ public class BossPanel extends JPanel {
 
         add(mainContent, BorderLayout.CENTER);
 
-        bossTable.addMouseListener(new java.awt.event.MouseAdapter() {
+        bossTable.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     int row = bossTable.rowAtPoint(e.getPoint());
                     if (row >= 0) {
@@ -217,7 +220,7 @@ public class BossPanel extends JPanel {
         gbc.weightx = 1.0;
         panel.add(kmField, gbc);
 
-        panel.setPreferredSize(new java.awt.Dimension(500, panel.getPreferredSize().height));
+        panel.setPreferredSize(new Dimension(500, panel.getPreferredSize().height));
 
         int result = JOptionPane.showConfirmDialog(this, panel, isNew ? "Add Boss" : "Edit Boss", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
@@ -231,7 +234,7 @@ public class BossPanel extends JPanel {
             try {
                 double newRate = Double.parseDouble(rateField.getText());
                 if (newRate != oldRate) {
-                    b.getRateHistory().add(new Boss.RateChange(java.time.LocalDate.now().toString(), oldRate));
+                    b.getRateHistory().add(new Boss.RateChange(LocalDate.now().toString(), oldRate));
                     b.setHourlyRate(newRate);
                 }
                 b.setTaxRate(Double.parseDouble(taxField.getText()));
