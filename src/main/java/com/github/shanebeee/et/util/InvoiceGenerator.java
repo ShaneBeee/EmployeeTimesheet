@@ -74,12 +74,16 @@ public class InvoiceGenerator {
         addrTable.addCell(toCell);
         document.add(addrTable);
 
-        Table table = new Table(UnitValue.createPercentArray(new float[]{itemized ? 2 : 4, 1, 1, 1, 1}));
+        Table table = new Table(itemized
+            ? UnitValue.createPercentArray(new float[]{2, 1, 1, 1, 1})
+            : UnitValue.createPercentArray(new float[]{4, 1, 1, 1}));
         table.setWidth(UnitValue.createPercentValue(100));
         table.setMarginBottom(20);
 
         // Styled Table Header
-        String[] headers = itemized ? new String[]{"Date", "Description", "Units", "Rate", "Total"} : new String[]{"Description", "Units", "Rate", "Total"};
+        String[] headers = itemized
+            ? new String[]{"Date", "Description", "Units", "Rate", "Total"}
+            : new String[]{"Description", "Units", "Rate", "Total"};
         for (String header : headers) {
             table.addHeaderCell(new Cell().add(new Paragraph(header).setBold().setFontColor(ColorConstants.WHITE))
                 .setBackgroundColor(ColorConstants.DARK_GRAY)
