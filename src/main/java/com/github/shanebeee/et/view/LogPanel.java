@@ -19,6 +19,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -174,7 +176,7 @@ public class LogPanel extends JPanel {
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Logs for " + date, true);
         dialog.setLayout(new BorderLayout());
-        dialog.setSize(500, 400);
+        dialog.setSize(650, 400);
 
         DefaultListModel<String> listModel = new DefaultListModel<>();
         for (LogEntry l : dayLogs) {
@@ -190,7 +192,18 @@ public class LogPanel extends JPanel {
             }
 
             if (l.getType() == LogEntry.EntryType.TIME) {
-                text = "TIME: " + TimePickerPanel.formatTime(l.getStartTime()) + " - " + TimePickerPanel.formatTime(l.getEndTime());
+                List<String> bossPercentages = new ArrayList<>();
+                l.getBossPercentages().forEach((uuidString, percent) -> {
+                    if (percent > 0) {
+                        String bossName = bosses.stream()
+                            .filter(boss -> boss.getId().equals(uuidString) || boss.getName().equals(uuidString))
+                            .map(Boss::getName)
+                            .findFirst()
+                            .orElse("Unknown");
+                        bossPercentages.add(bossName + ": " + percent + "%");
+                    }
+                });
+                text = "TIME: " + TimePickerPanel.formatTime(l.getStartTime()) + " - " + TimePickerPanel.formatTime(l.getEndTime()) + " (" + String.join(", ", bossPercentages) + ")";
             } else if (l.getType() == LogEntry.EntryType.KILOMETER) {
                 text = "KM: " + l.getKilometers() + " (" + bossLabel + ")";
             } else if (l.getType() == LogEntry.EntryType.EXTRA) {
@@ -203,9 +216,9 @@ public class LogPanel extends JPanel {
             list.setSelectedIndex(0);
         }
 
-        list.addMouseListener(new java.awt.event.MouseAdapter() {
+        list.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     int idx = list.locationToIndex(e.getPoint());
                     if (idx >= 0) {
@@ -308,15 +321,15 @@ public class LogPanel extends JPanel {
         JTextField endField = new JTextField(entry.getEndTime() != null ? entry.getEndTime() : storage.getDefaultEndTime());
         startField.setEditable(false);
         endField.setEditable(false);
-        startField.addMouseListener(new java.awt.event.MouseAdapter() {
+        startField.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 TimePickerPanel.showPicker(LogPanel.this, startField);
             }
         });
-        endField.addMouseListener(new java.awt.event.MouseAdapter() {
+        endField.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 TimePickerPanel.showPicker(LogPanel.this, endField);
             }
         });
