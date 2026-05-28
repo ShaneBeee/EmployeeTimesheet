@@ -52,7 +52,12 @@ public class MainFrame extends JFrame {
         sidebarContent.setLayout(new BoxLayout(sidebarContent, BoxLayout.Y_AXIS));
         sidebarContent.setOpaque(false);
 
-        JLabel titleLabel = new JLabel("Employee Timesheet");
+        JLabel titleLabel = new JLabel("<html>Employee<br>Timesheet</html>");
+        Image iconImage = UIUtils.createAppIcon(48);
+        if (iconImage != null) {
+            titleLabel.setIcon(new ImageIcon(iconImage));
+            titleLabel.setIconTextGap(10);
+        }
         titleLabel.setForeground(new Color(30, 41, 59));
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
