@@ -2,10 +2,11 @@ package com.github.shanebeee.et.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class Boss {
 
-    private String id;
+    private final String id;
     private String name;
     private String address;
     private String address2;
@@ -18,17 +19,13 @@ public class Boss {
     private List<RateChange> rateHistory = new ArrayList<>();
 
     public Boss(String name) {
-        this.id = java.util.UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString();
         this.name = name;
     }
 
     // Getters and Setters
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getName() {
@@ -111,22 +108,10 @@ public class Boss {
         this.rateHistory = rateHistory;
     }
 
-    public static class RateChange {
-        private String date; // ISO-8601
-        private double rate;
-
-        public RateChange(String date, double rate) {
-            this.date = date;
-            this.rate = rate;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public double getRate() {
-            return rate;
-        }
+    /**
+     * @param date ISO-8601
+     */
+    public record RateChange(String date, double rate) {
     }
 
 }
