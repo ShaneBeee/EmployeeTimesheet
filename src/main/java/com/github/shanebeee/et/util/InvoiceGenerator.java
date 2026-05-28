@@ -19,7 +19,9 @@ import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 
 public class InvoiceGenerator {
@@ -94,6 +96,7 @@ public class InvoiceGenerator {
         }
 
         double totalHours = 0;
+        double totalHoursCost = 0; // tracks cost across potentially multiple rates
         double totalKm = 0;
         double extraEntriesTotal = 0;
 
@@ -109,7 +112,9 @@ public class InvoiceGenerator {
                     LocalTime endT = LocalTime.parse(log.getEndTime());
                     double hours = Duration.between(startT, endT).toMinutes() / 60.0;
                     double billableHours = hours * perc;
+                    double rateForEntry = rateForDate(boss, log.getDate());
                     totalHours += billableHours;
+                    totalHoursCost += billableHours * rateForEntry;
 
                     if (itemized) {
                         table.addCell(new Cell().add(new Paragraph(log.getDate())).setPadding(5));
@@ -117,8 +122,8 @@ public class InvoiceGenerator {
                         if (perc < 1.0) desc += String.format(" (%.0f%%)", perc * 100);
                         table.addCell(new Cell().add(new Paragraph(desc)).setPadding(5));
                         table.addCell(new Cell().add(new Paragraph(String.format("%.2f", billableHours))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
-                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f/hr", boss.getHourlyRate()))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
-                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", billableHours * boss.getHourlyRate()))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f/hr", rateForEntry))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                        table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", billableHours * rateForEntry))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
                     }
                 }
             } else if (log.getType() == LogEntry.EntryType.KILOMETER) {
@@ -171,10 +176,14 @@ public class InvoiceGenerator {
 
         if (!itemized) {
             if (totalHours > 0) {
+                // Determine display rate: if all hours were at the same rate, show it; otherwise show "varies"
+                String displayRate = totalHours > 0
+                    ? String.format("$%.2f/hr", totalHoursCost / totalHours)
+                    : "";
                 table.addCell(new Cell().add(new Paragraph("Total Work Hours")).setPadding(5));
                 table.addCell(new Cell().add(new Paragraph(String.format("%.2f", totalHours))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
-                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f/hr", boss.getHourlyRate()))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
-                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", totalHours * boss.getHourlyRate()))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(displayRate)).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
+                table.addCell(new Cell().add(new Paragraph(String.format("$%.2f", totalHoursCost))).setPadding(5).setTextAlignment(TextAlignment.RIGHT));
             }
 
             if (totalKm > 0) {
@@ -200,9 +209,8 @@ public class InvoiceGenerator {
 
         document.add(table);
 
-        double hoursCost = totalHours * boss.getHourlyRate();
         double kmCost = totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0);
-        double subtotal = hoursCost + kmCost + extraEntriesTotal;
+        double subtotal = totalHoursCost + kmCost + extraEntriesTotal;
         double tax = subtotal * (boss.getTaxRate() / 100.0);
         double total = subtotal + tax;
 
@@ -222,6 +230,30 @@ public class InvoiceGenerator {
         document.add(totalsTable);
 
         document.close();
+    }
+
+    /**
+     * Returns the hourly rate that was in effect for the given log date.
+     * <p>
+     * rateHistory entries record the OLD rate at the moment a change was made.
+     * e.g. { date: "2026-05-28", rate: 22.0 } means "$22 was the rate up until May 28,
+     * and on May 28 it changed to something new."
+     * <p>
+     * So for a given log date, we find the earliest rateHistory entry whose date is
+     * AFTER the log date — that entry's rate is what was in effect on the log date.
+     * If no such future entry exists, the log date is on or after the latest change,
+     * so we use the current hourlyRate.
+     */
+    private static double rateForDate(Boss boss, String logDate) {
+        if (boss.getRateHistory() == null || boss.getRateHistory().isEmpty()) {
+            return boss.getHourlyRate();
+        }
+        LocalDate entryDate = LocalDate.parse(logDate);
+        return boss.getRateHistory().stream()
+            .filter(rc -> LocalDate.parse(rc.getDate()).isAfter(entryDate))
+            .min(Comparator.comparing(rc -> LocalDate.parse(rc.getDate())))
+            .map(Boss.RateChange::getRate)
+            .orElse(boss.getHourlyRate());
     }
 
     private static String safe(String str) {
