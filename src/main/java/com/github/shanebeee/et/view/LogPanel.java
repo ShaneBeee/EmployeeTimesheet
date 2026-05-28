@@ -226,12 +226,12 @@ public class LogPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton btnAdd = new JButton("Add Entry");
         btnAdd.putClientProperty("JButton.buttonType", "roundRect");
-        btnAdd.setBackground((Color) UIManager.get("App.accent"));
+        btnAdd.setBackground((Color) UIManager.get("App.success"));
         btnAdd.setForeground(Color.WHITE);
 
         JButton btnEdit = new JButton("Edit Entry");
         btnEdit.putClientProperty("JButton.buttonType", "roundRect");
-        btnEdit.setBackground((Color) UIManager.get("App.success"));
+        btnEdit.setBackground((Color) UIManager.get("App.warning"));
         btnEdit.setForeground(Color.WHITE);
 
         JButton btnDelete = new JButton("Delete Entry");
