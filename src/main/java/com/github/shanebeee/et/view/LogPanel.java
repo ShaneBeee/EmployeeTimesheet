@@ -31,10 +31,12 @@ public class LogPanel extends JPanel {
 
     private void initUI() {
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        topPanel.setOpaque(false);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
 
         JLabel titleLabel = new JLabel("Work Logs");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
+        titleLabel.setForeground(new Color(30, 41, 59));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
         topPanel.add(titleLabel, BorderLayout.WEST);
 
         JPanel navPanel = new JPanel();
@@ -56,13 +58,15 @@ public class LogPanel extends JPanel {
             loadMonth();
         });
 
+        navPanel.setOpaque(false);
         navPanel.add(btnPrev);
         navPanel.add(monthLabel);
         navPanel.add(btnNext);
         topPanel.add(navPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
-        calendarGrid = new JPanel(new GridLayout(0, 7, 5, 5));
+        calendarGrid = new JPanel(new GridLayout(0, 7, 8, 8));
+        calendarGrid.setOpaque(false);
         add(calendarGrid, BorderLayout.CENTER);
     }
 
@@ -77,7 +81,10 @@ public class LogPanel extends JPanel {
 
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         for (String day : days) {
-            calendarGrid.add(new JLabel(day, JLabel.CENTER));
+            JLabel label = new JLabel(day, JLabel.CENTER);
+            label.setForeground(new Color(100, 116, 139));
+            label.setFont(label.getFont().deriveFont(Font.BOLD));
+            calendarGrid.add(label);
         }
 
         LocalDate firstOfMonth = currentMonth.atDay(1);

@@ -27,20 +27,29 @@ public class InvoicePanel extends JPanel {
 
     private void initUI() {
         JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
         header.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
 
         JLabel titleLabel = new JLabel("Invoice Management");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
+        titleLabel.setForeground(new Color(30, 41, 59));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
         JPanel mainContent = new JPanel(new BorderLayout(20, 20));
+        mainContent.setOpaque(false);
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 15, 15));
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
         form.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Parameters"),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.weightx = 1.0;
 
         JComboBox<Boss> bossCombo = new JComboBox<>();
         List<Boss> bosses = storage.loadBosses();
@@ -72,9 +81,20 @@ public class InvoicePanel extends JPanel {
             }
         });
 
-        form.add(new JLabel("Select Boss:")); form.add(bossCombo);
-        form.add(new JLabel("Start Date (yyyy-MM-dd):")); form.add(startField);
-        form.add(new JLabel("End Date (yyyy-MM-dd):")); form.add(endField);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        form.add(new JLabel("Select Boss:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        form.add(bossCombo, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        form.add(new JLabel("Start Date:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        form.add(startField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        form.add(new JLabel("End Date:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        form.add(endField, gbc);
 
         JButton btnGenerate = new JButton("Generate Invoice (PDF)");
         JButton btnSummary = new JButton("Export Monthly Summary (PDF)");
@@ -157,10 +177,19 @@ public class InvoicePanel extends JPanel {
         });
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(btnGenerate);
         buttonPanel.add(btnSummary);
 
-        mainContent.add(form, BorderLayout.NORTH);
+        JPanel formContainer = new JPanel(new BorderLayout());
+        formContainer.setOpaque(false);
+        formContainer.add(form, BorderLayout.NORTH);
+
+        JLabel paramsTitle = new JLabel("Parameters");
+        paramsTitle.setFont(paramsTitle.getFont().deriveFont(Font.BOLD));
+        paramsTitle.setForeground(new Color(100, 116, 139));
+        mainContent.add(paramsTitle, BorderLayout.NORTH);
+        mainContent.add(formContainer, BorderLayout.CENTER);
         mainContent.add(buttonPanel, BorderLayout.SOUTH);
 
         add(mainContent, BorderLayout.CENTER);

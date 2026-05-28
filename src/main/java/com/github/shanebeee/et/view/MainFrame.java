@@ -2,6 +2,7 @@ package com.github.shanebeee.et.view;
 
 import javax.swing.*;
 import java.awt.*;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.UIUtils;
 
@@ -9,6 +10,7 @@ public class MainFrame extends JFrame {
     private final DataStorage storage;
     private JPanel contentPanel;
     private CardLayout cardLayout;
+    private java.util.Map<String, JButton> navButtons = new java.util.HashMap<>();
 
     public MainFrame() {
         this.storage = new DataStorage();
@@ -24,44 +26,85 @@ public class MainFrame extends JFrame {
     private void initUI() {
         // Sidebar
         JPanel sidebar = new JPanel();
-        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setPreferredSize(new Dimension(200, 0));
-        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground")));
+        sidebar.setLayout(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(250, 0));
+        sidebar.setBackground(new Color(248, 250, 252));
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(226, 232, 240)));
 
-        JLabel titleLabel = new JLabel("Employee Data");
+        JPanel sidebarContent = new JPanel();
+        sidebarContent.setLayout(new BoxLayout(sidebarContent, BoxLayout.Y_AXIS));
+        sidebarContent.setOpaque(false);
+
+        JLabel titleLabel = new JLabel("Employee Timesheet");
+        titleLabel.setForeground(new Color(30, 41, 59));
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sidebar.add(titleLabel);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sidebarContent.add(titleLabel);
 
-        JButton btnLogs = createNavButton("Work Logs", "LOGS");
-        JButton btnInvoices = createNavButton("Invoice Management", "INVOICES");
-        JButton btnBosses = createNavButton("Boss Management", "BOSSES");
-        JButton btnSettings = createNavButton("Settings", "SETTINGS");
+        JButton logsBtn = createNavButton("Work Logs", "LOGS", "logs.svg");
+        sidebarContent.add(logsBtn);
+        navButtons.put("LOGS", logsBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
 
-        sidebar.add(btnLogs);
-        sidebar.add(Box.createVerticalStrut(5));
-        sidebar.add(btnInvoices);
-        sidebar.add(Box.createVerticalStrut(5));
-        sidebar.add(btnBosses);
-        sidebar.add(Box.createVerticalStrut(5));
-        sidebar.add(btnSettings);
-        sidebar.add(Box.createVerticalGlue());
+        JButton invoicesBtn = createNavButton("Invoice Management", "INVOICES", "invoices.svg");
+        sidebarContent.add(invoicesBtn);
+        navButtons.put("INVOICES", invoicesBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
+
+        JButton bossesBtn = createNavButton("Boss Management", "BOSSES", "bosses.svg");
+        sidebarContent.add(bossesBtn);
+        navButtons.put("BOSSES", bossesBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
+
+        JButton settingsBtn = createNavButton("Settings", "SETTINGS", "settings.svg");
+        sidebarContent.add(settingsBtn);
+        navButtons.put("SETTINGS", settingsBtn);
+
+        sidebar.add(sidebarContent, BorderLayout.NORTH);
 
         // Content Area
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        contentPanel.setBackground(UIManager.getColor("MainContent.background"));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        contentPanel.add(new LogPanel(storage), "LOGS");
-        contentPanel.add(new InvoicePanel(storage), "INVOICES");
-        contentPanel.add(new BossPanel(storage), "BOSSES");
-        contentPanel.add(new SettingsPanel(storage), "SETTINGS");
+        contentPanel.add(wrapInCard(new LogPanel(storage)), "LOGS");
+        contentPanel.add(wrapInCard(new InvoicePanel(storage)), "INVOICES");
+        contentPanel.add(wrapInCard(new BossPanel(storage)), "BOSSES");
+        contentPanel.add(wrapInCard(new SettingsPanel(storage)), "SETTINGS");
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
 
+        // Highlight first panel
+        updateNavButtons(logsBtn);
+
         checkFirstTimeSetup();
+    }
+
+    private JPanel wrapInCard(JPanel panel) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(226, 232, 240), 1, true),
+                BorderFactory.createEmptyBorder(30, 30, 30, 30)
+        ));
+        
+        wrapper.add(panel, BorderLayout.CENTER);
+
+        // Add a subtle shadow effect using a MatteBorder
+        JPanel shadowWrapper = new JPanel(new BorderLayout());
+        shadowWrapper.setOpaque(false);
+        shadowWrapper.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(0, 0, 5, 5),
+                BorderFactory.createMatteBorder(0, 0, 2, 2, new Color(0, 0, 0, 10))
+        ));
+        
+        shadowWrapper.add(wrapper, BorderLayout.CENTER);
+        return shadowWrapper;
     }
 
     private void checkFirstTimeSetup() {
@@ -106,18 +149,48 @@ public class MainFrame extends JFrame {
 
     public void showPanel(String cardName) {
         cardLayout.show(contentPanel, cardName);
+        JButton btn = navButtons.get(cardName);
+        if (btn != null) {
+            updateNavButtons(btn);
+        }
     }
 
-    private JButton createNavButton(String text, String cardName) {
+    private JButton createNavButton(String text, String cardName, String iconName) {
         JButton btn = new JButton(text);
-        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        if (iconName != null) {
+            btn.setIcon(new FlatSVGIcon("icons/" + iconName, 18, 18));
+            btn.setIconTextGap(12);
+        }
+        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 25, 0, 10));
+        btn.setForeground(new Color(100, 116, 139));
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(false);
         
-        btn.addActionListener(e -> showPanel(cardName));
+        btn.addActionListener(e -> {
+            showPanel(cardName);
+            updateNavButtons(btn);
+        });
         return btn;
+    }
+
+    private void updateNavButtons(JButton activeBtn) {
+        for (JButton b : navButtons.values()) {
+            if (b == activeBtn) {
+                b.setForeground(UIManager.getColor("Component.accentColor"));
+                b.setFont(b.getFont().deriveFont(Font.BOLD));
+                b.setOpaque(true);
+                b.setBackground(UIManager.getColor("Selection.background"));
+            } else {
+                b.setForeground(new Color(100, 116, 139));
+                b.setFont(b.getFont().deriveFont(Font.PLAIN));
+                b.setOpaque(false);
+            }
+        }
     }
 }

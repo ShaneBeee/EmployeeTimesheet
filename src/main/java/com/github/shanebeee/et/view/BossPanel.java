@@ -24,10 +24,12 @@ public class BossPanel extends JPanel {
 
     private void initUI() {
         JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
         header.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
 
         JLabel titleLabel = new JLabel("Boss Management");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
+        titleLabel.setForeground(new Color(30, 41, 59));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
@@ -37,16 +39,24 @@ public class BossPanel extends JPanel {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         bossTable = new JTable(tableModel);
+        bossTable.setRowHeight(35);
+        bossTable.setIntercellSpacing(new Dimension(0, 0));
+        bossTable.setShowGrid(false);
+        bossTable.getTableHeader().setReorderingAllowed(false);
+        bossTable.getTableHeader().setBackground(new Color(248, 250, 252));
+        bossTable.getTableHeader().setForeground(new Color(100, 116, 139));
+        bossTable.getTableHeader().setFont(bossTable.getTableHeader().getFont().deriveFont(Font.BOLD));
         refreshTable();
 
         JPanel mainContent = new JPanel(new BorderLayout(10, 10));
-        bossTable.setRowHeight(25);
-        bossTable.setShowVerticalLines(false);
-        bossTable.setIntercellSpacing(new Dimension(0, 1));
+        mainContent.setOpaque(false);
         
-        mainContent.add(new JScrollPane(bossTable), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(bossTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240)));
+        mainContent.add(scrollPane, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setOpaque(false);
         JButton btnAdd = new JButton("Add Boss");
         JButton btnEdit = new JButton("Edit Boss");
         JButton btnDelete = new JButton("Delete Boss");
@@ -108,15 +118,51 @@ public class BossPanel extends JPanel {
         JTextField taxField = new JTextField(String.valueOf(b.getTaxRate()));
         JTextField kmField = new JTextField(b.getKmRate() != null ? String.valueOf(b.getKmRate()) : "");
 
-        JPanel panel = new JPanel(new GridLayout(0, 2));
-        panel.add(new JLabel("Name:")); panel.add(nameField);
-        panel.add(new JLabel("Company:")); panel.add(companyField);
-        panel.add(new JLabel("Address:")); panel.add(addressField);
-        panel.add(new JLabel("Phone:")); panel.add(phoneField);
-        panel.add(new JLabel("Email:")); panel.add(emailField);
-        panel.add(new JLabel("Hourly Rate:")); panel.add(rateField);
-        panel.add(new JLabel("Tax Rate (%):")); panel.add(taxField);
-        panel.add(new JLabel("KM Rate:")); panel.add(kmField);
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.weightx = 1.0;
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        panel.add(new JLabel("Name:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(nameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        panel.add(new JLabel("Company:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(companyField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        panel.add(new JLabel("Address:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(addressField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        panel.add(new JLabel("Phone:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(phoneField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0;
+        panel.add(new JLabel("Email:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(emailField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.0;
+        panel.add(new JLabel("Hourly Rate:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(rateField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 6; gbc.weightx = 0.0;
+        panel.add(new JLabel("Tax Rate (%):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(taxField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 7; gbc.weightx = 0.0;
+        panel.add(new JLabel("KM Rate:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(kmField, gbc);
 
         int result = JOptionPane.showConfirmDialog(this, panel, isNew ? "Add Boss" : "Edit Boss", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {

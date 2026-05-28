@@ -17,49 +17,77 @@ public class SettingsPanel extends JPanel {
 
     private void initUI() {
         JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
         header.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
 
         JLabel titleLabel = new JLabel("Settings");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
+        titleLabel.setForeground(new Color(30, 41, 59));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
         JPanel mainContent = new JPanel();
         mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
+        mainContent.setOpaque(false);
 
         EmployeeInfo info = storage.loadEmployeeInfo();
 
-        JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Employee Information"),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.weightx = 1.0;
 
         JTextField nameField = new JTextField(info.getFullName());
         JTextField companyField = new JTextField(info.getCompany());
         JTextField phoneField = new JTextField(info.getPhoneNumber());
         JTextField emailField = new JTextField(info.getEmail());
 
-        panel.add(new JLabel("Full Name:")); panel.add(nameField);
-        panel.add(new JLabel("Company:")); panel.add(companyField);
-        panel.add(new JLabel("Phone:")); panel.add(phoneField);
-        panel.add(new JLabel("Email:")); panel.add(emailField);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        panel.add(new JLabel("Full Name:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(nameField, gbc);
 
-        JPanel appSettingsPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        panel.add(new JLabel("Company:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(companyField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0;
+        panel.add(new JLabel("Phone:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(phoneField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0;
+        panel.add(new JLabel("Email:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(emailField, gbc);
+
+        JPanel appSettingsPanel = new JPanel(new GridBagLayout());
+        appSettingsPanel.setOpaque(false);
         appSettingsPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Application Settings"),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(226, 232, 240)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         JTextField startField = new JTextField(storage.getDefaultStartTime());
         JTextField endField = new JTextField(storage.getDefaultEndTime());
-        String[] themes = {"system", "light", "dark"};
-        JComboBox<String> themeCombo = new JComboBox<>(themes);
-        themeCombo.setSelectedItem(storage.getTheme());
 
-        appSettingsPanel.add(new JLabel("Default Start Time (HH:mm):")); appSettingsPanel.add(startField);
-        appSettingsPanel.add(new JLabel("Default End Time (HH:mm):")); appSettingsPanel.add(endField);
-        appSettingsPanel.add(new JLabel("Theme:")); appSettingsPanel.add(themeCombo);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        appSettingsPanel.add(new JLabel("Default Start Time (HH:mm):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        appSettingsPanel.add(startField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0;
+        appSettingsPanel.add(new JLabel("Default End Time (HH:mm):"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        appSettingsPanel.add(endField, gbc);
 
         JButton saveBtn = new JButton("Save Settings");
 
@@ -72,9 +100,8 @@ public class SettingsPanel extends JPanel {
 
             storage.setDefaultStartTime(startField.getText());
             storage.setDefaultEndTime(endField.getText());
-            storage.setTheme((String) themeCombo.getSelectedItem());
 
-            JOptionPane.showMessageDialog(this, "Settings Saved! Restart application if theme was changed.");
+            JOptionPane.showMessageDialog(this, "Settings Saved!");
 
             // Check if we need to set up bosses
             Window window = SwingUtilities.getWindowAncestor(this);
@@ -83,14 +110,30 @@ public class SettingsPanel extends JPanel {
             }
         });
 
+        JLabel employeeTitle = new JLabel("Employee Information");
+        employeeTitle.setFont(employeeTitle.getFont().deriveFont(Font.BOLD));
+        employeeTitle.setForeground(new Color(100, 116, 139));
+        mainContent.add(employeeTitle);
+        mainContent.add(Box.createVerticalStrut(10));
         mainContent.add(panel);
-        mainContent.add(Box.createVerticalStrut(20));
+        mainContent.add(Box.createVerticalStrut(30));
+        
+        JLabel appTitle = new JLabel("Application Settings");
+        appTitle.setFont(appTitle.getFont().deriveFont(Font.BOLD));
+        appTitle.setForeground(new Color(100, 116, 139));
+        mainContent.add(appTitle);
+        mainContent.add(Box.createVerticalStrut(10));
         mainContent.add(appSettingsPanel);
         mainContent.add(Box.createVerticalGlue());
 
-        add(new JScrollPane(mainContent), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(mainContent);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        add(scrollPane, BorderLayout.CENTER);
         
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setOpaque(false);
         bottomPanel.add(saveBtn);
         add(bottomPanel, BorderLayout.SOUTH);
     }

@@ -123,13 +123,10 @@ public class DataStorage {
     }
 
     public String getTheme() {
-        return loadSettings().theme;
+        return "light";
     }
 
     public void setTheme(String theme) {
-        Settings s = loadSettings();
-        s.theme = theme;
-        saveSettings(s);
     }
 
     public String getDefaultStartTime() {
@@ -162,7 +159,6 @@ public class DataStorage {
 
     private static class Settings {
         int lastInvoiceNumber = 0;
-        String theme = "system"; // light, dark, system
         String defaultStartTime = "11:00";
         String defaultEndTime = "15:00";
     }
