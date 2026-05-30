@@ -66,16 +66,28 @@ public class LogPanel extends JPanel {
         monthLabel.setFont(monthLabel.getFont().deriveFont(Font.BOLD, 14f));
         monthLabel.setPreferredSize(new Dimension(150, 20));
 
+        JButton btnToday = new JButton("Today");
+        btnToday.putClientProperty("JButton.buttonType", "roundRect");
+
         btnPrev.addActionListener(e -> {
             currentMonth = currentMonth.minusMonths(1);
             loadMonth();
+            btnToday.setVisible(!currentMonth.equals(YearMonth.now()));
         });
         btnNext.addActionListener(e -> {
             currentMonth = currentMonth.plusMonths(1);
             loadMonth();
+            btnToday.setVisible(!currentMonth.equals(YearMonth.now()));
         });
+        btnToday.addActionListener(e -> {
+            currentMonth = YearMonth.now();
+            loadMonth();
+            btnToday.setVisible(false);
+        });
+        btnToday.setVisible(false); // hidden when already on current month
 
         navPanel.setOpaque(false);
+        navPanel.add(btnToday);
         navPanel.add(btnPrev);
         navPanel.add(monthLabel);
         navPanel.add(btnNext);
