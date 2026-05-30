@@ -16,6 +16,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
@@ -96,9 +97,11 @@ public class LogPanel extends JPanel {
         calendarGrid.removeAll();
 
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-        for (String day : days) {
-            JLabel label = new JLabel(day, JLabel.CENTER);
-            label.setForeground(new Color(100, 116, 139));
+        for (int i = 0; i < days.length; i++) {
+            JLabel label = new JLabel(days[i], JLabel.CENTER);
+            label.setForeground(i >= 5
+                ? new Color(148, 163, 184) // muted for Sat/Sun
+                : new Color(100, 116, 139));
             label.setFont(label.getFont().deriveFont(Font.BOLD));
             calendarGrid.add(label);
         }
@@ -114,48 +117,99 @@ public class LogPanel extends JPanel {
         for (int day = 1; day <= daysInMonth; day++) {
             final int d = day;
             LocalDate date = currentMonth.atDay(day);
-            JButton dayBtn = new JButton(String.valueOf(day)) {
+            final long logCount = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
+            final boolean isWeekend = date.getDayOfWeek().getValue() >= 6;
+            final boolean isToday = date.equals(LocalDate.now());
+            final boolean[] hovered = {false};
+
+            JButton dayBtn = new JButton() {
                 @Override
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                    long count = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
-
-                    if (count > 0) {
-                        g2.setColor(UIManager.getColor("Component.accentColor"));
+                    if (logCount > 0) {
+                        // Gradient blue for logged days
+                        Color top = hovered[0] ? new Color(120, 172, 255) : new Color(99, 158, 255);
+                        Color bot = hovered[0] ? new Color(82, 148, 255) : new Color(59, 130, 246);
+                        g2.setPaint(new GradientPaint(0, 0, top, 0, getHeight(), bot));
                         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                    } else if (isToday) {
+                        // Soft accent tint for today
+                        g2.setColor(new Color(235, 245, 255));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                        g2.setColor(new Color(226, 232, 240));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                    } else if (isWeekend) {
+                        g2.setColor(hovered[0] ? new Color(226, 232, 240) : new Color(241, 245, 249));
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                        g2.setColor(new Color(203, 213, 225));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
                     } else {
-                        g2.setColor(Color.WHITE);
+                        g2.setColor(hovered[0] ? new Color(239, 246, 255) : Color.WHITE);
                         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
                         g2.setColor(new Color(226, 232, 240));
                         g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
                     }
 
-                    if (date.equals(LocalDate.now())) {
-                        g2.setColor(UIManager.getColor("Component.accentColor"));
-                        g2.setStroke(new BasicStroke(2));
-                        g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 12, 12);
+                    // Today: bright green dot in top-right corner
+                    if (isToday) {
+                        int dotSize = 10;
+                        int dotX = getWidth() - dotSize - 6;
+                        int dotY = 6;
+                        // Shadow
+                        g2.setColor(new Color(0, 0, 0, 50));
+                        g2.fillOval(dotX + 1, dotY + 2, dotSize, dotSize);
+                        // Bright green fill
+                        g2.setColor(new Color(74, 222, 128));
+                        g2.fillOval(dotX, dotY, dotSize, dotSize);
+                    }
+
+                    // Draw day number
+                    String dayStr = String.valueOf(d);
+                    g2.setFont(getFont().deriveFont(Font.BOLD, 14f));
+                    java.awt.FontMetrics fm = g2.getFontMetrics();
+                    int textX = (getWidth() - fm.stringWidth(dayStr)) / 2;
+
+                    if (logCount > 0) {
+                        // Day number near top when badge is shown
+                        g2.setColor(Color.WHITE);
+                        g2.drawString(dayStr, textX, fm.getAscent() + 8);
+
+                        // Badge pill at bottom
+                        String badgeText = logCount + (logCount == 1 ? " log" : " logs");
+                        g2.setFont(getFont().deriveFont(Font.PLAIN, 10f));
+                        java.awt.FontMetrics bfm = g2.getFontMetrics();
+                        int bw = bfm.stringWidth(badgeText) + 10;
+                        int bh = bfm.getHeight() + 2;
+                        int bx = (getWidth() - bw) / 2;
+                        int by = getHeight() - bh - 6;
+                        g2.setColor(new Color(255, 255, 255, 60));
+                        g2.fillRoundRect(bx, by, bw, bh, 8, 8);
+                        g2.setColor(Color.WHITE);
+                        g2.drawString(badgeText, bx + 5, by + bfm.getAscent() + 1);
+                    } else {
+                        // Top-aligned day number (consistent with logged cells)
+                        if (isToday) {
+                            g2.setColor(new Color(59, 130, 246));
+                        } else {
+                            g2.setColor(isWeekend ? new Color(148, 163, 184) : new Color(30, 41, 59));
+                        }
+                        g2.drawString(dayStr, textX, fm.getAscent() + 8);
                     }
 
                     g2.dispose();
-                    super.paintComponent(g);
                 }
             };
+            dayBtn.addMouseListener(new MouseAdapter() {
+                @Override public void mouseEntered(MouseEvent e) { hovered[0] = true;  dayBtn.repaint(); }
+                @Override public void mouseExited(MouseEvent e)  { hovered[0] = false; dayBtn.repaint(); }
+            });
             dayBtn.setOpaque(false);
             dayBtn.setContentAreaFilled(false);
+            dayBtn.setBorderPainted(false);
             dayBtn.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             dayBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-            // Check if there are logs for this day
-            long count = currentLogs.stream().filter(l -> l.getDate().equals(date.toString())).count();
-            if (count > 0) {
-                dayBtn.setForeground(Color.WHITE);
-                String plural = count == 1 ? "log" : "logs";
-                dayBtn.setText("<html><center>" + day + "<br><small>(" + count + " " + plural + ")</small></center></html>");
-            } else {
-                dayBtn.setForeground(new Color(30, 41, 59));
-            }
 
             dayBtn.addActionListener(e -> showDayLogs(date));
             calendarGrid.add(dayBtn);
