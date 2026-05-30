@@ -412,7 +412,7 @@ public class LogPanel extends JPanel {
                         if (e.getClickCount() == 2) {
                             if (showEntryDialog(dayLogs.get(idx))) {
                                 storage.saveLogs(currentMonth.toString(), currentLogs);
-                                dialog.dispose();
+                                rebuildRef[0].get();
                                 refreshCalendar();
                             }
                         }
@@ -484,8 +484,11 @@ public class LogPanel extends JPanel {
             entry.setDate(date.toString());
             if (showEntryDialog(entry)) {
                 currentLogs.add(entry);
+                dayLogs.add(entry);
                 storage.saveLogs(currentMonth.toString(), currentLogs);
-                dialog.dispose();
+                selectedIdx[0] = dayLogs.size() - 1;
+                headerSub.setText(dayLogs.size() + (dayLogs.size() == 1 ? " entry" : " entries"));
+                rebuildRef[0].get();
                 refreshCalendar();
             }
         });
@@ -494,7 +497,7 @@ public class LogPanel extends JPanel {
             if (selectedIdx[0] >= 0) {
                 if (showEntryDialog(dayLogs.get(selectedIdx[0]))) {
                     storage.saveLogs(currentMonth.toString(), currentLogs);
-                    dialog.dispose();
+                    rebuildRef[0].get();
                     refreshCalendar();
                 }
             }
@@ -503,8 +506,11 @@ public class LogPanel extends JPanel {
         btnDelete.addActionListener(e -> {
             if (selectedIdx[0] >= 0) {
                 currentLogs.remove(dayLogs.get(selectedIdx[0]));
+                dayLogs.remove(selectedIdx[0]);
                 storage.saveLogs(currentMonth.toString(), currentLogs);
-                dialog.dispose();
+                selectedIdx[0] = dayLogs.isEmpty() ? -1 : Math.min(selectedIdx[0], dayLogs.size() - 1);
+                headerSub.setText(dayLogs.size() + (dayLogs.size() == 1 ? " entry" : " entries"));
+                rebuildRef[0].get();
                 refreshCalendar();
             }
         });
