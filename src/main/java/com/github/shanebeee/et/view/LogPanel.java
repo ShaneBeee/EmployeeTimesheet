@@ -191,7 +191,7 @@ public class LogPanel extends JPanel {
                         g2.drawString(dayStr, textX, fm.getAscent() + 8);
 
                         // Badge pill at bottom
-                        String badgeText = logCount + (logCount == 1 ? " log" : " logs");
+                        String badgeText = logCount + (logCount == 1 ? " entry" : " entries");
                         g2.setFont(getFont().deriveFont(Font.PLAIN, 10f));
                         FontMetrics bfm = g2.getFontMetrics();
                         int bw = bfm.stringWidth(badgeText) + 10;
