@@ -250,9 +250,9 @@ public class InvoiceGenerator {
         }
         LocalDate entryDate = LocalDate.parse(logDate);
         return boss.getRateHistory().stream()
-            .filter(rc -> LocalDate.parse(rc.getDate()).isAfter(entryDate))
-            .min(Comparator.comparing(rc -> LocalDate.parse(rc.getDate())))
-            .map(Boss.RateChange::getRate)
+            .filter(rc -> LocalDate.parse(rc.date()).isAfter(entryDate))
+            .min(Comparator.comparing(rc -> LocalDate.parse(rc.date())))
+            .map(Boss.RateChange::rate)
             .orElse(boss.getHourlyRate());
     }
 

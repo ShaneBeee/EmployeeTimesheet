@@ -1,6 +1,8 @@
 package com.github.shanebeee.et.view;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.github.shanebeee.et.model.Boss;
+import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.UIUtils;
 
@@ -16,13 +18,16 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MainFrame extends JFrame {
 
     private final DataStorage storage;
     private JPanel contentPanel;
     private CardLayout cardLayout;
-    private java.util.Map<String, JButton> navButtons = new java.util.HashMap<>();
+    private final Map<String, JButton> navButtons = new HashMap<>();
 
     public MainFrame() {
         this.storage = new DataStorage();
@@ -40,16 +45,6 @@ public class MainFrame extends JFrame {
     }
 
     private void initUI() {
-        // Custom Title Bar
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBackground(new Color(64, 64, 64));
-        titleBar.setPreferredSize(new Dimension(0, 30));
-
-        JLabel titleLabelText = new JLabel("Employee Timesheet", SwingConstants.CENTER);
-        titleLabelText.setForeground(Color.WHITE);
-        titleLabelText.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD));
-        titleBar.add(titleLabelText, BorderLayout.CENTER);
-
         // Sidebar
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BorderLayout());
@@ -110,7 +105,6 @@ public class MainFrame extends JFrame {
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
-        add(titleBar, BorderLayout.NORTH);
 
         // Highlight first panel
         updateNavButtons(logsBtn);
@@ -161,7 +155,7 @@ public class MainFrame extends JFrame {
     }
 
     private void checkFirstTimeSetup() {
-        com.github.shanebeee.et.model.EmployeeInfo info = storage.loadEmployeeInfo();
+        EmployeeInfo info = storage.loadEmployeeInfo();
         if (info.getFullName() == null || info.getFullName().trim().isEmpty()) {
             SwingUtilities.invokeLater(() -> {
                 int option = JOptionPane.showConfirmDialog(this,
@@ -184,7 +178,7 @@ public class MainFrame extends JFrame {
     }
 
     public void checkBosses() {
-        java.util.List<com.github.shanebeee.et.model.Boss> bosses = storage.loadBosses();
+        List<Boss> bosses = storage.loadBosses();
         if (bosses.isEmpty()) {
             SwingUtilities.invokeLater(() -> {
                 int option = JOptionPane.showConfirmDialog(this,
