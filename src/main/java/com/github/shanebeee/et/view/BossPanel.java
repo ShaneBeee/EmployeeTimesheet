@@ -43,7 +43,7 @@ public class BossPanel extends JPanel {
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
-        String[] columns = {"Name", "Company", "Phone", "Hourly Rate"};
+        String[] columns = {"Name", "Company", "Phone", "Hourly Rate", "Tax Rate"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -58,6 +58,14 @@ public class BossPanel extends JPanel {
         bossTable.getTableHeader().setBackground(new Color(248, 250, 252));
         bossTable.getTableHeader().setForeground(new Color(100, 116, 139));
         bossTable.getTableHeader().setFont(bossTable.getTableHeader().getFont().deriveFont(Font.BOLD));
+
+        // Column widths: Name, Company, Phone, Hourly Rate, Tax Rate
+        bossTable.getColumnModel().getColumn(0).setPreferredWidth(160);
+        bossTable.getColumnModel().getColumn(1).setPreferredWidth(160);
+        bossTable.getColumnModel().getColumn(2).setPreferredWidth(120);
+        bossTable.getColumnModel().getColumn(3).setPreferredWidth(90);
+        bossTable.getColumnModel().getColumn(4).setPreferredWidth(90);
+        bossTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         refreshTable();
 
         JPanel mainContent = new JPanel(new BorderLayout(10, 10));
@@ -124,7 +132,7 @@ public class BossPanel extends JPanel {
     private void refreshTable() {
         tableModel.setRowCount(0);
         for (Boss boss : bosses) {
-            tableModel.addRow(new Object[]{boss.getName(), boss.getCompany(), boss.getPhoneNumber(), boss.getHourlyRate()});
+            tableModel.addRow(new Object[]{boss.getName(), boss.getCompany(), boss.getPhoneNumber(), boss.getHourlyRate(), boss.getTaxRate()});
         }
     }
 
