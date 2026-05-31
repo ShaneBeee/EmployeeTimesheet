@@ -29,12 +29,12 @@ public class BossPanel extends JPanel {
     private JPanel cardsPanel;
 
     private static final Color[] AVATAR_COLORS = {
-        new Color(59, 130, 246),
-        new Color(139, 92, 246),
-        new Color(236, 72, 153),
-        new Color(34, 197, 94),
-        new Color(245, 158, 11),
-        new Color(239, 68, 68)
+        new Color(59, 130, 246),   // blue
+        new Color(99, 102, 241),   // indigo
+        new Color(139, 92, 246),   // violet
+        new Color(20, 184, 166),   // teal
+        new Color(6, 182, 212),    // cyan
+        new Color(16, 185, 129),   // emerald
     };
 
     public BossPanel(DataStorage storage) {
