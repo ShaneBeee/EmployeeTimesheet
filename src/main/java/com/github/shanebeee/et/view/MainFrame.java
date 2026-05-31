@@ -18,6 +18,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,12 @@ public class MainFrame extends JFrame {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private final Map<String, JButton> navButtons = new HashMap<>();
+    private static final Map<String, Color> NAV_COLORS = Map.of(
+        "LOGS", new Color(59, 130, 246),
+        "INVOICES", new Color(139, 92, 246),
+        "BOSSES", new Color(20, 184, 166),
+        "SETTINGS", new Color(100, 116, 139)
+    );
 
     public MainFrame() {
         this.storage = new DataStorage();
@@ -203,22 +211,60 @@ public class MainFrame extends JFrame {
     }
 
     private JButton createNavButton(String text, String cardName, String iconName) {
-        JButton btn = new JButton(text);
+        Color navColor = NAV_COLORS.getOrDefault(cardName, new Color(100, 116, 139));
+        final boolean[] hovered = {false};
+
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                boolean isActive = getBackground() != null && isOpaque();
+                if (isActive) {
+                    // Active: filled pill background
+                    g2.setColor(new Color(navColor.getRed(), navColor.getGreen(), navColor.getBlue(), 18));
+                    g2.fillRoundRect(8, 2, getWidth() - 16, getHeight() - 4, 10, 10);
+                } else if (hovered[0]) {
+                    // Hover: subtle highlight
+                    g2.setColor(new Color(navColor.getRed(), navColor.getGreen(), navColor.getBlue(), 10));
+                    g2.fillRoundRect(8, 2, getWidth() - 16, getHeight() - 4, 10, 10);
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+
         if (iconName != null) {
-            btn.setIcon(new FlatSVGIcon("icons/" + iconName, 18, 18));
+            // Tint the SVG icon with the nav color
+            FlatSVGIcon icon = new FlatSVGIcon("icons/" + iconName, 18, 18);
+            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> navColor));
+            btn.setIcon(icon);
             btn.setIconTextGap(12);
         }
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBorder(BorderFactory.createEmptyBorder(0, 25, 0, 10));
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 10));
         btn.setForeground(new Color(100, 116, 139));
         btn.setFont(new Font("SansSerif", Font.PLAIN, 14));
         btn.setContentAreaFilled(false);
         btn.setOpaque(false);
 
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                hovered[0] = true;
+                btn.repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                hovered[0] = false;
+                btn.repaint();
+            }
+        });
         btn.addActionListener(e -> {
             showPanel(cardName);
             updateNavButtons(btn);
@@ -227,17 +273,20 @@ public class MainFrame extends JFrame {
     }
 
     private void updateNavButtons(JButton activeBtn) {
-        for (JButton b : navButtons.values()) {
+        for (Map.Entry<String, JButton> entry : navButtons.entrySet()) {
+            JButton b = entry.getValue();
+            Color navColor = NAV_COLORS.getOrDefault(entry.getKey(), new Color(100, 116, 139));
             if (b == activeBtn) {
-                b.setForeground(UIManager.getColor("Component.accentColor"));
+                b.setForeground(navColor);
                 b.setFont(b.getFont().deriveFont(Font.BOLD));
                 b.setOpaque(true);
-                b.setBackground(UIManager.getColor("Selection.background"));
+                b.setBackground(new Color(navColor.getRed(), navColor.getGreen(), navColor.getBlue(), 18));
             } else {
                 b.setForeground(new Color(100, 116, 139));
                 b.setFont(b.getFont().deriveFont(Font.PLAIN));
                 b.setOpaque(false);
             }
+            b.repaint();
         }
     }
 
