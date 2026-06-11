@@ -1,20 +1,13 @@
 package com.github.shanebeee.et.view;
 
 import javax.swing.*;
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.FontMetrics;
 import java.awt.Frame;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -24,7 +17,11 @@ public class TimePickerPanel extends JPanel {
     private int hour;
     private int minute;
     private boolean isAm;
-    private boolean selectingHour = true;
+    private JSpinner spinnerHour;
+    private JSpinner spinnerMinute;
+    private JToggleButton btnAm;
+    private JToggleButton btnPm;
+    private JLabel lblPreview;
     private Runnable onSelect;
 
     public TimePickerPanel(String initialTime, Runnable onSelect) {
@@ -42,110 +39,133 @@ public class TimePickerPanel extends JPanel {
             this.isAm = true;
         }
 
-        setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(300, 400));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setPreferredSize(new Dimension(350, 180));
 
-        JPanel header = new JPanel(new BorderLayout());
-        JLabel lblTime = new JLabel(getDisplayTime(), SwingConstants.CENTER);
-        lblTime.setFont(lblTime.getFont().deriveFont(24f));
-        header.add(lblTime, BorderLayout.CENTER);
+        // ===== PREVIEW SECTION =====
+        JPanel previewPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        previewPanel.setOpaque(false);
+        lblPreview = new JLabel(getDisplayTime());
+        lblPreview.setFont(lblPreview.getFont().deriveFont(28f).deriveFont(java.awt.Font.BOLD));
+        lblPreview.setForeground(new Color(30, 41, 59));
+        previewPanel.add(lblPreview);
+        add(previewPanel, BorderLayout.NORTH);
 
-        JPanel amPmPanel = new JPanel(new GridLayout(2, 1));
-        JToggleButton btnAm = new JToggleButton("AM", isAm);
-        JToggleButton btnPm = new JToggleButton("PM", !isAm);
+        // ===== TIME INPUT SECTION =====
+        JPanel timeInputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
+        timeInputPanel.setOpaque(false);
+
+        // Hour Spinner
+        SpinnerNumberModel hourModel = new SpinnerNumberModel(hour, 1, 12, 1);
+        spinnerHour = new JSpinner(hourModel);
+        spinnerHour.setPreferredSize(new Dimension(70, 36));
+        configureSpinner(spinnerHour, false);
+
+        // Separator
+        JLabel colonLabel = new JLabel(":");
+        colonLabel.setFont(colonLabel.getFont().deriveFont(18f));
+
+        // Minute Spinner
+        SpinnerNumberModel minuteModel = new SpinnerNumberModel(minute, 0, 59, 5);
+        spinnerMinute = new JSpinner(minuteModel);
+        spinnerMinute.setPreferredSize(new Dimension(70, 36));
+        configureSpinner(spinnerMinute, true);
+
+        // AM/PM Panel
+        JPanel amPmPanel = new JPanel(new GridLayout(1, 2, 4, 0));
+        btnAm = new JToggleButton("AM", isAm);
+        btnPm = new JToggleButton("PM", !isAm);
         ButtonGroup amPmGroup = new ButtonGroup();
         amPmGroup.add(btnAm);
         amPmGroup.add(btnPm);
 
+        btnAm.setPreferredSize(new Dimension(50, 36));
+        btnPm.setPreferredSize(new Dimension(50, 36));
+        styleToggleButton(btnAm, true);
+        styleToggleButton(btnPm, false);
+
         btnAm.addActionListener(e -> {
             isAm = true;
-            repaint();
-            lblTime.setText(getDisplayTime());
+            styleToggleButton(btnAm, true);
+            styleToggleButton(btnPm, false);
+            updatePreview();
         });
         btnPm.addActionListener(e -> {
             isAm = false;
-            repaint();
-            lblTime.setText(getDisplayTime());
+            styleToggleButton(btnAm, false);
+            styleToggleButton(btnPm, true);
+            updatePreview();
         });
 
         amPmPanel.add(btnAm);
         amPmPanel.add(btnPm);
-        header.add(amPmPanel, BorderLayout.EAST);
 
-        JPanel clockFace = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // Assemble time input
+        timeInputPanel.add(spinnerHour);
+        timeInputPanel.add(colonLabel);
+        timeInputPanel.add(spinnerMinute);
+        timeInputPanel.add(amPmPanel);
 
-                lblTime.setText(getDisplayTime());
+        add(timeInputPanel, BorderLayout.CENTER);
 
-                int size = Math.min(getWidth(), getHeight()) - 40;
-                int centerX = getWidth() / 2;
-                int centerY = getHeight() / 2;
-                int radius = size / 2;
-
-                // Draw circle
-                g2.setColor(getBackground().darker());
-                g2.fillOval(centerX - radius, centerY - radius, size, size);
-
-                // Draw numbers
-                g2.setColor(getForeground());
-                for (int i = 0; i < 12; i++) {
-                    int val = selectingHour ? (i == 0 ? 12 : i) : i * 5;
-                    double angle = Math.toRadians(i * 30 - 90);
-                    int x = (int) (centerX + (radius - 20) * Math.cos(angle));
-                    int y = (int) (centerY + (radius - 20) * Math.sin(angle));
-
-                    String text = String.valueOf(val);
-                    FontMetrics fm = g2.getFontMetrics();
-                    g2.drawString(text, x - fm.stringWidth(text) / 2, y + fm.getAscent() / 2 - 2);
-                }
-
-                // Draw hand
-                int currentVal = selectingHour ? hour % 12 : minute;
-                double handAngle = Math.toRadians((selectingHour ? currentVal * 30 : currentVal * 6) - 90);
-                int handX = (int) (centerX + (radius - 40) * Math.cos(handAngle));
-                int handY = (int) (centerY + (radius - 40) * Math.sin(handAngle));
-
-                g2.setColor(UIManager.getColor("Component.accentColor") != null ? UIManager.getColor("Component.accentColor") : Color.BLUE);
-                g2.setStroke(new BasicStroke(2));
-                g2.drawLine(centerX, centerY, handX, handY);
-                g2.fillOval(centerX - 4, centerY - 4, 8, 8);
-                g2.fillOval(handX - 10, handY - 10, 20, 20);
-
-                g2.setColor(Color.WHITE);
-                String valText = String.valueOf(selectingHour ? (hour == 0 ? 12 : hour) : minute);
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(valText, handX - fm.stringWidth(valText) / 2, handY + fm.getAscent() / 2 - 2);
-            }
-        };
-
-        clockFace.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                updateTimeFromMouse(e.getX(), e.getY(), clockFace);
-            }
+        // ===== ADD CHANGE LISTENERS =====
+        spinnerHour.addChangeListener(e -> {
+            hour = (Integer) spinnerHour.getValue();
+            updatePreview();
+            if (onSelect != null) onSelect.run();
         });
 
-        clockFace.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                updateTimeFromMouse(e.getX(), e.getY(), clockFace);
-            }
+        spinnerMinute.addChangeListener(e -> {
+            minute = (Integer) spinnerMinute.getValue();
+            updatePreview();
+            if (onSelect != null) onSelect.run();
         });
+    }
 
-        JButton btnToggle = new JButton("Minutes");
-        btnToggle.addActionListener(e -> {
-            selectingHour = !selectingHour;
-            btnToggle.setText(selectingHour ? "Minutes" : "Hours");
-            clockFace.repaint();
-        });
+    private void configureSpinner(JSpinner spinner, boolean pad) {
+        spinner.setFont(spinner.getFont().deriveFont(14f));
+        spinner.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        JComponent editor = spinner.getEditor();
+        if (editor instanceof JSpinner.DefaultEditor) {
+            JSpinner.DefaultEditor defaultEditor = (JSpinner.DefaultEditor) editor;
+            JFormattedTextField textField = defaultEditor.getTextField();
+            textField.setHorizontalAlignment(JTextField.CENTER);
+            textField.setFont(textField.getFont().deriveFont(14f));
+            textField.setEditable(true);
+            textField.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            textField.setForeground(new Color(30, 41, 59));
+        }
+        if (pad) {
+            // Replace spinner editor with a plain label that we fully control
+            JLabel minuteLabel = new JLabel(String.format("%02d", (Integer) spinner.getValue()));
+            minuteLabel.setHorizontalAlignment(JLabel.CENTER);
+            minuteLabel.setFont(spinner.getFont().deriveFont(14f));
+            minuteLabel.setForeground(new Color(30, 41, 59));
+            minuteLabel.setOpaque(true);
+            minuteLabel.setBackground(UIManager.getColor("TextField.background"));
+            minuteLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            spinner.setEditor(minuteLabel);
+            spinner.getModel().addChangeListener(e ->
+                minuteLabel.setText(String.format("%02d", (Integer) spinner.getValue())));
+            spinner.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+        }
+    }
 
-        add(header, BorderLayout.NORTH);
-        add(clockFace, BorderLayout.CENTER);
-        add(btnToggle, BorderLayout.SOUTH);
+    private void updatePreview() {
+        lblPreview.setText(getDisplayTime());
+    }
+
+    private void styleToggleButton(JToggleButton button, boolean isSelected) {
+        button.putClientProperty("JButton.buttonType", "roundRect");
+        button.setFont(button.getFont().deriveFont(12f));
+        if (isSelected) {
+            button.setBackground(new Color(59, 130, 246));
+            button.setForeground(Color.WHITE);
+        } else {
+            button.setBackground(new Color(241, 245, 249));
+            button.setForeground(new Color(100, 116, 139));
+        }
     }
 
     public static String formatTime(String time24) {
@@ -171,40 +191,34 @@ public class TimePickerPanel extends JPanel {
         TimePickerPanel picker = new TimePickerPanel(targetField.getText(), () -> {
         });
 
-        JPanel previewPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel lblPreview = new JLabel("Selected: " + picker.getDisplayTime());
-        previewPanel.add(lblPreview);
-        picker.onSelect = () -> lblPreview.setText("Selected: " + picker.getDisplayTime());
+        // ── Footer matching showEntryDialog style ────────────────────────────
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
+        footer.setBackground(Color.WHITE);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
 
-        JButton btnOk = new JButton("OK");
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.putClientProperty("JButton.buttonType", "roundRect");
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        JButton btnOk = new JButton("Select Time");
+        btnOk.putClientProperty("JButton.buttonType", "roundRect");
+        btnOk.setBackground(new Color(59, 130, 246));
+        btnOk.setForeground(Color.WHITE);
         btnOk.addActionListener(e -> {
             targetField.setText(formatTime(picker.getTime()));
             dialog.dispose();
         });
 
+        footer.add(btnCancel);
+        footer.add(btnOk);
+
         dialog.add(picker, BorderLayout.CENTER);
-        dialog.add(previewPanel, BorderLayout.NORTH);
-        dialog.add(btnOk, BorderLayout.SOUTH);
+        dialog.add(footer, BorderLayout.SOUTH);
         dialog.pack();
         dialog.setLocationRelativeTo(parent);
         dialog.setVisible(true);
     }
 
-    private void updateTimeFromMouse(int x, int y, JPanel clockFace) {
-        int centerX = clockFace.getWidth() / 2;
-        int centerY = clockFace.getHeight() / 2;
-        double angle = Math.toDegrees(Math.atan2(y - centerY, x - centerX)) + 90;
-        if (angle < 0) angle += 360;
-
-        if (selectingHour) {
-            hour = (int) Math.round(angle / 30) % 12;
-            if (hour == 0) hour = 12;
-        } else {
-            minute = (int) Math.round(angle / 6) % 60;
-        }
-        repaint();
-        if (onSelect != null) onSelect.run();
-    }
 
     public String getDisplayTime() {
         return LocalTime.of(hour % 12 == 0 ? (isAm ? 0 : 12) : (isAm ? hour : hour + 12), minute).format(displayFormatter);
