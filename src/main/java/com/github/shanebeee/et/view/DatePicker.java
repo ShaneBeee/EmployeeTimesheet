@@ -44,13 +44,24 @@ public class DatePicker extends JDialog {
         } catch (Exception e) {
             initialDate = LocalDate.now();
         }
-
         DatePicker picker = new DatePicker((Frame) window, initialDate);
         picker.setVisible(true);
         LocalDate result = picker.getSelectedDate();
-        if (result != null) {
-            targetField.setText(result.toString());
+        if (result != null) targetField.setText(result.toString());
+    }
+
+    public static void showPicker(Component parent, JButton targetButton) {
+        Window window = SwingUtilities.getWindowAncestor(parent);
+        LocalDate initialDate;
+        try {
+            initialDate = LocalDate.parse(targetButton.getText());
+        } catch (Exception e) {
+            initialDate = LocalDate.now();
         }
+        DatePicker picker = new DatePicker((Frame) window, initialDate);
+        picker.setVisible(true);
+        LocalDate result = picker.getSelectedDate();
+        if (result != null) targetButton.setText(result.toString());
     }
 
     private void initUI() {
