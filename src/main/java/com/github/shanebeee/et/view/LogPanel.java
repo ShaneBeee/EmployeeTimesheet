@@ -20,6 +20,8 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -530,7 +532,7 @@ public class LogPanel extends JPanel {
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Log Entry", true);
         dialog.setLayout(new BorderLayout());
-        dialog.setSize(520, 460);
+        dialog.setSize(520, 560);
         dialog.getContentPane().setBackground(new Color(248, 250, 252));
 
         // ── Header ──────────────────────────────────────────────────────────
@@ -561,63 +563,188 @@ public class LogPanel extends JPanel {
         JPanel cards = new JPanel(cardLayout);
         cards.setBackground(new Color(248, 250, 252));
 
-        // Helper to create a styled form row
-        // TIME CARD ──────────────────────────────────────────────────────────
-        JPanel timeCard = new JPanel();
-        timeCard.setLayout(new BoxLayout(timeCard, BoxLayout.Y_AXIS));
+        // TIME CARD — using GridBagLayout for precise row control
+        JPanel timeCard = new JPanel(new java.awt.GridBagLayout());
         timeCard.setBackground(new Color(248, 250, 252));
         timeCard.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new java.awt.Insets(0, 0, 4, 0);
 
-        JTextField startField = new JTextField(entry.getStartTime() != null
+        JButton startField = makeTimeButton(entry.getStartTime() != null
             ? TimePickerPanel.formatTime(entry.getStartTime())
             : TimePickerPanel.formatTime(storage.getDefaultStartTime()));
-        JTextField endField = new JTextField(entry.getEndTime() != null
+        JButton endField = makeTimeButton(entry.getEndTime() != null
             ? TimePickerPanel.formatTime(entry.getEndTime())
             : TimePickerPanel.formatTime(storage.getDefaultEndTime()));
-        startField.setEditable(false);
-        endField.setEditable(false);
-        startField.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                TimePickerPanel.showPicker(LogPanel.this, startField);
-            }
-        });
-        endField.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                TimePickerPanel.showPicker(LogPanel.this, endField);
-            }
-        });
+        startField.addActionListener(e -> TimePickerPanel.showPicker(LogPanel.this, startField));
+        endField.addActionListener(e -> TimePickerPanel.showPicker(LogPanel.this, endField));
 
-        timeCard.add(makeFormSection("Time Range"));
-        timeCard.add(Box.createVerticalStrut(8));
-        JPanel timeRow = new JPanel(new GridLayout(1, 2, 10, 0));
-        timeRow.setOpaque(false);
-        timeRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
-        timeRow.add(makeFieldBlock("Start Time", startField));
-        timeRow.add(makeFieldBlock("End Time", endField));
-        timeCard.add(timeRow);
-        timeCard.add(Box.createVerticalStrut(16));
-        timeCard.add(makeFormSection("Boss Allocation"));
-        timeCard.add(Box.createVerticalStrut(8));
+        // TIME RANGE section
+        timeCard.add(makeFormSection("Time Range"), gbc);
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 4, 0);
+        timeCard.add(makeFieldLabel("Start Time"), gbc);
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 10, 0);
+        timeCard.add(startField, gbc);
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 4, 0);
+        timeCard.add(makeFieldLabel("End Time"), gbc);
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 16, 0);
+        timeCard.add(endField, gbc);
 
-        Map<String, JTextField> percFields = new HashMap<>();
+        // BOSS ALLOCATION section — sliders instead of text fields
+        Map<String, JSlider> percSliders = new HashMap<>();
+        Map<String, JTextField> percFields = new HashMap<>(); // kept for save logic compatibility
         for (Boss b : bosses) {
-            Double currentPerc = 0.0;
+            int currentPerc = 0;
             if (entry.getBossPercentages() != null) {
-                currentPerc = entry.getBossPercentages().get(b.getId());
-                if (currentPerc == null) currentPerc = entry.getBossPercentages().getOrDefault(b.getName(), 0.0);
+                Double p = entry.getBossPercentages().get(b.getId());
+                if (p == null) p = entry.getBossPercentages().getOrDefault(b.getName(), 0.0);
+                currentPerc = (int) Math.round(p);
             }
-            JTextField pField = new JTextField(String.valueOf(currentPerc));
-            percFields.put(b.getId(), pField);
-            JPanel row = makeFieldBlock(b.getName() + " (%)", pField);
-            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
-            timeCard.add(row);
-            timeCard.add(Box.createVerticalStrut(6));
+            JSlider slider = new JSlider(0, 100, currentPerc);
+            slider.setMajorTickSpacing(25);
+            slider.setMinorTickSpacing(5);
+            slider.setSnapToTicks(false);
+            slider.setOpaque(false);
+            percSliders.put(b.getId(), slider);
+            // Keep a hidden text field in sync for save logic
+            JTextField hidden = new JTextField(String.valueOf(currentPerc));
+            percFields.put(b.getId(), hidden);
+            final boolean[] splitting = {false};
+            slider.putClientProperty("splitting", splitting);
+            slider.addChangeListener(ev -> {
+                if (splitting[0]) return;
+                // Snap to nearest 5 manually
+                int snapped = (int) Math.round(slider.getValue() / 5.0) * 5;
+                if (slider.getValue() != snapped) {
+                    slider.setValue(snapped);
+                    return;
+                }
+                hidden.setText(String.valueOf(slider.getValue()));
+            });
         }
+
+        // Alloc header row: label on left, split button + status % on right
+        JPanel allocHeader = new JPanel(new BorderLayout());
+        allocHeader.setOpaque(false);
+        JLabel allocTitle = new JLabel("BOSS ALLOCATION");
+        allocTitle.setFont(allocTitle.getFont().deriveFont(Font.BOLD, 10f));
+        allocTitle.setForeground(new Color(148, 163, 184));
+        JLabel allocStatus = new JLabel("0%");
+        allocStatus.setFont(allocStatus.getFont().deriveFont(Font.BOLD, 10f));
+        allocStatus.setForeground(new Color(245, 158, 11));
+
+        JButton btnSplit = new JButton("Split Evenly");
+        btnSplit.putClientProperty("JButton.buttonType", "roundRect");
+        btnSplit.setFont(btnSplit.getFont().deriveFont(Font.PLAIN, 10f));
+        btnSplit.setBackground(new Color(241, 245, 249));
+        btnSplit.setForeground(new Color(100, 116, 139));
+
+        JPanel allocRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        allocRight.setOpaque(false);
+        allocRight.add(btnSplit);
+        allocRight.add(allocStatus);
+
+        allocHeader.add(allocTitle, BorderLayout.WEST);
+        allocHeader.add(allocRight, BorderLayout.EAST);
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 4, 0);
+        timeCard.add(allocHeader, gbc);
+
+        // Progress bar — fixed 6px height via GridBagConstraints ipady
+        JComponent allocBar = new JComponent() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(226, 232, 240));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                double total = 0;
+                for (JTextField f : percFields.values())
+                    try { total += Double.parseDouble(f.getText()); } catch (NumberFormatException ignored) {}
+                int fillW = (int) (getWidth() * Math.min(total, 100) / 100.0);
+                Color fc = total > 100 ? new Color(239, 68, 68) : total == 100 ? new Color(34, 197, 94) : new Color(59, 130, 246);
+                if (fillW > 0) { g2.setColor(fc); g2.fillRoundRect(0, 0, fillW, getHeight(), getHeight(), getHeight()); }
+                g2.dispose();
+            }
+        };
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 8, 0);
+        gbc.ipady = 6; // forces row height to exactly 6px
+        timeCard.add(allocBar, gbc);
+        gbc.ipady = 0;
+
+        // Runnable to update status + bar
+        Runnable updateAlloc = () -> {
+            double total = 0;
+            for (JTextField f : percFields.values())
+                try { total += Double.parseDouble(f.getText()); } catch (NumberFormatException ignored) {}
+            allocStatus.setText((int) total + "%");
+            allocStatus.setForeground(total > 100 ? new Color(239, 68, 68) : total == 100 ? new Color(34, 197, 94) : new Color(245, 158, 11));
+            allocBar.repaint();
+        };
+
+        Map<String, JLabel> valueLabels = new HashMap<>();
+
+        // Split Evenly: divide 100% equally, remainder goes to first boss
+        btnSplit.addActionListener(ev -> {
+            int count = percSliders.size();
+            if (count == 0) return;
+            int share = 100 / count;
+            int remainder = 100 - (share * count);
+            boolean first = true;
+            for (Map.Entry<String, JSlider> sliderEntry : percSliders.entrySet()) {
+                JSlider s = sliderEntry.getValue();
+                boolean[] splitting = (boolean[]) s.getClientProperty("splitting");
+                splitting[0] = true;
+                s.setValue(first ? share + remainder : share);
+                splitting[0] = false;
+                percFields.get(sliderEntry.getKey()).setText(String.valueOf(s.getValue()));
+                valueLabels.get(sliderEntry.getKey()).setText(s.getValue() + "%");
+                first = false;
+            }
+            updateAlloc.run();
+        });
+
+        // Boss percentage sliders
+        for (Boss b : bosses) {
+            JSlider slider = percSliders.get(b.getId());
+            JTextField hidden = percFields.get(b.getId());
+
+            JPanel sliderHeader = new JPanel(new BorderLayout());
+            sliderHeader.setOpaque(false);
+            JLabel bossName = makeFieldLabel(b.getName());
+            JLabel valueLabel = new JLabel(slider.getValue() + "%");
+            valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 11f));
+            valueLabel.setForeground(new Color(59, 130, 246));
+            sliderHeader.add(bossName, BorderLayout.WEST);
+            sliderHeader.add(valueLabel, BorderLayout.EAST);
+            valueLabels.put(b.getId(), valueLabel);
+
+            slider.addChangeListener(ev -> {
+                valueLabel.setText(slider.getValue() + "%");
+                hidden.setText(String.valueOf(slider.getValue()));
+                updateAlloc.run();
+            });
+
+            gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 2, 0);
+            timeCard.add(sliderHeader, gbc);
+            gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 10, 0);
+            timeCard.add(slider, gbc);
+        }
+        updateAlloc.run();
+
+        // Filler row to push content to top
+        gbc.gridy++;
+        gbc.weighty = 1.0;
+        gbc.fill = java.awt.GridBagConstraints.BOTH;
+        timeCard.add(new JPanel() {{ setOpaque(false); }}, gbc);
+
         cards.add(new JScrollPane(timeCard) {{
             setBorder(BorderFactory.createEmptyBorder());
             getViewport().setBackground(new Color(248, 250, 252));
+            setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
         }}, LogEntry.EntryType.TIME.name());
 
         // KM CARD ────────────────────────────────────────────────────────────
@@ -760,6 +887,24 @@ public class LogPanel extends JPanel {
 
     // ── UI helper methods ────────────────────────────────────────────────────
 
+    private JLabel makeFieldLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
+        lbl.setForeground(new Color(71, 85, 105));
+        return lbl;
+    }
+
+    private JButton makeTimeButton(String time) {
+        JButton btn = new JButton(time);
+        btn.putClientProperty("JButton.buttonType", "roundRect");
+        btn.setBackground(new Color(241, 245, 249));
+        btn.setForeground(new Color(30, 41, 59));
+        btn.setFont(btn.getFont().deriveFont(Font.PLAIN, 13f));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.CENTER);
+        return btn;
+    }
+
     private JButton makeTypeToggle(String text, boolean active) {
         JButton btn = new JButton(text);
         btn.putClientProperty("JButton.buttonType", "roundRect");
@@ -785,6 +930,7 @@ public class LogPanel extends JPanel {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        p.setAlignmentX(LEFT_ALIGNMENT);
         JLabel lbl = new JLabel(title.toUpperCase());
         lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 10f));
         lbl.setForeground(new Color(148, 163, 184));
@@ -795,6 +941,7 @@ public class LogPanel extends JPanel {
     private JPanel makeFieldBlock(String label, JComponent field) {
         JPanel p = new JPanel(new BorderLayout(0, 4));
         p.setOpaque(false);
+        p.setAlignmentX(LEFT_ALIGNMENT);
         JLabel lbl = new JLabel(label);
         lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
         lbl.setForeground(new Color(71, 85, 105));

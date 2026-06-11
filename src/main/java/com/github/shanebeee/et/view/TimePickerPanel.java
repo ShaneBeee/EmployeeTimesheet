@@ -31,7 +31,7 @@ public class TimePickerPanel extends JPanel {
             int h = time.getHour();
             this.hour = h % 12;
             if (this.hour == 0) this.hour = 12;
-            this.minute = time.getMinute();
+            this.minute = (int) Math.round(time.getMinute() / 5.0) * 5 % 60; // snap to nearest 5
             this.isAm = h < 12;
         } catch (Exception e) {
             this.hour = 11;
@@ -187,8 +187,16 @@ public class TimePickerPanel extends JPanel {
     }
 
     public static void showPicker(Component parent, JTextField targetField) {
+        showPickerInternal(parent, targetField.getText(), targetField::setText);
+    }
+
+    public static void showPicker(Component parent, JButton targetButton) {
+        showPickerInternal(parent, targetButton.getText(), targetButton::setText);
+    }
+
+    private static void showPickerInternal(Component parent, String currentTime, java.util.function.Consumer<String> onConfirm) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(parent), "Select Time", true);
-        TimePickerPanel picker = new TimePickerPanel(targetField.getText(), () -> {
+        TimePickerPanel picker = new TimePickerPanel(currentTime, () -> {
         });
 
         // ── Footer matching showEntryDialog style ────────────────────────────
@@ -205,7 +213,7 @@ public class TimePickerPanel extends JPanel {
         btnOk.setBackground(new Color(59, 130, 246));
         btnOk.setForeground(Color.WHITE);
         btnOk.addActionListener(e -> {
-            targetField.setText(formatTime(picker.getTime()));
+            onConfirm.accept(formatTime(picker.getTime()));
             dialog.dispose();
         });
 
@@ -216,6 +224,15 @@ public class TimePickerPanel extends JPanel {
         dialog.add(footer, BorderLayout.SOUTH);
         dialog.pack();
         dialog.setLocationRelativeTo(parent);
+
+        // Keyboard shortcuts: Enter = confirm, Escape = cancel
+        dialog.getRootPane().setDefaultButton(btnOk);
+        dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "cancel");
+        dialog.getRootPane().getActionMap().put("cancel", new javax.swing.AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) { dialog.dispose(); }
+        });
+
         dialog.setVisible(true);
     }
 
