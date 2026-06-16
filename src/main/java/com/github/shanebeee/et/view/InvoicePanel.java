@@ -92,6 +92,11 @@ public class InvoicePanel extends JPanel {
         invoiceBtns.setOpaque(false);
         invoiceBtns.setAlignmentX(LEFT_ALIGNMENT);
 
+        JButton btnPreviewInvoice = new JButton("Preview");
+        btnPreviewInvoice.putClientProperty("JButton.buttonType", "roundRect");
+        btnPreviewInvoice.setBackground(new Color(241, 245, 249));
+        btnPreviewInvoice.setForeground(new Color(30, 41, 59));
+
         JButton btnItemized = new JButton("Itemized Invoice");
         btnItemized.putClientProperty("JButton.buttonType", "roundRect");
         btnItemized.setBackground(new Color(241, 245, 249));
@@ -102,6 +107,7 @@ public class InvoicePanel extends JPanel {
         btnGenerate.setBackground(new Color(59, 130, 246));
         btnGenerate.setForeground(Color.WHITE);
 
+        invoiceBtns.add(btnPreviewInvoice);
         invoiceBtns.add(btnItemized);
         invoiceBtns.add(btnGenerate);
         invoiceCard.add(invoiceBtns);
@@ -109,6 +115,7 @@ public class InvoicePanel extends JPanel {
 
         btnGenerate.addActionListener(e -> generate(false));
         btnItemized.addActionListener(e -> generate(true));
+        btnPreviewInvoice.addActionListener(e -> showInvoicePreview());
 
         content.add(invoiceCard);
         content.add(Box.createVerticalStrut(16));
@@ -353,6 +360,252 @@ public class InvoicePanel extends JPanel {
         val.setForeground(new Color(71, 85, 105));
         row.add(lbl, BorderLayout.WEST);
         row.add(val, BorderLayout.EAST);
+        return row;
+    }
+
+    private void showInvoicePreview() {
+        Boss boss = (Boss) bossCombo.getSelectedItem();
+        if (boss == null) return;
+        EmployeeInfo employee = storage.loadEmployeeInfo();
+        LocalDate start = LocalDate.parse(startBtn.getText());
+        LocalDate end = LocalDate.parse(endBtn.getText());
+
+        // Collect logs
+        List<LogEntry> allLogs = new ArrayList<>();
+        LocalDate curr = start.withDayOfMonth(1);
+        while (!curr.isAfter(end)) {
+            allLogs.addAll(storage.loadLogs(YearMonth.from(curr).toString()));
+            curr = curr.plusMonths(1);
+        }
+        List<LogEntry> logs = allLogs.stream()
+            .filter(l -> { LocalDate d = LocalDate.parse(l.getDate()); return !d.isBefore(start) && !d.isAfter(end); })
+            .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
+            .toList();
+
+        // Calculate totals
+        double totalHours = 0, totalKm = 0, totalExtras = 0;
+        for (LogEntry log : logs) {
+            if (log.getType() == LogEntry.EntryType.TIME) {
+                double perc = log.getBossPercentages() != null ?
+                    log.getBossPercentages().getOrDefault(boss.getId(),
+                        log.getBossPercentages().getOrDefault(boss.getName(), 0.0)) / 100.0 : 0;
+                if (perc > 0) {
+                    java.time.LocalTime s = TimePickerPanel.parseTime(log.getStartTime());
+                    java.time.LocalTime e2 = TimePickerPanel.parseTime(log.getEndTime());
+                    totalHours += java.time.Duration.between(s, e2).toMinutes() / 60.0 * perc;
+                }
+            } else if (log.getType() == LogEntry.EntryType.KILOMETER) {
+                if (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))
+                    totalKm += log.getKilometers() != null ? log.getKilometers() : 0;
+            } else if (log.getType() == LogEntry.EntryType.EXTRA) {
+                if (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))
+                    totalExtras += (log.getUnits() != null ? log.getUnits() : 0) * (log.getCostPerUnit() != null ? log.getCostPerUnit() : 0);
+            }
+        }
+        double subtotalHours  = totalHours * boss.getHourlyRate();
+        double subtotalKm     = totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0);
+        double subtotal       = subtotalHours + subtotalKm + totalExtras;
+        double tax            = subtotal * (boss.getTaxRate() / 100.0);
+        double grandTotal     = subtotal + tax;
+
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy");
+
+        // ── Dialog ───────────────────────────────────────────────────────────
+        JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
+            "Invoice Preview", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(560, 680);
+        dialog.setResizable(false);
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBackground(Color.WHITE);
+        body.setBorder(BorderFactory.createEmptyBorder(28, 28, 28, 28));
+
+        // ── Invoice header ───────────────────────────────────────────────────
+        JPanel invoiceHeader = new JPanel(new BorderLayout());
+        invoiceHeader.setOpaque(false);
+        invoiceHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+
+        // Left: employee info
+        JPanel fromPanel = new JPanel();
+        fromPanel.setLayout(new BoxLayout(fromPanel, BoxLayout.Y_AXIS));
+        fromPanel.setOpaque(false);
+        JLabel fromName = new JLabel(employee != null ? employee.getFullName() : "Your Name");
+        fromName.setFont(fromName.getFont().deriveFont(Font.BOLD, 16f));
+        fromName.setForeground(new Color(30, 41, 59));
+        JLabel fromEmail = new JLabel(employee != null && employee.getEmail() != null ? employee.getEmail() : "");
+        fromEmail.setFont(fromEmail.getFont().deriveFont(Font.PLAIN, 11f));
+        fromEmail.setForeground(new Color(100, 116, 139));
+        fromPanel.add(fromName);
+        fromPanel.add(fromEmail);
+
+        // Right: INVOICE label + date range
+        JPanel invoiceMeta = new JPanel();
+        invoiceMeta.setLayout(new BoxLayout(invoiceMeta, BoxLayout.Y_AXIS));
+        invoiceMeta.setOpaque(false);
+        JLabel invoiceTitle = new JLabel("INVOICE", JLabel.RIGHT);
+        invoiceTitle.setFont(invoiceTitle.getFont().deriveFont(Font.BOLD, 20f));
+        invoiceTitle.setForeground(new Color(59, 130, 246));
+        invoiceTitle.setAlignmentX(RIGHT_ALIGNMENT);
+        JLabel dateRange = new JLabel(start.format(dateFmt) + " – " + end.format(dateFmt), JLabel.RIGHT);
+        dateRange.setFont(dateRange.getFont().deriveFont(Font.PLAIN, 11f));
+        dateRange.setForeground(new Color(100, 116, 139));
+        dateRange.setAlignmentX(RIGHT_ALIGNMENT);
+        invoiceMeta.add(invoiceTitle);
+        invoiceMeta.add(dateRange);
+
+        invoiceHeader.add(fromPanel, BorderLayout.WEST);
+        invoiceHeader.add(invoiceMeta, BorderLayout.EAST);
+        body.add(invoiceHeader);
+        body.add(Box.createVerticalStrut(12));
+
+        // Divider
+        body.add(makeThinDivider(new Color(59, 130, 246)));
+        body.add(Box.createVerticalStrut(12));
+
+        // Bill To
+        JLabel billToLbl = new JLabel("BILL TO");
+        billToLbl.setFont(billToLbl.getFont().deriveFont(Font.BOLD, 9f));
+        billToLbl.setForeground(new Color(148, 163, 184));
+        billToLbl.setAlignmentX(LEFT_ALIGNMENT);
+        body.add(billToLbl);
+        body.add(Box.createVerticalStrut(4));
+        JLabel bossNameLbl = new JLabel(boss.getName());
+        bossNameLbl.setFont(bossNameLbl.getFont().deriveFont(Font.BOLD, 13f));
+        bossNameLbl.setForeground(new Color(30, 41, 59));
+        bossNameLbl.setAlignmentX(LEFT_ALIGNMENT);
+        body.add(bossNameLbl);
+        body.add(Box.createVerticalStrut(16));
+
+        // ── Line items table ─────────────────────────────────────────────────
+        body.add(makeTableHeader());
+        body.add(makeThinDivider(new Color(226, 232, 240)));
+        body.add(Box.createVerticalStrut(4));
+
+        if (totalHours > 0) {
+            body.add(makeLineItem(
+                "Labour",
+                String.format("%.2f hrs @ $%.2f/hr", totalHours, boss.getHourlyRate()),
+                String.format("$%.2f", subtotalHours)));
+        }
+        if (totalKm > 0) {
+            body.add(makeLineItem(
+                "Travel",
+                String.format("%.1f km @ $%.2f/km", totalKm, boss.getKmRate() != null ? boss.getKmRate() : 0),
+                String.format("$%.2f", subtotalKm)));
+        }
+        if (totalExtras > 0) {
+            body.add(makeLineItem("Extras", "Miscellaneous", String.format("$%.2f", totalExtras)));
+        }
+
+        body.add(Box.createVerticalStrut(4));
+        body.add(makeThinDivider(new Color(226, 232, 240)));
+        body.add(Box.createVerticalStrut(8));
+
+        // ── Totals ───────────────────────────────────────────────────────────
+        body.add(makeTotalRow("Subtotal", String.format("$%.2f", subtotal), false));
+        body.add(Box.createVerticalStrut(4));
+        body.add(makeTotalRow(String.format("GST/HST (%.0f%%)", boss.getTaxRate()), String.format("$%.2f", tax), false));
+        body.add(Box.createVerticalStrut(8));
+        body.add(makeThinDivider(new Color(226, 232, 240)));
+        body.add(Box.createVerticalStrut(8));
+        body.add(makeTotalRow("TOTAL DUE", String.format("$%.2f", grandTotal), true));
+
+        JScrollPane scroll = new JScrollPane(body);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(Color.WHITE);
+        scroll.setOpaque(false);
+        dialog.add(scroll, BorderLayout.CENTER);
+
+        // ── Footer ───────────────────────────────────────────────────────────
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
+        footer.setBackground(Color.WHITE);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
+        JButton btnClose = new JButton("Close");
+        btnClose.putClientProperty("JButton.buttonType", "roundRect");
+        btnClose.addActionListener(ev -> dialog.dispose());
+        JButton btnGenerate2 = new JButton("Generate PDF");
+        btnGenerate2.putClientProperty("JButton.buttonType", "roundRect");
+        btnGenerate2.setBackground(new Color(59, 130, 246));
+        btnGenerate2.setForeground(Color.WHITE);
+        btnGenerate2.addActionListener(ev -> { dialog.dispose(); generate(false); });
+        footer.add(btnClose);
+        footer.add(btnGenerate2);
+        dialog.add(footer, BorderLayout.SOUTH);
+
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    private JPanel makeThinDivider(Color color) {
+        JPanel div = new JPanel();
+        div.setOpaque(false);
+        div.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        div.setPreferredSize(new Dimension(0, 1));
+        div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, color));
+        div.setAlignmentX(LEFT_ALIGNMENT);
+        return div;
+    }
+
+    private JPanel makeTableHeader() {
+        JPanel row = new JPanel(new BorderLayout(8, 0));
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        row.setAlignmentX(LEFT_ALIGNMENT);
+        row.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        JLabel desc = new JLabel("DESCRIPTION");
+        desc.setFont(desc.getFont().deriveFont(Font.BOLD, 9f));
+        desc.setForeground(new Color(148, 163, 184));
+        JLabel detail = new JLabel("DETAILS");
+        detail.setFont(detail.getFont().deriveFont(Font.BOLD, 9f));
+        detail.setForeground(new Color(148, 163, 184));
+        JLabel amt = new JLabel("AMOUNT", JLabel.RIGHT);
+        amt.setFont(amt.getFont().deriveFont(Font.BOLD, 9f));
+        amt.setForeground(new Color(148, 163, 184));
+        amt.setPreferredSize(new Dimension(80, 20));
+        row.add(desc, BorderLayout.WEST);
+        row.add(detail, BorderLayout.CENTER);
+        row.add(amt, BorderLayout.EAST);
+        return row;
+    }
+
+    private JPanel makeLineItem(String description, String detail, String amount) {
+        JPanel row = new JPanel(new BorderLayout(8, 0));
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        row.setAlignmentX(LEFT_ALIGNMENT);
+        row.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        JLabel desc = new JLabel(description);
+        desc.setFont(desc.getFont().deriveFont(Font.PLAIN, 13f));
+        desc.setForeground(new Color(30, 41, 59));
+        JLabel det = new JLabel(detail);
+        det.setFont(det.getFont().deriveFont(Font.PLAIN, 12f));
+        det.setForeground(new Color(100, 116, 139));
+        JLabel amt = new JLabel(amount, JLabel.RIGHT);
+        amt.setFont(amt.getFont().deriveFont(Font.PLAIN, 13f));
+        amt.setForeground(new Color(30, 41, 59));
+        amt.setPreferredSize(new Dimension(80, 20));
+        row.add(desc, BorderLayout.WEST);
+        row.add(det, BorderLayout.CENTER);
+        row.add(amt, BorderLayout.EAST);
+        return row;
+    }
+
+    private JPanel makeTotalRow(String label, String amount, boolean bold) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        row.setAlignmentX(LEFT_ALIGNMENT);
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(lbl.getFont().deriveFont(bold ? Font.BOLD : Font.PLAIN, bold ? 14f : 12f));
+        lbl.setForeground(bold ? new Color(30, 41, 59) : new Color(100, 116, 139));
+        JLabel amt = new JLabel(amount, JLabel.RIGHT);
+        amt.setFont(amt.getFont().deriveFont(bold ? Font.BOLD : Font.PLAIN, bold ? 14f : 12f));
+        amt.setForeground(bold ? new Color(59, 130, 246) : new Color(30, 41, 59));
+        row.add(lbl, BorderLayout.WEST);
+        row.add(amt, BorderLayout.EAST);
         return row;
     }
 
