@@ -108,8 +108,8 @@ public class InvoiceGenerator {
                     perc = log.getBossPercentages().getOrDefault(boss.getName(), 0.0) / 100.0;
                 }
                 if (perc > 0) {
-                    LocalTime startT = LocalTime.parse(log.getStartTime());
-                    LocalTime endT = LocalTime.parse(log.getEndTime());
+                    LocalTime startT = TimePickerPanel.parseTime(log.getStartTime());
+                    LocalTime endT = TimePickerPanel.parseTime(log.getEndTime());
                     double hours = Duration.between(startT, endT).toMinutes() / 60.0;
                     double billableHours = hours * perc;
                     double rateForEntry = rateForDate(boss, log.getDate());

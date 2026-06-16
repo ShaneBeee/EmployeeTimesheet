@@ -2,6 +2,7 @@ package com.github.shanebeee.et.storage;
 
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
+import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.model.LogEntry;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -28,6 +29,7 @@ public class DataStorage {
     private static final String SETTINGS_FILE = SETTINGS_DIR + "settings.json";
     private static final String LOGS_DIR = BASE_DIR + "logs/";
     private static final String INVOICES_DIR = BASE_DIR + "invoices/";
+    private static final String EXPENSES_DIR = BASE_DIR + "expenses/";
 
     private final Gson gson;
 
@@ -41,6 +43,7 @@ public class DataStorage {
             Files.createDirectories(Paths.get(LOGS_DIR));
             Files.createDirectories(Paths.get(SETTINGS_DIR));
             Files.createDirectories(Paths.get(INVOICES_DIR));
+            Files.createDirectories(Paths.get(EXPENSES_DIR));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,6 +57,17 @@ public class DataStorage {
 
     public void saveBosses(List<Boss> bosses) {
         saveToFile(BOSSES_FILE, bosses);
+    }
+
+    // Expenditures
+    public List<Expenditure> loadExpenditures(String year) {
+        String file = EXPENSES_DIR + year + ".json";
+        return loadList(file, new TypeToken<List<Expenditure>>() {}.getType());
+    }
+
+    public void saveExpenditures(String year, List<Expenditure> expenditures) {
+        String file = EXPENSES_DIR + year + ".json";
+        saveToFile(file, expenditures);
     }
 
     // Employee Info

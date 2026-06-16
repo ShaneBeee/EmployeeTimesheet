@@ -31,9 +31,10 @@ public class MainFrame extends JFrame {
     private CardLayout cardLayout;
     private final Map<String, JButton> navButtons = new HashMap<>();
     private static final Map<String, Color> NAV_COLORS = Map.of(
-        "LOGS", new Color(59, 130, 246),
-        "INVOICES", new Color(139, 92, 246),
-        "BOSSES", new Color(20, 184, 166),
+        "LOGS",     new Color(59,  130, 246),
+        "INVOICES", new Color(139, 92,  246),
+        "EXPENSES", new Color(245, 158, 11),
+        "BOSSES",   new Color(20,  184, 166),
         "SETTINGS", new Color(100, 116, 139)
     );
 
@@ -89,6 +90,11 @@ public class MainFrame extends JFrame {
         navButtons.put("INVOICES", invoicesBtn);
         sidebarContent.add(Box.createVerticalStrut(5));
 
+        JButton expensesBtn = createNavButton("Expenses", "EXPENSES", "expenses.svg");
+        sidebarContent.add(expensesBtn);
+        navButtons.put("EXPENSES", expensesBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
+
         JButton bossesBtn = createNavButton("Boss Management", "BOSSES", "bosses.svg");
         sidebarContent.add(bossesBtn);
         navButtons.put("BOSSES", bossesBtn);
@@ -106,10 +112,11 @@ public class MainFrame extends JFrame {
         contentPanel.setBackground(UIManager.getColor("MainContent.background"));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        contentPanel.add(wrapInCard(new LogPanel(storage)), "LOGS");
-        contentPanel.add(wrapInCard(new InvoicePanel(storage)), "INVOICES");
-        contentPanel.add(wrapInCard(new BossPanel(storage)), "BOSSES");
-        contentPanel.add(wrapInCard(new SettingsPanel(storage)), "SETTINGS");
+        contentPanel.add(wrapInCard(new LogPanel(storage)),      "LOGS");
+        contentPanel.add(wrapInCard(new InvoicePanel(storage)),   "INVOICES");
+        contentPanel.add(wrapInCard(new ExpensesPanel(storage)),  "EXPENSES");
+        contentPanel.add(wrapInCard(new BossPanel(storage)),      "BOSSES");
+        contentPanel.add(wrapInCard(new SettingsPanel(storage)),  "SETTINGS");
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);

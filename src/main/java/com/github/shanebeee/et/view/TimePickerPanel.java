@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 
 public class TimePickerPanel extends JPanel {
 
-    private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+    private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH);
     private int hour;
     private int minute;
     private boolean isAm;
@@ -171,18 +171,35 @@ public class TimePickerPanel extends JPanel {
     public static String formatTime(String time24) {
         try {
             return LocalTime.parse(time24, DateTimeFormatter.ofPattern("HH:mm"))
-                .format(DateTimeFormatter.ofPattern("hh:mm a"));
+                .format(DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH));
         } catch (Exception e) {
             return time24;
         }
     }
 
-    public static String unformatTime(String time24) {
+    public static String unformatTime(String time12) {
         try {
-            return LocalTime.parse(time24, DateTimeFormatter.ofPattern("hh:mm a"))
-                .format(DateTimeFormatter.ofPattern("HH:mm"));
+            return parseTime(time12).format(DateTimeFormatter.ofPattern("HH:mm"));
         } catch (Exception e) {
-            return time24;
+            return time12;
+        }
+    }
+
+    public static LocalTime parseTime(String timeStr) {
+        try {
+            return LocalTime.parse(timeStr); // Try ISO format HH:mm first
+        } catch (Exception e) {
+            try {
+                // Try h:mm a format with English locale
+                return LocalTime.parse(timeStr.toUpperCase(), DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH));
+            } catch (Exception e2) {
+                try {
+                    // Try hh:mm a format just in case
+                    return LocalTime.parse(timeStr.toUpperCase(), DateTimeFormatter.ofPattern("hh:mm a", java.util.Locale.ENGLISH));
+                } catch (Exception e3) {
+                    throw new IllegalArgumentException("Unable to parse time: " + timeStr);
+                }
+            }
         }
     }
 

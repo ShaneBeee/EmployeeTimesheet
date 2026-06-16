@@ -81,8 +81,8 @@ public class SummaryGenerator {
                         perc = log.getBossPercentages().getOrDefault(boss.getName(), 0.0) / 100.0;
                     }
                     if (perc > 0) {
-                        LocalTime start = LocalTime.parse(log.getStartTime());
-                        LocalTime end = LocalTime.parse(log.getEndTime());
+                        LocalTime start = com.github.shanebeee.et.view.TimePickerPanel.parseTime(log.getStartTime());
+                        LocalTime end = com.github.shanebeee.et.view.TimePickerPanel.parseTime(log.getEndTime());
                         double hours = Duration.between(start, end).toMinutes() / 60.0;
                         totalHours += (hours * perc);
                     }

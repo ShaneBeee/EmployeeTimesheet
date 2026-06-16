@@ -225,8 +225,8 @@ public class InvoicePanel extends JPanel {
                         log.getBossPercentages().getOrDefault(boss.getId(),
                             log.getBossPercentages().getOrDefault(boss.getName(), 0.0)) / 100.0 : 0;
                     if (perc > 0) {
-                        java.time.LocalTime start = java.time.LocalTime.parse(log.getStartTime());
-                        java.time.LocalTime end = java.time.LocalTime.parse(log.getEndTime());
+                        java.time.LocalTime start = TimePickerPanel.parseTime(log.getStartTime());
+                        java.time.LocalTime end = TimePickerPanel.parseTime(log.getEndTime());
                         double hours = java.time.Duration.between(start, end).toMinutes() / 60.0;
                         totalHours += hours * perc;
                     }
