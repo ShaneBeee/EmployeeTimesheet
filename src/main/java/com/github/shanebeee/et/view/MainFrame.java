@@ -34,6 +34,7 @@ public class MainFrame extends JFrame {
         "LOGS",     new Color(59,  130, 246),
         "INVOICES", new Color(139, 92,  246),
         "EXPENSES", new Color(245, 158, 11),
+        "KM",       new Color(16,  185, 129),
         "BOSSES",   new Color(20,  184, 166),
         "SETTINGS", new Color(100, 116, 139)
     );
@@ -95,6 +96,11 @@ public class MainFrame extends JFrame {
         navButtons.put("EXPENSES", expensesBtn);
         sidebarContent.add(Box.createVerticalStrut(5));
 
+        JButton kmBtn = createNavButton("Kilometre Log", "KM", "km.svg");
+        sidebarContent.add(kmBtn);
+        navButtons.put("KM", kmBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
+
         JButton bossesBtn = createNavButton("Boss Management", "BOSSES", "bosses.svg");
         sidebarContent.add(bossesBtn);
         navButtons.put("BOSSES", bossesBtn);
@@ -115,6 +121,7 @@ public class MainFrame extends JFrame {
         contentPanel.add(wrapInCard(new LogPanel(storage)),      "LOGS");
         contentPanel.add(wrapInCard(new InvoicePanel(storage)),   "INVOICES");
         contentPanel.add(wrapInCard(new ExpensesPanel(storage)),  "EXPENSES");
+        contentPanel.add(wrapInCard(new KmLogPanel(storage)),     "KM");
         contentPanel.add(wrapInCard(new BossPanel(storage)),      "BOSSES");
         contentPanel.add(wrapInCard(new SettingsPanel(storage)),  "SETTINGS");
 

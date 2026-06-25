@@ -1,6 +1,7 @@
 package com.github.shanebeee.et.view;
 
 import com.github.shanebeee.et.model.Boss;
+import com.github.shanebeee.et.model.KmTrip;
 import com.github.shanebeee.et.model.LogEntry;
 import com.github.shanebeee.et.storage.DataStorage;
 
@@ -507,7 +508,13 @@ public class LogPanel extends JPanel {
 
         btnDelete.addActionListener(e -> {
             if (selectedIdx[0] >= 0) {
-                currentLogs.remove(dayLogs.get(selectedIdx[0]));
+                LogEntry toDelete = dayLogs.get(selectedIdx[0]);
+                // If it was a KM entry, remove the auto-logged KM trip
+                if (toDelete.getType() == LogEntry.EntryType.KILOMETER) {
+                    String year = toDelete.getDate().substring(0, 4);
+                    storage.removeAutoKmTrip(year, toDelete.getId());
+                }
+                currentLogs.remove(toDelete);
                 dayLogs.remove(selectedIdx[0]);
                 storage.saveLogs(currentMonth.toString(), currentLogs);
                 selectedIdx[0] = dayLogs.isEmpty() ? -1 : Math.min(selectedIdx[0], dayLogs.size() - 1);
@@ -860,6 +867,16 @@ public class LogPanel extends JPanel {
                 entry.setDescription(null);
                 entry.setUnits(null);
                 entry.setCostPerUnit(null);
+                // Auto-log to KM tracker
+                if (b != null && entry.getKilometers() != null && entry.getKilometers() > 0) {
+                    KmTrip autoTrip = new KmTrip();
+                    autoTrip.setSourceLogId(entry.getId());
+                    autoTrip.setDate(entry.getDate());
+                    autoTrip.setKm(entry.getKilometers());
+                    autoTrip.setNote("Work trip for " + b.getName());
+                    String year = entry.getDate().substring(0, 4);
+                    storage.upsertAutoKmTrip(year, autoTrip);
+                }
             } else {
                 Boss b = (Boss) extraBossCombo.getSelectedItem();
                 entry.setBossUuid(b != null ? b.getId() : null);

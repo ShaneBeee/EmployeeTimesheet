@@ -1,5 +1,7 @@
 package com.github.shanebeee.et.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class Expenditure {
@@ -8,12 +10,14 @@ public class Expenditure {
     private String date;           // ISO-8601 yyyy-MM-dd
     private Category category;
     private String description;
-    private double amount;
-    private double businessUsePercent; // 0-100, for mixed-use expenses like phone/home office
+    private double subtotal;       // pre-tax amount
+    private double gst;            // GST paid
+    private double total;          // total after all taxes
+    private List<String> receiptFiles; // relative paths under receipts/{year}/{month}/
 
     public Expenditure() {
         this.id = UUID.randomUUID().toString();
-        this.businessUsePercent = 100.0;
+        this.receiptFiles = new ArrayList<>();
     }
 
     // ── Getters & Setters ────────────────────────────────────────────────────
@@ -46,27 +50,37 @@ public class Expenditure {
         this.description = description;
     }
 
-    public double getAmount() {
-        return amount;
+    public double getSubtotal() {
+        return subtotal;
     }
 
-    public void setAmount(double amount) {
-        this.amount = amount;
+    public void setSubtotal(double subtotal) {
+        this.subtotal = subtotal;
     }
 
-    public double getBusinessUsePercent() {
-        return businessUsePercent;
+    public double getGst() {
+        return gst;
     }
 
-    public void setBusinessUsePercent(double businessUsePercent) {
-        this.businessUsePercent = businessUsePercent;
+    public void setGst(double gst) {
+        this.gst = gst;
     }
 
-    /**
-     * The deductible portion after applying businessUsePercent
-     */
-    public double getDeductibleAmount() {
-        return amount * (businessUsePercent / 100.0);
+    public double getTotal() {
+        return total;
+    }
+
+    public void setTotal(double total) {
+        this.total = total;
+    }
+
+    public List<String> getReceiptFiles() {
+        if (receiptFiles == null) receiptFiles = new ArrayList<>();
+        return receiptFiles;
+    }
+
+    public void setReceiptFiles(List<String> receiptFiles) {
+        this.receiptFiles = receiptFiles;
     }
 
     // ── Category enum — mapped to T2125 line numbers ─────────────────────────
