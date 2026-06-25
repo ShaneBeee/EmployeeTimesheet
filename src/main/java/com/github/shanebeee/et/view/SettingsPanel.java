@@ -1,6 +1,7 @@
 package com.github.shanebeee.et.view;
 
 import com.github.shanebeee.et.model.EmployeeInfo;
+import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.storage.DataStorage;
 
 import javax.swing.*;
@@ -11,17 +12,24 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
 public class SettingsPanel extends JPanel {
 
     private final DataStorage storage;
+    private JPanel categoriesListPanel;
+    private List<ExpenseCategory> categories;
 
     public SettingsPanel(DataStorage storage) {
         this.storage = storage;
@@ -31,6 +39,7 @@ public class SettingsPanel extends JPanel {
 
     private void initUI() {
         EmployeeInfo info = storage.loadEmployeeInfo();
+        categories = storage.loadExpenseCategories();
 
         // ── Page header ──────────────────────────────────────────────────────
         JPanel header = new JPanel(new BorderLayout());
@@ -42,8 +51,9 @@ public class SettingsPanel extends JPanel {
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
-        // ── Main content (no scroll) ─────────────────────────────────────────
-        JPanel content = new JPanel(new BorderLayout(0, 12));
+        // ── Scrollable content ───────────────────────────────────────────────
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setOpaque(false);
 
         // ── Profile strip ────────────────────────────────────────────────────
@@ -57,7 +67,9 @@ public class SettingsPanel extends JPanel {
 
         JPanel profileStrip = new JPanel(new BorderLayout(14, 0));
         profileStrip.setOpaque(false);
-        profileStrip.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        profileStrip.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        profileStrip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        profileStrip.setAlignmentX(LEFT_ALIGNMENT);
 
         JPanel avatarCircle = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
@@ -96,8 +108,9 @@ public class SettingsPanel extends JPanel {
 
         profileStrip.add(avatarCircle, BorderLayout.WEST);
         profileStrip.add(profileText, BorderLayout.CENTER);
+        content.add(profileStrip);
 
-        // ── Fields panel ─────────────────────────────────────────────────────
+        // ── Employee + App settings card ─────────────────────────────────────
         JTextField nameField     = new JTextField(info.getFullName());
         JTextField companyField  = new JTextField(info.getCompany());
         JTextField addressField  = new JTextField(info.getAddress());
@@ -120,10 +133,8 @@ public class SettingsPanel extends JPanel {
             }
         });
 
-        // Single card with all fields, two sections separated by a gap row
         JPanel allFields = makeCard();
         allFields.setLayout(new BoxLayout(allFields, BoxLayout.Y_AXIS));
-
         allFields.add(makeSectionRow("Employee Information"));
         allFields.add(makeDivider());
         allFields.add(makeFieldRow("Full Name",    nameField));     allFields.add(makeDivider());
@@ -132,22 +143,48 @@ public class SettingsPanel extends JPanel {
         allFields.add(makeFieldRow("Address 2",    address2Field)); allFields.add(makeDivider());
         allFields.add(makeFieldRow("Phone",        phoneField));    allFields.add(makeDivider());
         allFields.add(makeFieldRow("Email",        emailField));
-
-        // Gap between sections
         allFields.add(makeGapRow());
-
         allFields.add(makeSectionRow("Application Settings"));
         allFields.add(makeDivider());
         allFields.add(makeFieldRow("Default Start Time", startField)); allFields.add(makeDivider());
         allFields.add(makeFieldRow("Default End Time",   endField));
+        content.add(allFields);
+        content.add(Box.createVerticalStrut(16));
 
-        JPanel center = new JPanel(new BorderLayout(0, 12));
-        center.setOpaque(false);
-        center.add(profileStrip, BorderLayout.NORTH);
-        center.add(allFields, BorderLayout.CENTER);
+        // ── Expense Categories card ───────────────────────────────────────────
+        JPanel catCard = makeCard();
+        catCard.setLayout(new BoxLayout(catCard, BoxLayout.Y_AXIS));
 
-        content.add(center, BorderLayout.CENTER);
-        add(content, BorderLayout.CENTER);
+        JPanel catHeader = new JPanel(new BorderLayout());
+        catHeader.setOpaque(false);
+        catHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        catHeader.setBorder(BorderFactory.createEmptyBorder(8, 0, 6, 0));
+        JLabel catTitle = new JLabel("EXPENSE CATEGORIES");
+        catTitle.setFont(catTitle.getFont().deriveFont(Font.BOLD, 10f));
+        catTitle.setForeground(new Color(148, 163, 184));
+        JButton btnAddCat = new JButton("+ Add Category");
+        btnAddCat.putClientProperty("JButton.buttonType", "roundRect");
+        btnAddCat.setFont(btnAddCat.getFont().deriveFont(Font.PLAIN, 11f));
+        btnAddCat.addActionListener(e -> showCategoryDialog(null));
+        catHeader.add(catTitle,   BorderLayout.WEST);
+        catHeader.add(btnAddCat,  BorderLayout.EAST);
+        catCard.add(catHeader);
+        catCard.add(makeDivider());
+
+        categoriesListPanel = new JPanel();
+        categoriesListPanel.setLayout(new BoxLayout(categoriesListPanel, BoxLayout.Y_AXIS));
+        categoriesListPanel.setOpaque(false);
+        catCard.add(categoriesListPanel);
+        refreshCategoryList();
+
+        content.add(catCard);
+
+        JScrollPane scroll = new JScrollPane(content);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(12);
+        add(scroll, BorderLayout.CENTER);
 
         // ── Save button ──────────────────────────────────────────────────────
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
@@ -182,7 +219,212 @@ public class SettingsPanel extends JPanel {
         });
     }
 
+    // ── Category list ─────────────────────────────────────────────────────────
+
+    private void refreshCategoryList() {
+        categoriesListPanel.removeAll();
+        for (ExpenseCategory cat : categories) {
+            categoriesListPanel.add(makeCategoryRow(cat));
+            categoriesListPanel.add(makeDivider());
+        }
+        categoriesListPanel.revalidate();
+        categoriesListPanel.repaint();
+    }
+
+    private JPanel makeCategoryRow(ExpenseCategory cat) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+
+        // Color swatch
+        JPanel swatch = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                try { g2.setColor(Color.decode(cat.getColor())); }
+                catch (Exception ex) { g2.setColor(new Color(148, 163, 184)); }
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        swatch.setOpaque(false);
+        swatch.setPreferredSize(new Dimension(16, 16));
+
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
+        left.add(swatch);
+
+        JPanel textPanel = new JPanel();
+        textPanel.setOpaque(false);
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        JLabel nameLbl = new JLabel(cat.getLabel());
+        nameLbl.setFont(nameLbl.getFont().deriveFont(Font.PLAIN, 12f));
+        nameLbl.setForeground(new Color(30, 41, 59));
+        JLabel hintLbl = new JLabel(cat.getT2125Line() + (cat.getHint() != null ? "  ·  " + cat.getHint() : ""));
+        hintLbl.setFont(hintLbl.getFont().deriveFont(Font.PLAIN, 10f));
+        hintLbl.setForeground(new Color(148, 163, 184));
+        textPanel.add(nameLbl);
+        textPanel.add(hintLbl);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        buttons.setOpaque(false);
+        JButton editBtn = new JButton("Edit");
+        editBtn.putClientProperty("JButton.buttonType", "roundRect");
+        editBtn.setFont(editBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        editBtn.addActionListener(e -> showCategoryDialog(cat));
+
+        if (!cat.isBuiltIn()) {
+            JButton delBtn = new JButton("Delete");
+            delBtn.putClientProperty("JButton.buttonType", "roundRect");
+            delBtn.setFont(delBtn.getFont().deriveFont(Font.PLAIN, 11f));
+            delBtn.setForeground((Color) UIManager.get("App.danger"));
+            delBtn.addActionListener(e -> {
+                int confirm = JOptionPane.showConfirmDialog(this,
+                    "Delete category \"" + cat.getLabel() + "\"?\nExpenses in this category will show as uncategorized.",
+                    "Delete Category", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    categories.remove(cat);
+                    storage.saveExpenseCategories(categories);
+                    refreshCategoryList();
+                }
+            });
+            buttons.add(delBtn);
+        }
+        buttons.add(editBtn);
+
+        row.add(textPanel, BorderLayout.CENTER);
+        row.add(buttons,   BorderLayout.EAST);
+        return row;
+    }
+
+    private void showCategoryDialog(ExpenseCategory existing) {
+        boolean isNew = existing == null;
+        ExpenseCategory cat = isNew ? new ExpenseCategory() : existing;
+
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+            isNew ? "Add Category" : "Edit Category", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(420, 340);
+        dialog.getContentPane().setBackground(new Color(248, 250, 252));
+
+        // Header
+        JPanel hdr = new JPanel(new BorderLayout());
+        hdr.setBackground(Color.WHITE);
+        hdr.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(14, 20, 14, 20)));
+        JLabel hdrTitle = new JLabel(isNew ? "New Category" : "Edit Category");
+        hdrTitle.setFont(hdrTitle.getFont().deriveFont(Font.BOLD, 15f));
+        hdrTitle.setForeground(new Color(30, 41, 59));
+        hdr.add(hdrTitle, BorderLayout.WEST);
+        dialog.add(hdr, BorderLayout.NORTH);
+
+        // Form
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(new Color(248, 250, 252));
+        form.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0; gbc.gridx = 0; gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 4, 0);
+
+        JTextField labelField   = new JTextField(cat.getLabel() != null ? cat.getLabel() : "");
+        JTextField hintField    = new JTextField(cat.getHint()  != null ? cat.getHint()  : "");
+        JTextField t2125Field   = new JTextField(cat.getT2125Line() != null ? cat.getT2125Line() : "");
+        JTextField colorField   = new JTextField(cat.getColor() != null ? cat.getColor() : "#94A3B8");
+
+        // Live color preview
+        JPanel colorPreview = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                try { g2.setColor(Color.decode(colorField.getText().trim())); }
+                catch (Exception ex) { g2.setColor(new Color(148, 163, 184)); }
+                g2.fillOval(2, 2, getWidth() - 4, getHeight() - 4);
+                g2.dispose();
+            }
+        };
+        colorPreview.setOpaque(false);
+        colorPreview.setPreferredSize(new Dimension(28, 28));
+        colorField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { colorPreview.repaint(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { colorPreview.repaint(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { colorPreview.repaint(); }
+        });
+
+        JPanel colorRow = new JPanel(new BorderLayout(8, 0));
+        colorRow.setOpaque(false);
+        colorRow.add(colorField,   BorderLayout.CENTER);
+        colorRow.add(colorPreview, BorderLayout.EAST);
+
+        form.add(makeDialogLabel("Name"), gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 12, 0);
+        form.add(labelField, gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+        form.add(makeDialogLabel("Hint (shown in expense dialog)"), gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 12, 0);
+        form.add(hintField, gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+        form.add(makeDialogLabel("T2125 Line Number"), gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 12, 0);
+        form.add(t2125Field, gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+        form.add(makeDialogLabel("Colour (hex, e.g. #3B82F6)"), gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 0, 0);
+        form.add(colorRow, gbc);
+
+        dialog.add(form, BorderLayout.CENTER);
+
+        // Footer
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(Color.WHITE);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
+        JPanel footerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
+        footerRight.setOpaque(false);
+
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.putClientProperty("JButton.buttonType", "roundRect");
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        JButton btnSave = new JButton(isNew ? "Add Category" : "Save");
+        btnSave.putClientProperty("JButton.buttonType", "roundRect");
+        btnSave.setBackground((Color) UIManager.get("App.accent"));
+        btnSave.setForeground(Color.WHITE);
+        btnSave.addActionListener(e -> {
+            String name = labelField.getText().trim();
+            if (name.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Category name is required.", "Required", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            cat.setLabel(name);
+            cat.setHint(hintField.getText().trim());
+            cat.setT2125Line(t2125Field.getText().trim());
+            cat.setColor(colorField.getText().trim());
+            if (isNew) categories.add(cat);
+            storage.saveExpenseCategories(categories);
+            refreshCategoryList();
+            dialog.dispose();
+        });
+
+        footerRight.add(btnCancel);
+        footerRight.add(btnSave);
+        footer.add(footerRight, BorderLayout.EAST);
+        dialog.add(footer, BorderLayout.SOUTH);
+
+        dialog.getRootPane().setDefaultButton(btnSave);
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private JLabel makeDialogLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
+        lbl.setForeground(new Color(71, 85, 105));
+        return lbl;
+    }
 
     private JPanel makeCard() {
         JPanel card = new JPanel() {
@@ -223,14 +465,11 @@ public class SettingsPanel extends JPanel {
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-
         JLabel lbl = new JLabel(label);
         lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
         lbl.setForeground(new Color(71, 85, 105));
         lbl.setPreferredSize(new Dimension(150, 20));
-
         field.setFont(field.getFont().deriveFont(Font.PLAIN, 12f));
-
         row.add(lbl, BorderLayout.WEST);
         row.add(field, BorderLayout.CENTER);
         return row;

@@ -8,7 +8,8 @@ public class Expenditure {
 
     private final String id;
     private String date;           // ISO-8601 yyyy-MM-dd
-    private Category category;
+    private Category category;     // legacy enum — kept for Gson backwards compat
+    private String categoryId;     // UUID pointing to ExpenseCategory
     private String description;
     private double subtotal;       // pre-tax amount
     private double gst;            // GST paid
@@ -41,6 +42,9 @@ public class Expenditure {
     public void setCategory(Category category) {
         this.category = category;
     }
+
+    public String getCategoryId()              { return categoryId; }
+    public void   setCategoryId(String id)     { this.categoryId = id; }
 
     public String getDescription() {
         return description;

@@ -1,5 +1,6 @@
 package com.github.shanebeee.et.view;
 
+import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.storage.DataStorage;
 
@@ -62,9 +63,12 @@ public class ExpensesPanel extends JPanel {
     private boolean inDetail = false;
     private YearMonth detailMonth;   // which month is showing in detail
 
+    private List<ExpenseCategory> categories;
+
     public ExpensesPanel(DataStorage storage) {
         this.storage = storage;
         this.currentYear = LocalDate.now().getYear();
+        categories = storage.loadExpenseCategories();
         setLayout(new BorderLayout());
         initUI();
         loadYear();
@@ -353,13 +357,16 @@ public class ExpensesPanel extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int x = 0;
-                Map<Expenditure.Category, Double> byCat = new LinkedHashMap<>();
-                for (Expenditure e : exps)
-                    if (e.getCategory() != null)
-                        byCat.merge(e.getCategory(), e.getTotal(), Double::sum);
-                for (Map.Entry<Expenditure.Category, Double> entry : byCat.entrySet()) {
+                Map<String, Double> byCat = new LinkedHashMap<>();
+                for (Expenditure e : exps) {
+                    ExpenseCategory cat = storage.resolveCategory(e, categories);
+                    if (cat != null) byCat.merge(cat.getId(), e.getTotal(), Double::sum);
+                }
+                for (Map.Entry<String, Double> entry : byCat.entrySet()) {
                     int segW = (int) Math.round(entry.getValue() / total * getWidth());
-                    g2.setColor(categoryColor(entry.getKey()));
+                    // find color for this category id
+                    categories.stream().filter(c -> c.getId().equals(entry.getKey())).findFirst()
+                        .ifPresent(cat -> g2.setColor(hexColor(cat.getColor())));
                     g2.fillRect(x, 0, segW, getHeight());
                     x += segW;
                 }
@@ -450,13 +457,14 @@ public class ExpensesPanel extends JPanel {
         // Remove old category rows (after the 4 fixed components)
         while (summaryCard.getComponentCount() > 4) summaryCard.remove(summaryCard.getComponentCount() - 1);
 
-        Map<Expenditure.Category, Double> byCategory = new LinkedHashMap<>();
-        for (Expenditure.Category cat : Expenditure.Category.values()) byCategory.put(cat, 0.0);
-        for (Expenditure e : currentExpenses)
-            if (e.getCategory() != null)
-                byCategory.merge(e.getCategory(), e.getTotal(), Double::sum);
-
-        byCategory.forEach((cat, total) -> {
+        Map<String, Double> byCategory = new LinkedHashMap<>();
+        for (ExpenseCategory cat : categories) byCategory.put(cat.getId(), 0.0);
+        for (Expenditure e : currentExpenses) {
+            ExpenseCategory cat = storage.resolveCategory(e, categories);
+            if (cat != null) byCategory.merge(cat.getId(), e.getTotal(), Double::sum);
+        }
+        for (ExpenseCategory cat : categories) {
+            double total = byCategory.getOrDefault(cat.getId(), 0.0);
             if (total > 0) {
                 JPanel row = new JPanel(new BorderLayout(4, 0));
                 row.setOpaque(false);
@@ -473,7 +481,7 @@ public class ExpensesPanel extends JPanel {
                 row.add(val, BorderLayout.EAST);
                 summaryCard.add(row);
             }
-        });
+        }
 
         summaryCard.revalidate();
         summaryCard.repaint();
@@ -491,7 +499,9 @@ public class ExpensesPanel extends JPanel {
     }
 
     private JPanel makeExpenseCard(Expenditure exp) {
-        Color accent = categoryColor(exp.getCategory());
+        ExpenseCategory cat   = storage.resolveCategory(exp, categories);
+        Color accent          = cat != null ? hexColor(cat.getColor()) : new Color(148, 163, 184);
+        String categoryLabel  = cat != null ? cat.getLabel() : "";
         final boolean[] hovered = {false};
 
         JPanel card = new JPanel(new BorderLayout(12, 0)) {
@@ -525,7 +535,7 @@ public class ExpensesPanel extends JPanel {
                 g2.setColor(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 20));
                 g2.fillOval(0, 0, getWidth(), getHeight());
                 g2.setColor(accent);
-                String letter = exp.getCategory() != null ? exp.getCategory().getLabel().substring(0, 1) : "?";
+                String letter = cat != null ? cat.getLabel().substring(0, 1) : "?";
                 g2.setFont(getFont().deriveFont(Font.BOLD, 13f));
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString(letter, (getWidth() - fm.stringWidth(letter)) / 2, (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
@@ -540,12 +550,11 @@ public class ExpensesPanel extends JPanel {
         text.setOpaque(false);
         String title = exp.getDescription() != null && !exp.getDescription().isBlank()
             ? exp.getDescription()
-            : (exp.getCategory() != null ? exp.getCategory().getLabel() : "Expense");
+            : (categoryLabel.isBlank() ? "Expense" : categoryLabel);
         JLabel titleLbl = new JLabel(title);
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 13f));
         titleLbl.setForeground(new Color(30, 41, 59));
-        String sub = (exp.getCategory() != null ? exp.getCategory().getLabel() : "") +
-            "  ·  " + exp.getDate();
+        String sub = categoryLabel + "  ·  " + exp.getDate();
         if (!exp.getReceiptFiles().isEmpty()) {
             sub += "  ·  📎 " + exp.getReceiptFiles().size() + " receipt" + (exp.getReceiptFiles().size() > 1 ? "s" : "");
         }
@@ -643,14 +652,22 @@ public class ExpensesPanel extends JPanel {
         dateBtn.addActionListener(e -> DatePicker.showPicker(dialog, dateBtn));
 
         // Category
-        JComboBox<Expenditure.Category> catCombo = new JComboBox<>(Expenditure.Category.values());
-        if (exp.getCategory() != null) catCombo.setSelectedItem(exp.getCategory());
+        JComboBox<ExpenseCategory> catCombo = new JComboBox<>();
+        for (ExpenseCategory c : categories) catCombo.addItem(c);
+        // Select current category
+        ExpenseCategory currentCat = storage.resolveCategory(exp, categories);
+        if (currentCat != null) catCombo.setSelectedItem(currentCat);
+        else if (!categories.isEmpty()) catCombo.setSelectedIndex(0);
 
         // Category hint
-        JLabel hintLabel = new JLabel(((Expenditure.Category) catCombo.getSelectedItem()).getHint());
+        JLabel hintLabel = new JLabel(catCombo.getSelectedItem() != null
+            ? ((ExpenseCategory) catCombo.getSelectedItem()).getHint() : "");
         hintLabel.setFont(hintLabel.getFont().deriveFont(Font.ITALIC, 11f));
         hintLabel.setForeground(new Color(148, 163, 184));
-        catCombo.addActionListener(e -> hintLabel.setText(((Expenditure.Category) catCombo.getSelectedItem()).getHint()));
+        catCombo.addActionListener(e -> {
+            if (catCombo.getSelectedItem() instanceof ExpenseCategory ec)
+                hintLabel.setText(ec.getHint());
+        });
 
         // Description
         JTextField descField = new JTextField(exp.getDescription() != null ? exp.getDescription() : "");
@@ -923,8 +940,10 @@ public class ExpensesPanel extends JPanel {
                 double subtotal = Double.parseDouble(subtotalField.getText().trim());
                 double gst      = gstField.getText().trim().isEmpty() ? 0 : Double.parseDouble(gstField.getText().trim());
                 double total    = totalField.getText().trim().isEmpty() ? subtotal + gst : Double.parseDouble(totalField.getText().trim());
+                ExpenseCategory selectedCat = (ExpenseCategory) catCombo.getSelectedItem();
                 exp.setDate(dateBtn.getText());
-                exp.setCategory((Expenditure.Category) catCombo.getSelectedItem());
+                exp.setCategory(null); // clear legacy enum
+                exp.setCategoryId(selectedCat != null ? selectedCat.getId() : null);
                 exp.setDescription(descField.getText().trim());
                 exp.setSubtotal(subtotal);
                 exp.setGst(gst);
@@ -997,18 +1016,13 @@ public class ExpensesPanel extends JPanel {
         return card;
     }
 
-    private Color categoryColor(Expenditure.Category cat) {
-        if (cat == null) return new Color(148, 163, 184);
-        return switch (cat) {
-            case VEHICLE -> new Color(239, 68, 68);
-            case PHONE_INTERNET -> new Color(59, 130, 246);
-            case HOME_OFFICE -> new Color(139, 92, 246);
-            case MEALS -> new Color(245, 158, 11);
-            case SUPPLIES -> new Color(20, 184, 166);
-            case PROFESSIONAL -> new Color(99, 102, 241);
-            case ADVERTISING -> new Color(236, 72, 153);
-            case OTHER -> new Color(148, 163, 184);
-        };
+    private static Color hexColor(String hex) {
+        if (hex == null || hex.isBlank()) return new Color(148, 163, 184);
+        try {
+            return Color.decode(hex);
+        } catch (NumberFormatException e) {
+            return new Color(148, 163, 184);
+        }
     }
 
 }

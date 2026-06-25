@@ -2,6 +2,7 @@ package com.github.shanebeee.et.storage;
 
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
+import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.model.KmOdometer;
 import com.github.shanebeee.et.model.KmTrip;
@@ -29,9 +30,10 @@ public class DataStorage {
 
     private static final String BASE_DIR = System.getProperty("user.home") + File.separator + "ShaneApps" + File.separator + "EmployeeTimesheet" + File.separator;
     private static final String SETTINGS_DIR = BASE_DIR + "settings/";
-    private static final String BOSSES_FILE = SETTINGS_DIR + "bosses.json";
-    private static final String EMPLOYEE_FILE = SETTINGS_DIR + "employee.json";
-    private static final String SETTINGS_FILE = SETTINGS_DIR + "settings.json";
+    private static final String BOSSES_FILE      = SETTINGS_DIR + "bosses.json";
+    private static final String EMPLOYEE_FILE    = SETTINGS_DIR + "employee.json";
+    private static final String SETTINGS_FILE    = SETTINGS_DIR + "settings.json";
+    private static final String CATEGORIES_FILE  = SETTINGS_DIR + "expense_categories.json";
     private static final String LOGS_DIR     = BASE_DIR + "logs/";
     private static final String INVOICES_DIR = BASE_DIR + "invoices/";
     private static final String RECEIPTS_DIR = BASE_DIR + "receipts/";
@@ -54,6 +56,51 @@ public class DataStorage {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // Expense Categories
+    public List<ExpenseCategory> loadExpenseCategories() {
+        List<ExpenseCategory> cats = loadList(CATEGORIES_FILE,
+            new TypeToken<List<ExpenseCategory>>() {}.getType());
+        if (cats.isEmpty()) {
+            cats = defaultCategories();
+            saveExpenseCategories(cats);
+        }
+        return cats;
+    }
+
+    public void saveExpenseCategories(List<ExpenseCategory> categories) {
+        saveToFile(CATEGORIES_FILE, categories);
+    }
+
+    /** Resolves an Expenditure to its ExpenseCategory.
+     *  Tries categoryId first, falls back to matching the legacy enum label. */
+    public ExpenseCategory resolveCategory(Expenditure exp, List<ExpenseCategory> allCats) {
+        if (exp.getCategoryId() != null) {
+            return allCats.stream()
+                .filter(c -> c.getId().equals(exp.getCategoryId()))
+                .findFirst().orElse(null);
+        }
+        if (exp.getCategory() != null) {
+            String label = exp.getCategory().getLabel();
+            return allCats.stream()
+                .filter(c -> c.getLabel().equalsIgnoreCase(label))
+                .findFirst().orElse(null);
+        }
+        return null;
+    }
+
+    private List<ExpenseCategory> defaultCategories() {
+        List<ExpenseCategory> cats = new ArrayList<>();
+        cats.add(new ExpenseCategory("Vehicle",           "Gas, maintenance, insurance, repairs",   "9281", "#EF4444", true));
+        cats.add(new ExpenseCategory("Phone & Internet",  "Cell phone, home internet",              "9270", "#3B82F6", true));
+        cats.add(new ExpenseCategory("Home Office",       "Rent, utilities (% of home)",            "9945", "#8B5CF6", true));
+        cats.add(new ExpenseCategory("Meals & Entertain.","50% deductible by CRA",                 "8523", "#F59E0B", true));
+        cats.add(new ExpenseCategory("Office Supplies",   "Paper, ink, tools, software",           "8810", "#14B8A6", true));
+        cats.add(new ExpenseCategory("Professional Fees", "Accountant, lawyer, subscriptions",     "8860", "#6366F1", true));
+        cats.add(new ExpenseCategory("Advertising",       "Business cards, online ads, marketing", "8520", "#EC4899", true));
+        cats.add(new ExpenseCategory("Other",             "Miscellaneous business expenses",        "9270", "#94A3B8", true));
+        return cats;
     }
 
     // Bosses
