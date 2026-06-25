@@ -43,7 +43,7 @@ public class MainFrame extends JFrame {
         setTitle("Employee Timesheet");
         setIconImage(UIUtils.createAppIcon(64));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
+        setSize(1200, 800);
         setLocationRelativeTo(null);
 
         getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
