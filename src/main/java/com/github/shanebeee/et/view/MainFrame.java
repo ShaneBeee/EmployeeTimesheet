@@ -87,11 +87,6 @@ public class MainFrame extends JFrame {
         navButtons.put("LOGS", logsBtn);
         sidebarContent.add(Box.createVerticalStrut(5));
 
-        JButton invoicesBtn = createNavButton("Invoice Management", "INVOICES", "invoices.svg");
-        sidebarContent.add(invoicesBtn);
-        navButtons.put("INVOICES", invoicesBtn);
-        sidebarContent.add(Box.createVerticalStrut(5));
-
         JButton expensesBtn = createNavButton("Expenses", "EXPENSES", "expenses.svg");
         sidebarContent.add(expensesBtn);
         navButtons.put("EXPENSES", expensesBtn);
@@ -100,6 +95,11 @@ public class MainFrame extends JFrame {
         JButton kmBtn = createNavButton("Kilometre Log", "KM", "km.svg");
         sidebarContent.add(kmBtn);
         navButtons.put("KM", kmBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
+
+        JButton invoicesBtn = createNavButton("Invoice Management", "INVOICES", "invoices.svg");
+        sidebarContent.add(invoicesBtn);
+        navButtons.put("INVOICES", invoicesBtn);
         sidebarContent.add(Box.createVerticalStrut(5));
 
         JButton accountingBtn = createNavButton("Accounting", "ACCOUNTING", "accounting.svg");
