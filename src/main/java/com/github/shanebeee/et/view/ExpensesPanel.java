@@ -135,7 +135,7 @@ public class ExpensesPanel extends JPanel {
         // Position them side-by-side initially; grid is visible, detail is off-screen right
         contentArea.addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent e) {
-                layoutViews(inDetail ? -contentArea.getWidth() : 0, false);
+                layoutViews(inDetail ? -contentArea.getWidth() : 0, true);
             }
         });
 
@@ -164,7 +164,10 @@ public class ExpensesPanel extends JPanel {
         if (repaint) contentArea.repaint();
     }
 
+    private boolean animating = false;
+
     private void navigateToDetail(YearMonth ym) {
+        if (animating) return;
         detailMonth = ym;
         buildDetailView(ym);
         sidebarCards.show(sidebar, "blank");
@@ -172,6 +175,7 @@ public class ExpensesPanel extends JPanel {
     }
 
     private void navigateToGrid() {
+        if (animating) return;
         sidebarCards.show(sidebar, "summary");
         animateSlide(true);
     }
@@ -182,17 +186,20 @@ public class ExpensesPanel extends JPanel {
         int endX   = toGrid ?  0 : -w;
         long startTime = System.currentTimeMillis();
         inDetail = !toGrid;
+        animating = true;
 
         Timer timer = new Timer(true);
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 long elapsed = System.currentTimeMillis() - startTime;
                 float t = Math.min(1f, elapsed / (float) ANIM_MS);
-                // ease-out cubic
                 float ease = 1f - (float) Math.pow(1 - t, 3);
                 int x = Math.round(startX + (endX - startX) * ease);
                 SwingUtilities.invokeLater(() -> layoutViews(x, true));
-                if (t >= 1f) timer.cancel();
+                if (t >= 1f) {
+                    animating = false;
+                    timer.cancel();
+                }
             }
         }, 0, 16);
     }
@@ -236,7 +243,9 @@ public class ExpensesPanel extends JPanel {
         inDetail = false;
         sidebarCards.show(sidebar, "summary");
         buildGridView();
-        layoutViews(0, false);
+        layoutViews(0, true);
+        contentArea.revalidate();
+        contentArea.repaint();
         refreshSummary();
     }
 
@@ -342,7 +351,7 @@ public class ExpensesPanel extends JPanel {
             card.addMouseListener(new MouseAdapter() {
                 public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
                 public void mouseExited(MouseEvent e)  { hovered[0] = false; card.repaint(); }
-                public void mouseClicked(MouseEvent e) { navigateToDetail(ym); }
+                public void mousePressed(MouseEvent e) { navigateToDetail(ym); }
             });
         }
 
