@@ -84,6 +84,13 @@ public class YearArchiver {
                 fileCount += addDirToZip(zos, kmYear, "km/" + year);
             }
 
+            // Expense categories for this year
+            File catsFile = new File(baseDir + "settings/expense_categories_" + year + ".json");
+            if (catsFile.exists()) {
+                addFileToZip(zos, "settings/expense_categories_" + year + ".json", catsFile);
+                fileCount++;
+            }
+
             // Invoices — include any file whose name contains the year
             File invoicesDir = new File(baseDir + "invoices");
             if (invoicesDir.exists()) {

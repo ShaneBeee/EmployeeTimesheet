@@ -23,6 +23,7 @@ import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.LocalDate;
 import java.util.List;
 
 public class SettingsPanel extends JPanel {
@@ -30,8 +31,9 @@ public class SettingsPanel extends JPanel {
     private final DataStorage storage;
     private JPanel categoriesListPanel;
     private List<ExpenseCategory> categories;
+    private int categoryYear = LocalDate.now().getYear();
 
-    // Profile tab fields — kept as fields so save action can read them
+    // Profile tab fields
     private JTextField nameField, companyField, addressField, address2Field, phoneField, emailField;
     private JLabel profileName, profileSub;
 
@@ -46,7 +48,7 @@ public class SettingsPanel extends JPanel {
 
     private void initUI() {
         EmployeeInfo info = storage.loadEmployeeInfo();
-        categories = storage.loadExpenseCategories();
+        categories = storage.loadExpenseCategories(String.valueOf(categoryYear));
 
         // ── Page header ──────────────────────────────────────────────────────
         JPanel header = new JPanel(new BorderLayout());
@@ -62,14 +64,12 @@ public class SettingsPanel extends JPanel {
         JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
         tabs.setOpaque(false);
         tabs.setFont(tabs.getFont().deriveFont(Font.PLAIN, 13f));
-
         tabs.addTab("Profile",            buildProfileTab(info));
         tabs.addTab("Preferences",        buildPreferencesTab());
         tabs.addTab("Expense Categories", buildCategoriesTab());
-
         add(tabs, BorderLayout.CENTER);
 
-        // ── Save button (shown on Profile and Preferences tabs only) ─────────
+        // ── Save button (hidden on categories tab) ───────────────────────────
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
         bottomPanel.setOpaque(false);
         JButton saveBtn = new JButton("Save Settings");
@@ -80,10 +80,7 @@ public class SettingsPanel extends JPanel {
         bottomPanel.add(saveBtn);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // Hide save button on categories tab (it auto-saves)
-        tabs.addChangeListener(e -> {
-            bottomPanel.setVisible(tabs.getSelectedIndex() != 2);
-        });
+        tabs.addChangeListener(e -> bottomPanel.setVisible(tabs.getSelectedIndex() != 2));
 
         saveBtn.addActionListener(e -> {
             info.setFullName(nameField.getText());
@@ -95,13 +92,10 @@ public class SettingsPanel extends JPanel {
             storage.saveEmployeeInfo(info);
             storage.setDefaultStartTime(TimePickerPanel.unformatTime(startField.getText()));
             storage.setDefaultEndTime(TimePickerPanel.unformatTime(endField.getText()));
-
-            // Update the profile strip live
             profileName.setText(nameField.getText().isBlank() ? "Your Name" : nameField.getText());
             profileSub.setText(
                 (companyField.getText().isBlank() ? "" : companyField.getText()) +
                     (emailField.getText().isBlank() ? "" : "  ·  " + emailField.getText()));
-
             JOptionPane.showMessageDialog(this, "Settings saved!", "Saved", JOptionPane.INFORMATION_MESSAGE);
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof MainFrame mainFrame) mainFrame.checkBosses();
@@ -116,7 +110,6 @@ public class SettingsPanel extends JPanel {
         tab.setOpaque(false);
         tab.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
 
-        // Avatar / profile strip
         String initials = info.getFullName() == null || info.getFullName().isBlank() ? "?"
             : info.getFullName().contains(" ")
               ? String.valueOf(info.getFullName().charAt(0))
@@ -171,7 +164,6 @@ public class SettingsPanel extends JPanel {
         profileStrip.add(profileText,  BorderLayout.CENTER);
         tab.add(profileStrip);
 
-        // Fields card
         nameField     = new JTextField(info.getFullName());
         companyField  = new JTextField(info.getCompany());
         addressField  = new JTextField(info.getAddress());
@@ -233,12 +225,6 @@ public class SettingsPanel extends JPanel {
         card.add(makeFieldRow("Default End Time",   endField));
         tab.add(card);
 
-        // Filler
-        JPanel filler = new JPanel();
-        filler.setOpaque(false);
-        filler.setAlignmentX(LEFT_ALIGNMENT);
-        tab.add(filler);
-
         JScrollPane scroll = new JScrollPane(tab);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setOpaque(false);
@@ -261,38 +247,49 @@ public class SettingsPanel extends JPanel {
         JPanel catCard = makeCard();
         catCard.setLayout(new BoxLayout(catCard, BoxLayout.Y_AXIS));
 
-        JPanel catHeader = new JPanel(new BorderLayout());
+        // ── Header: title | year nav | action buttons ─────────────────────────
+        JPanel catHeader = new JPanel(new BorderLayout(8, 0));
         catHeader.setOpaque(false);
         catHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         catHeader.setBorder(BorderFactory.createEmptyBorder(8, 0, 6, 0));
+
         JLabel catTitle = new JLabel("EXPENSE CATEGORIES");
         catTitle.setFont(catTitle.getFont().deriveFont(Font.BOLD, 10f));
         catTitle.setForeground(new Color(148, 163, 184));
 
+        // Year nav — centred
+        JPanel yearNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
+        yearNav.setOpaque(false);
+        JButton btnPrev = new JButton("<");
+        btnPrev.putClientProperty("JButton.buttonType", "roundRect");
+        btnPrev.setFont(btnPrev.getFont().deriveFont(Font.PLAIN, 11f));
+        JLabel yearLbl = new JLabel(String.valueOf(categoryYear), JLabel.CENTER);
+        yearLbl.setFont(yearLbl.getFont().deriveFont(Font.BOLD, 12f));
+        yearLbl.setForeground(new Color(30, 41, 59));
+        yearLbl.setPreferredSize(new Dimension(44, 20));
+        JButton btnNext = new JButton(">");
+        btnNext.putClientProperty("JButton.buttonType", "roundRect");
+        btnNext.setFont(btnNext.getFont().deriveFont(Font.PLAIN, 11f));
+        yearNav.add(btnPrev);
+        yearNav.add(yearLbl);
+        yearNav.add(btnNext);
+
+        // Action buttons — right-aligned
         JPanel catButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         catButtons.setOpaque(false);
         JButton btnReset = new JButton("Reset to Defaults");
         btnReset.putClientProperty("JButton.buttonType", "roundRect");
         btnReset.setFont(btnReset.getFont().deriveFont(Font.PLAIN, 11f));
         btnReset.setForeground(new Color(239, 68, 68));
-        btnReset.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "Reset all categories to the T2125 defaults?\n"
-                + "Any custom categories you added will be removed.",
-                "Reset Categories", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (confirm == JOptionPane.YES_OPTION) {
-                categories = storage.getDefaultCategories();
-                storage.saveExpenseCategories(categories);
-                refreshCategoryList();
-            }
-        });
         JButton btnAddCat = new JButton("+ Add Category");
         btnAddCat.putClientProperty("JButton.buttonType", "roundRect");
         btnAddCat.setFont(btnAddCat.getFont().deriveFont(Font.PLAIN, 11f));
         btnAddCat.addActionListener(e -> showCategoryDialog(null));
         catButtons.add(btnReset);
         catButtons.add(btnAddCat);
+
         catHeader.add(catTitle,   BorderLayout.WEST);
+        catHeader.add(yearNav,    BorderLayout.CENTER);
         catHeader.add(catButtons, BorderLayout.EAST);
         catCard.add(catHeader);
         catCard.add(makeDivider());
@@ -301,7 +298,35 @@ public class SettingsPanel extends JPanel {
         categoriesListPanel.setLayout(new BoxLayout(categoriesListPanel, BoxLayout.Y_AXIS));
         categoriesListPanel.setOpaque(false);
         catCard.add(categoriesListPanel);
+
+        // Load and display
+        categories = storage.loadExpenseCategories(String.valueOf(categoryYear));
         refreshCategoryList();
+
+        // Wire year nav
+        btnPrev.addActionListener(e -> {
+            categoryYear--;
+            yearLbl.setText(String.valueOf(categoryYear));
+            categories = storage.loadExpenseCategories(String.valueOf(categoryYear));
+            refreshCategoryList();
+        });
+        btnNext.addActionListener(e -> {
+            categoryYear++;
+            yearLbl.setText(String.valueOf(categoryYear));
+            categories = storage.loadExpenseCategories(String.valueOf(categoryYear));
+            refreshCategoryList();
+        });
+        btnReset.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Reset " + categoryYear + " categories to the T2125 defaults?\n"
+                + "Any custom categories for " + categoryYear + " will be removed.",
+                "Reset Categories", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm == JOptionPane.YES_OPTION) {
+                categories = storage.getDefaultCategories(String.valueOf(categoryYear));
+                storage.saveExpenseCategories(String.valueOf(categoryYear), categories);
+                refreshCategoryList();
+            }
+        });
 
         tab.add(catCard);
 
@@ -385,7 +410,7 @@ public class SettingsPanel extends JPanel {
                     "Delete Category", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                 if (confirm == JOptionPane.YES_OPTION) {
                     categories.remove(cat);
-                    storage.saveExpenseCategories(categories);
+                    storage.saveExpenseCategories(String.valueOf(categoryYear), categories);
                     refreshCategoryList();
                 }
             });
@@ -497,7 +522,7 @@ public class SettingsPanel extends JPanel {
             cat.setT2125Line(t2125Field.getText().trim());
             cat.setColor(colorField.getText().trim());
             if (isNew) categories.add(cat);
-            storage.saveExpenseCategories(categories);
+            storage.saveExpenseCategories(String.valueOf(categoryYear), categories);
             refreshCategoryList();
             dialog.dispose();
         });

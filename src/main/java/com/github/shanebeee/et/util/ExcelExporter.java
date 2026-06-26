@@ -26,7 +26,7 @@ public class ExcelExporter {
     public File export(int year, String outputPath) throws IOException, InterruptedException {
         List<Expenditure>     expenses = storage.loadExpenditures(String.valueOf(year));
         expenses.sort((a, b) -> a.getDate().compareTo(b.getDate()));
-        List<ExpenseCategory> cats     = storage.loadExpenseCategories();
+        List<ExpenseCategory> cats     = storage.loadExpenseCategories(String.valueOf(year));
         List<KmTrip>          trips    = storage.loadKmTrips(String.valueOf(year));
         trips.sort((a, b) -> a.getDate().compareTo(b.getDate()));
         KmOdometer odometer = storage.loadKmOdometer(String.valueOf(year));

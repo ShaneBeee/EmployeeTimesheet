@@ -58,19 +58,60 @@ public class DataStorage {
         }
     }
 
-    // Expense Categories
-    public List<ExpenseCategory> loadExpenseCategories() {
-        List<ExpenseCategory> cats = loadList(CATEGORIES_FILE,
+    // Expense Categories (per-year)
+    public List<ExpenseCategory> loadExpenseCategories(String year) {
+        String file = categoriesFile(year);
+        List<ExpenseCategory> cats = loadList(file,
             new TypeToken<List<ExpenseCategory>>() {}.getType());
         if (cats.isEmpty()) {
-            cats = defaultCategories();
-            saveExpenseCategories(cats);
+            // Seed from previous year if it exists, otherwise use defaults
+            cats = seedCategoriesForYear(year);
+            saveExpenseCategories(year, cats);
         }
         return cats;
     }
 
+    public void saveExpenseCategories(String year, List<ExpenseCategory> categories) {
+        saveToFile(categoriesFile(year), categories);
+    }
+
+    /** Backwards-compat overload — loads current year's categories. */
+    public List<ExpenseCategory> loadExpenseCategories() {
+        return loadExpenseCategories(String.valueOf(java.time.LocalDate.now().getYear()));
+    }
+
+    /** Backwards-compat overload — saves current year's categories. */
     public void saveExpenseCategories(List<ExpenseCategory> categories) {
-        saveToFile(CATEGORIES_FILE, categories);
+        saveExpenseCategories(String.valueOf(java.time.LocalDate.now().getYear()), categories);
+    }
+
+    private String categoriesFile(String year) {
+        return SETTINGS_DIR + "expense_categories_" + year + ".json";
+    }
+
+    /**
+     * Seeds categories for a new year: copies from the most recent previous year
+     * that has categories, falling back to defaults if none found.
+     */
+    private List<ExpenseCategory> seedCategoriesForYear(String year) {
+        int y = Integer.parseInt(year);
+        for (int prev = y - 1; prev >= y - 5; prev--) {
+            File f = new File(categoriesFile(String.valueOf(prev)));
+            if (f.exists()) {
+                List<ExpenseCategory> prevCats = loadList(f.getAbsolutePath(),
+                    new TypeToken<List<ExpenseCategory>>() {}.getType());
+                if (!prevCats.isEmpty()) {
+                    // Give each category a fresh UUID so they're independent per year
+                    prevCats.forEach(c -> c.setId(java.util.UUID.randomUUID().toString()));
+                    return prevCats;
+                }
+            }
+        }
+        // Also check the old global file for migration
+        List<ExpenseCategory> legacy = loadList(CATEGORIES_FILE,
+            new TypeToken<List<ExpenseCategory>>() {}.getType());
+        if (!legacy.isEmpty()) return legacy;
+        return defaultCategories();
     }
 
     /** Resolves an Expenditure to its ExpenseCategory.
@@ -91,6 +132,10 @@ public class DataStorage {
     }
 
     public List<ExpenseCategory> getDefaultCategories() {
+        return defaultCategories();
+    }
+
+    public List<ExpenseCategory> getDefaultCategories(String year) {
         return defaultCategories();
     }
 

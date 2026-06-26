@@ -68,7 +68,7 @@ public class ExpensesPanel extends JPanel {
     public ExpensesPanel(DataStorage storage) {
         this.storage = storage;
         this.currentYear = LocalDate.now().getYear();
-        categories = storage.loadExpenseCategories();
+        categories = storage.loadExpenseCategories(String.valueOf(currentYear));
         setLayout(new BorderLayout());
         initUI();
         loadYear();
@@ -232,6 +232,7 @@ public class ExpensesPanel extends JPanel {
     private void loadYear() {
         yearLabel.setText(String.valueOf(currentYear));
         currentExpenses = storage.loadExpenditures(String.valueOf(currentYear));
+        categories = storage.loadExpenseCategories(String.valueOf(currentYear));
         inDetail = false;
         sidebarCards.show(sidebar, "summary");
         buildGridView();
@@ -940,9 +941,9 @@ public class ExpensesPanel extends JPanel {
                 double subtotal = Double.parseDouble(subtotalField.getText().trim());
                 double gst      = gstField.getText().trim().isEmpty() ? 0 : Double.parseDouble(gstField.getText().trim());
                 double total    = totalField.getText().trim().isEmpty() ? subtotal + gst : Double.parseDouble(totalField.getText().trim());
-                ExpenseCategory selectedCat = (ExpenseCategory) catCombo.getSelectedItem();
                 exp.setDate(dateBtn.getText());
-                exp.setCategory(null); // clear legacy enum
+                ExpenseCategory selectedCat = (ExpenseCategory) catCombo.getSelectedItem();
+                exp.setCategory(null);
                 exp.setCategoryId(selectedCat != null ? selectedCat.getId() : null);
                 exp.setDescription(descField.getText().trim());
                 exp.setSubtotal(subtotal);
