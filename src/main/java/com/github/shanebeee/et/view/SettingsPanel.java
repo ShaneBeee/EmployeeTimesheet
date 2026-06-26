@@ -31,6 +31,13 @@ public class SettingsPanel extends JPanel {
     private JPanel categoriesListPanel;
     private List<ExpenseCategory> categories;
 
+    // Profile tab fields — kept as fields so save action can read them
+    private JTextField nameField, companyField, addressField, address2Field, phoneField, emailField;
+    private JLabel profileName, profileSub;
+
+    // Preferences tab fields
+    private JTextField startField, endField;
+
     public SettingsPanel(DataStorage storage) {
         this.storage = storage;
         setLayout(new BorderLayout());
@@ -51,15 +58,69 @@ public class SettingsPanel extends JPanel {
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
-        // ── Scrollable content ───────────────────────────────────────────────
-        JPanel content = new JPanel();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setOpaque(false);
+        // ── Tabs ──────────────────────────────────────────────────────────────
+        JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
+        tabs.setOpaque(false);
+        tabs.setFont(tabs.getFont().deriveFont(Font.PLAIN, 13f));
 
-        // ── Profile strip ────────────────────────────────────────────────────
+        tabs.addTab("Profile",            buildProfileTab(info));
+        tabs.addTab("Preferences",        buildPreferencesTab());
+        tabs.addTab("Expense Categories", buildCategoriesTab());
+
+        add(tabs, BorderLayout.CENTER);
+
+        // ── Save button (shown on Profile and Preferences tabs only) ─────────
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
+        bottomPanel.setOpaque(false);
+        JButton saveBtn = new JButton("Save Settings");
+        saveBtn.putClientProperty("JButton.buttonType", "roundRect");
+        saveBtn.setBackground((Color) UIManager.get("App.accent"));
+        saveBtn.setForeground(Color.WHITE);
+        saveBtn.setFont(saveBtn.getFont().deriveFont(Font.BOLD, 13f));
+        bottomPanel.add(saveBtn);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // Hide save button on categories tab (it auto-saves)
+        tabs.addChangeListener(e -> {
+            bottomPanel.setVisible(tabs.getSelectedIndex() != 2);
+        });
+
+        saveBtn.addActionListener(e -> {
+            info.setFullName(nameField.getText());
+            info.setCompany(companyField.getText());
+            info.setAddress(addressField.getText());
+            info.setAddress2(address2Field.getText());
+            info.setPhoneNumber(phoneField.getText());
+            info.setEmail(emailField.getText());
+            storage.saveEmployeeInfo(info);
+            storage.setDefaultStartTime(TimePickerPanel.unformatTime(startField.getText()));
+            storage.setDefaultEndTime(TimePickerPanel.unformatTime(endField.getText()));
+
+            // Update the profile strip live
+            profileName.setText(nameField.getText().isBlank() ? "Your Name" : nameField.getText());
+            profileSub.setText(
+                (companyField.getText().isBlank() ? "" : companyField.getText()) +
+                    (emailField.getText().isBlank() ? "" : "  ·  " + emailField.getText()));
+
+            JOptionPane.showMessageDialog(this, "Settings saved!", "Saved", JOptionPane.INFORMATION_MESSAGE);
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window instanceof MainFrame mainFrame) mainFrame.checkBosses();
+        });
+    }
+
+    // ── Tab: Profile ──────────────────────────────────────────────────────────
+
+    private JPanel buildProfileTab(EmployeeInfo info) {
+        JPanel tab = new JPanel();
+        tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
+        tab.setOpaque(false);
+        tab.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
+        // Avatar / profile strip
         String initials = info.getFullName() == null || info.getFullName().isBlank() ? "?"
             : info.getFullName().contains(" ")
-              ? String.valueOf(info.getFullName().charAt(0)) + info.getFullName().charAt(info.getFullName().indexOf(' ') + 1)
+              ? String.valueOf(info.getFullName().charAt(0))
+                + info.getFullName().charAt(info.getFullName().indexOf(' ') + 1)
               : String.valueOf(info.getFullName().charAt(0));
         initials = initials.toUpperCase();
         final String fin = initials;
@@ -67,7 +128,7 @@ public class SettingsPanel extends JPanel {
 
         JPanel profileStrip = new JPanel(new BorderLayout(14, 0));
         profileStrip.setOpaque(false);
-        profileStrip.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        profileStrip.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
         profileStrip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
         profileStrip.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -93,11 +154,11 @@ public class SettingsPanel extends JPanel {
         JPanel profileText = new JPanel();
         profileText.setOpaque(false);
         profileText.setLayout(new BoxLayout(profileText, BoxLayout.Y_AXIS));
-        JLabel profileName = new JLabel(info.getFullName() != null && !info.getFullName().isBlank()
+        profileName = new JLabel(info.getFullName() != null && !info.getFullName().isBlank()
             ? info.getFullName() : "Your Name");
         profileName.setFont(profileName.getFont().deriveFont(Font.BOLD, 14f));
         profileName.setForeground(new Color(30, 41, 59));
-        JLabel profileSub = new JLabel(
+        profileSub = new JLabel(
             (info.getCompany() != null && !info.getCompany().isBlank() ? info.getCompany() : "") +
                 (info.getEmail() != null && !info.getEmail().isBlank() ? "  ·  " + info.getEmail() : ""));
         profileSub.setFont(profileSub.getFont().deriveFont(Font.PLAIN, 11f));
@@ -107,25 +168,56 @@ public class SettingsPanel extends JPanel {
         profileText.add(profileSub);
 
         profileStrip.add(avatarCircle, BorderLayout.WEST);
-        profileStrip.add(profileText, BorderLayout.CENTER);
-        content.add(profileStrip);
+        profileStrip.add(profileText,  BorderLayout.CENTER);
+        tab.add(profileStrip);
 
-        // ── Employee + App settings card ─────────────────────────────────────
-        JTextField nameField     = new JTextField(info.getFullName());
-        JTextField companyField  = new JTextField(info.getCompany());
-        JTextField addressField  = new JTextField(info.getAddress());
-        JTextField address2Field = new JTextField(info.getAddress2());
-        JTextField phoneField    = new JTextField(info.getPhoneNumber());
-        JTextField emailField    = new JTextField(info.getEmail());
+        // Fields card
+        nameField     = new JTextField(info.getFullName());
+        companyField  = new JTextField(info.getCompany());
+        addressField  = new JTextField(info.getAddress());
+        address2Field = new JTextField(info.getAddress2());
+        phoneField    = new JTextField(info.getPhoneNumber());
+        emailField    = new JTextField(info.getEmail());
 
-        JTextField startField = new JTextField(TimePickerPanel.formatTime(storage.getDefaultStartTime()));
+        JPanel card = makeCard();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.add(makeSectionRow("Employee Information"));
+        card.add(makeDivider());
+        card.add(makeFieldRow("Full Name",  nameField));     card.add(makeDivider());
+        card.add(makeFieldRow("Company",    companyField));  card.add(makeDivider());
+        card.add(makeFieldRow("Address",    addressField));  card.add(makeDivider());
+        card.add(makeFieldRow("Address 2",  address2Field)); card.add(makeDivider());
+        card.add(makeFieldRow("Phone",      phoneField));    card.add(makeDivider());
+        card.add(makeFieldRow("Email",      emailField));
+        tab.add(card);
+
+        JScrollPane scroll = new JScrollPane(tab);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(12);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(scroll);
+        return wrapper;
+    }
+
+    // ── Tab: Preferences ─────────────────────────────────────────────────────
+
+    private JPanel buildPreferencesTab() {
+        JPanel tab = new JPanel();
+        tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
+        tab.setOpaque(false);
+        tab.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
+        startField = new JTextField(TimePickerPanel.formatTime(storage.getDefaultStartTime()));
         startField.setEditable(false);
         startField.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 TimePickerPanel.showPicker(SettingsPanel.this, startField);
             }
         });
-        JTextField endField = new JTextField(TimePickerPanel.formatTime(storage.getDefaultEndTime()));
+        endField = new JTextField(TimePickerPanel.formatTime(storage.getDefaultEndTime()));
         endField.setEditable(false);
         endField.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
@@ -133,25 +225,39 @@ public class SettingsPanel extends JPanel {
             }
         });
 
-        JPanel allFields = makeCard();
-        allFields.setLayout(new BoxLayout(allFields, BoxLayout.Y_AXIS));
-        allFields.add(makeSectionRow("Employee Information"));
-        allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Full Name",    nameField));     allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Company",      companyField));  allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Address",      addressField));  allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Address 2",    address2Field)); allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Phone",        phoneField));    allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Email",        emailField));
-        allFields.add(makeGapRow());
-        allFields.add(makeSectionRow("Application Settings"));
-        allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Default Start Time", startField)); allFields.add(makeDivider());
-        allFields.add(makeFieldRow("Default End Time",   endField));
-        content.add(allFields);
-        content.add(Box.createVerticalStrut(16));
+        JPanel card = makeCard();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.add(makeSectionRow("Work Log Defaults"));
+        card.add(makeDivider());
+        card.add(makeFieldRow("Default Start Time", startField)); card.add(makeDivider());
+        card.add(makeFieldRow("Default End Time",   endField));
+        tab.add(card);
 
-        // ── Expense Categories card ───────────────────────────────────────────
+        // Filler
+        JPanel filler = new JPanel();
+        filler.setOpaque(false);
+        filler.setAlignmentX(LEFT_ALIGNMENT);
+        tab.add(filler);
+
+        JScrollPane scroll = new JScrollPane(tab);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(12);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(scroll);
+        return wrapper;
+    }
+
+    // ── Tab: Expense Categories ───────────────────────────────────────────────
+
+    private JPanel buildCategoriesTab() {
+        JPanel tab = new JPanel();
+        tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
+        tab.setOpaque(false);
+        tab.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
         JPanel catCard = makeCard();
         catCard.setLayout(new BoxLayout(catCard, BoxLayout.Y_AXIS));
 
@@ -162,12 +268,32 @@ public class SettingsPanel extends JPanel {
         JLabel catTitle = new JLabel("EXPENSE CATEGORIES");
         catTitle.setFont(catTitle.getFont().deriveFont(Font.BOLD, 10f));
         catTitle.setForeground(new Color(148, 163, 184));
+
+        JPanel catButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        catButtons.setOpaque(false);
+        JButton btnReset = new JButton("Reset to Defaults");
+        btnReset.putClientProperty("JButton.buttonType", "roundRect");
+        btnReset.setFont(btnReset.getFont().deriveFont(Font.PLAIN, 11f));
+        btnReset.setForeground(new Color(239, 68, 68));
+        btnReset.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Reset all categories to the T2125 defaults?\n"
+                + "Any custom categories you added will be removed.",
+                "Reset Categories", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm == JOptionPane.YES_OPTION) {
+                categories = storage.getDefaultCategories();
+                storage.saveExpenseCategories(categories);
+                refreshCategoryList();
+            }
+        });
         JButton btnAddCat = new JButton("+ Add Category");
         btnAddCat.putClientProperty("JButton.buttonType", "roundRect");
         btnAddCat.setFont(btnAddCat.getFont().deriveFont(Font.PLAIN, 11f));
         btnAddCat.addActionListener(e -> showCategoryDialog(null));
+        catButtons.add(btnReset);
+        catButtons.add(btnAddCat);
         catHeader.add(catTitle,   BorderLayout.WEST);
-        catHeader.add(btnAddCat,  BorderLayout.EAST);
+        catHeader.add(catButtons, BorderLayout.EAST);
         catCard.add(catHeader);
         catCard.add(makeDivider());
 
@@ -177,46 +303,17 @@ public class SettingsPanel extends JPanel {
         catCard.add(categoriesListPanel);
         refreshCategoryList();
 
-        content.add(catCard);
+        tab.add(catCard);
 
-        JScrollPane scroll = new JScrollPane(content);
+        JScrollPane scroll = new JScrollPane(tab);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setOpaque(false);
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(12);
-        add(scroll, BorderLayout.CENTER);
-
-        // ── Save button ──────────────────────────────────────────────────────
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
-        bottomPanel.setOpaque(false);
-        JButton saveBtn = new JButton("Save Settings");
-        saveBtn.putClientProperty("JButton.buttonType", "roundRect");
-        saveBtn.setBackground((Color) UIManager.get("App.accent"));
-        saveBtn.setForeground(Color.WHITE);
-        saveBtn.setFont(saveBtn.getFont().deriveFont(Font.BOLD, 13f));
-        bottomPanel.add(saveBtn);
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        saveBtn.addActionListener(e -> {
-            info.setFullName(nameField.getText());
-            info.setCompany(companyField.getText());
-            info.setAddress(addressField.getText());
-            info.setAddress2(address2Field.getText());
-            info.setPhoneNumber(phoneField.getText());
-            info.setEmail(emailField.getText());
-            storage.saveEmployeeInfo(info);
-            storage.setDefaultStartTime(TimePickerPanel.unformatTime(startField.getText()));
-            storage.setDefaultEndTime(TimePickerPanel.unformatTime(endField.getText()));
-
-            profileName.setText(nameField.getText().isBlank() ? "Your Name" : nameField.getText());
-            profileSub.setText(
-                (companyField.getText().isBlank() ? "" : companyField.getText()) +
-                    (emailField.getText().isBlank() ? "" : "  ·  " + emailField.getText()));
-
-            JOptionPane.showMessageDialog(this, "Settings saved!", "Saved", JOptionPane.INFORMATION_MESSAGE);
-            Window window = SwingUtilities.getWindowAncestor(this);
-            if (window instanceof MainFrame mainFrame) mainFrame.checkBosses();
-        });
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(scroll);
+        return wrapper;
     }
 
     // ── Category list ─────────────────────────────────────────────────────────
@@ -237,7 +334,6 @@ public class SettingsPanel extends JPanel {
         row.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
 
-        // Color swatch
         JPanel swatch = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -251,21 +347,25 @@ public class SettingsPanel extends JPanel {
         swatch.setOpaque(false);
         swatch.setPreferredSize(new Dimension(16, 16));
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        left.setOpaque(false);
-        left.add(swatch);
-
         JPanel textPanel = new JPanel();
         textPanel.setOpaque(false);
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         JLabel nameLbl = new JLabel(cat.getLabel());
         nameLbl.setFont(nameLbl.getFont().deriveFont(Font.PLAIN, 12f));
         nameLbl.setForeground(new Color(30, 41, 59));
-        JLabel hintLbl = new JLabel(cat.getT2125Line() + (cat.getHint() != null ? "  ·  " + cat.getHint() : ""));
+        JLabel hintLbl = new JLabel(
+            (cat.getT2125Line() != null ? cat.getT2125Line() : "")
+            + (cat.getHint() != null && !cat.getHint().isBlank() ? "  ·  " + cat.getHint() : ""));
         hintLbl.setFont(hintLbl.getFont().deriveFont(Font.PLAIN, 10f));
         hintLbl.setForeground(new Color(148, 163, 184));
         textPanel.add(nameLbl);
         textPanel.add(hintLbl);
+
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        left.add(swatch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(textPanel);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         buttons.setOpaque(false);
@@ -293,8 +393,8 @@ public class SettingsPanel extends JPanel {
         }
         buttons.add(editBtn);
 
-        row.add(textPanel, BorderLayout.CENTER);
-        row.add(buttons,   BorderLayout.EAST);
+        row.add(left,    BorderLayout.WEST);
+        row.add(buttons, BorderLayout.EAST);
         return row;
     }
 
@@ -308,7 +408,6 @@ public class SettingsPanel extends JPanel {
         dialog.setSize(420, 340);
         dialog.getContentPane().setBackground(new Color(248, 250, 252));
 
-        // Header
         JPanel hdr = new JPanel(new BorderLayout());
         hdr.setBackground(Color.WHITE);
         hdr.setBorder(BorderFactory.createCompoundBorder(
@@ -320,7 +419,6 @@ public class SettingsPanel extends JPanel {
         hdr.add(hdrTitle, BorderLayout.WEST);
         dialog.add(hdr, BorderLayout.NORTH);
 
-        // Form
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(new Color(248, 250, 252));
         form.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -329,12 +427,11 @@ public class SettingsPanel extends JPanel {
         gbc.weightx = 1.0; gbc.gridx = 0; gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 4, 0);
 
-        JTextField labelField   = new JTextField(cat.getLabel() != null ? cat.getLabel() : "");
-        JTextField hintField    = new JTextField(cat.getHint()  != null ? cat.getHint()  : "");
-        JTextField t2125Field   = new JTextField(cat.getT2125Line() != null ? cat.getT2125Line() : "");
-        JTextField colorField   = new JTextField(cat.getColor() != null ? cat.getColor() : "#94A3B8");
+        JTextField labelField  = new JTextField(cat.getLabel()     != null ? cat.getLabel()     : "");
+        JTextField hintField   = new JTextField(cat.getHint()      != null ? cat.getHint()      : "");
+        JTextField t2125Field  = new JTextField(cat.getT2125Line() != null ? cat.getT2125Line() : "");
+        JTextField colorField  = new JTextField(cat.getColor()     != null ? cat.getColor()     : "#94A3B8");
 
-        // Live color preview
         JPanel colorPreview = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -373,10 +470,8 @@ public class SettingsPanel extends JPanel {
         form.add(makeDialogLabel("Colour (hex, e.g. #3B82F6)"), gbc);
         gbc.gridy++; gbc.insets = new Insets(0, 0, 0, 0);
         form.add(colorRow, gbc);
-
         dialog.add(form, BorderLayout.CENTER);
 
-        // Footer
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.WHITE);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
@@ -411,7 +506,6 @@ public class SettingsPanel extends JPanel {
         footerRight.add(btnSave);
         footer.add(footerRight, BorderLayout.EAST);
         dialog.add(footer, BorderLayout.SOUTH);
-
         dialog.getRootPane().setDefaultButton(btnSave);
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
@@ -468,9 +562,9 @@ public class SettingsPanel extends JPanel {
         JLabel lbl = new JLabel(label);
         lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
         lbl.setForeground(new Color(71, 85, 105));
-        lbl.setPreferredSize(new Dimension(150, 20));
+        lbl.setPreferredSize(new Dimension(160, 20));
         field.setFont(field.getFont().deriveFont(Font.PLAIN, 12f));
-        row.add(lbl, BorderLayout.WEST);
+        row.add(lbl,   BorderLayout.WEST);
         row.add(field, BorderLayout.CENTER);
         return row;
     }
@@ -482,14 +576,5 @@ public class SettingsPanel extends JPanel {
         div.setPreferredSize(new Dimension(0, 1));
         div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
         return div;
-    }
-
-    private JPanel makeGapRow() {
-        JPanel gap = new JPanel();
-        gap.setOpaque(false);
-        gap.setMaximumSize(new Dimension(Integer.MAX_VALUE, 10));
-        gap.setPreferredSize(new Dimension(0, 10));
-        gap.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)));
-        return gap;
     }
 }

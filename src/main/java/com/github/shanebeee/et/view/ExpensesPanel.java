@@ -597,7 +597,7 @@ public class ExpensesPanel extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) showExpenseDialog(exp, detailMonth);
+                if (e.getClickCount() == 1) showExpenseDialog(exp, detailMonth);
             }
         });
 

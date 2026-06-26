@@ -90,16 +90,31 @@ public class DataStorage {
         return null;
     }
 
+    public List<ExpenseCategory> getDefaultCategories() {
+        return defaultCategories();
+    }
+
     private List<ExpenseCategory> defaultCategories() {
         List<ExpenseCategory> cats = new ArrayList<>();
-        cats.add(new ExpenseCategory("Vehicle",           "Gas, maintenance, insurance, repairs",   "9281", "#EF4444", true));
-        cats.add(new ExpenseCategory("Phone & Internet",  "Cell phone, home internet",              "9270", "#3B82F6", true));
-        cats.add(new ExpenseCategory("Home Office",       "Rent, utilities (% of home)",            "9945", "#8B5CF6", true));
-        cats.add(new ExpenseCategory("Meals & Entertain.","50% deductible by CRA",                 "8523", "#F59E0B", true));
-        cats.add(new ExpenseCategory("Office Supplies",   "Paper, ink, tools, software",           "8810", "#14B8A6", true));
-        cats.add(new ExpenseCategory("Professional Fees", "Accountant, lawyer, subscriptions",     "8860", "#6366F1", true));
-        cats.add(new ExpenseCategory("Advertising",       "Business cards, online ads, marketing", "8520", "#EC4899", true));
-        cats.add(new ExpenseCategory("Other",             "Miscellaneous business expenses",        "9270", "#94A3B8", true));
+        // Line numbers from CRA T2125 E (25) Part 4
+        cats.add(new ExpenseCategory("Advertising",              "Business cards, online ads, marketing",          "8521", "#EC4899", true));
+        cats.add(new ExpenseCategory("Meals & Entertainment",    "50% deductible by CRA",                          "8523", "#F59E0B", true));
+        cats.add(new ExpenseCategory("Insurance",                "Business insurance premiums",                    "8690", "#6366F1", true));
+        cats.add(new ExpenseCategory("Interest & Bank Charges",  "Loan interest, bank fees",                       "8710", "#8B5CF6", true));
+        cats.add(new ExpenseCategory("Licences & Memberships",   "Business taxes, licences, memberships, dues",    "8760", "#0EA5E9", true));
+        cats.add(new ExpenseCategory("Office Expenses",          "General office costs, software subscriptions",   "8810", "#14B8A6", true));
+        cats.add(new ExpenseCategory("Office Supplies",          "Paper, ink, printer supplies, stationery",       "8811", "#10B981", true));
+        cats.add(new ExpenseCategory("Professional Fees",        "Accountant, lawyer, consultant fees",            "8860", "#3B82F6", true));
+        cats.add(new ExpenseCategory("Management & Admin Fees",  "Management or administration fees paid",         "8871", "#64748B", true));
+        cats.add(new ExpenseCategory("Rent",                     "Office or workspace rent",                       "8910", "#F97316", true));
+        cats.add(new ExpenseCategory("Repairs & Maintenance",    "Equipment or workspace repairs",                 "8960", "#EF4444", true));
+        cats.add(new ExpenseCategory("Travel",                   "Flights, hotels, transit for business travel",   "9200", "#06B6D4", true));
+        cats.add(new ExpenseCategory("Utilities",                "Phone, internet, heat, electricity",             "9220", "#84CC16", true));
+        cats.add(new ExpenseCategory("Fuel (non-vehicle)",       "Fuel costs not related to a motor vehicle",      "9224", "#F59E0B", true));
+        cats.add(new ExpenseCategory("Delivery & Freight",       "Courier, shipping, postage",                     "9275", "#A78BFA", true));
+        cats.add(new ExpenseCategory("Motor Vehicle",            "Gas, maintenance, insurance, registration",      "9281", "#EF4444", true));
+        cats.add(new ExpenseCategory("Home Office",              "Business-use-of-home expenses (% of home)",      "9945", "#8B5CF6", true));
+        cats.add(new ExpenseCategory("Other",                    "Miscellaneous business expenses (line 9270)",    "9270", "#94A3B8", true));
         return cats;
     }
 
