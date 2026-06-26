@@ -190,23 +190,55 @@ public class ExcelExporter {
         py.append("ws2['A1'].font=Font(name='Arial',bold=True,size=14,color='1E3A5F')\n");
         py.append("ws2.merge_cells('A1:D1')\n\n");
 
-        py.append("ws2['A3']='SUMMARY'\n");
-        py.append("ws2['A3'].font=Font(name='Arial',bold=True,size=10,color='64748B')\n");
-        py.append(String.format("ws2['A4']='Start Odometer (km)';ws2['B4']=%.0f\n", odometer.getStartKm()));
-        py.append(String.format("ws2['A5']='End Odometer (km)';  ws2['B5']=%.0f\n", odometer.getEndKm()));
-        py.append(String.format("ws2['A6']='Total KM (year)';    ws2['B6']=%.1f\n", totalKm));
-        py.append(String.format("ws2['A7']='Business KM';        ws2['B7']=%.1f\n", businessKm));
-        py.append(String.format("ws2['A8']='Business Use %%';    ws2['B8']=%.1f\n", pct));
-        py.append("ws2['B8'].number_format='0.0\"%\"'\n");
-        py.append("for r in range(4,9):\n");
+        // Employee info rows (same as expenses sheet)
+        int kmInfoRow = 2;
+        if (info.getFullName() != null && !info.getFullName().isBlank()) {
+            py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", kmInfoRow, pyStr(info.getFullName())));
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
+        }
+        if (info.getCompany() != null && !info.getCompany().isBlank()) {
+            py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", kmInfoRow, pyStr(info.getCompany())));
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
+        }
+        if (info.getAddress() != null && !info.getAddress().isBlank()) {
+            String addr = info.getAddress()
+                + (info.getAddress2() != null && !info.getAddress2().isBlank() ? ", " + info.getAddress2() : "");
+            py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", kmInfoRow, pyStr(addr)));
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
+        }
+        String kmContactLine = "";
+        if (info.getPhoneNumber() != null && !info.getPhoneNumber().isBlank()) kmContactLine += info.getPhoneNumber();
+        if (info.getEmail() != null && !info.getEmail().isBlank()) {
+            if (!kmContactLine.isEmpty()) kmContactLine += "   |   ";
+            kmContactLine += info.getEmail();
+        }
+        if (!kmContactLine.isEmpty()) {
+            py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", kmInfoRow, pyStr(kmContactLine)));
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
+        }
+        int kmSummaryRow = kmInfoRow + 1; // blank separator
+
+        py.append(String.format("ws2.cell(row=%d,column=1,value='SUMMARY').font=Font(name='Arial',bold=True,size=10,color='64748B')\n", kmSummaryRow));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Start Odometer (km)');ws2.cell(row=%d,column=2,value=%.0f)\n", kmSummaryRow+1, kmSummaryRow+1, odometer.getStartKm()));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='End Odometer (km)');  ws2.cell(row=%d,column=2,value=%.0f)\n", kmSummaryRow+2, kmSummaryRow+2, odometer.getEndKm()));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Total KM (year)');    ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow+3, kmSummaryRow+3, totalKm));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Business KM');        ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow+4, kmSummaryRow+4, businessKm));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Business Use %%%%');    ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow+5, kmSummaryRow+5, pct));
+        py.append(String.format("ws2.cell(row=%d,column=2).number_format='0.0\"%%\"'\n", kmSummaryRow+5));
+        py.append(String.format("for r in range(%d,%d):\n", kmSummaryRow+1, kmSummaryRow+6));
         py.append("  ws2.cell(row=r,column=1).font=Font(name='Arial',size=10,color='64748B')\n");
         py.append("  ws2.cell(row=r,column=2).font=Font(name='Arial',bold=True,size=10)\n\n");
 
-        py.append("for ci,h in enumerate(['Date','Distance (km)','Note / Purpose','Source'],1):\n");
-        py.append("  c=ws2.cell(row=10,column=ci,value=h)\n");
+        int kmHeaderRow = kmSummaryRow + 7;
+        py.append(String.format("for ci,h in enumerate(['Date','Distance (km)','Note / Purpose','Source'],1):\n"));
+        py.append(String.format("  c=ws2.cell(row=%d,column=ci,value=h)\n", kmHeaderRow));
         py.append("  c.font=hdr_font;c.fill=hdr_fill;c.alignment=hdr_align;c.border=border\n\n");
 
-        int kmRow = 11; int ki = 0;
+        int kmRow = kmHeaderRow + 1; int ki = 0;
         for (KmTrip t : trips) {
             boolean alt = (ki % 2 == 1);
             String src = t.getSourceLogId() != null ? "Auto (Work Log)" : "Manual";
@@ -220,12 +252,12 @@ public class ExcelExporter {
         }
         if (!trips.isEmpty()) {
             py.append(String.format("ws2.cell(row=%d,column=1,value='TOTAL')\n", kmRow));
-            py.append(String.format("ws2.cell(row=%d,column=2,value='=SUM(B11:B%d)').number_format='#,##0.0'\n", kmRow, kmRow-1));
+            py.append(String.format("ws2.cell(row=%d,column=2,value='=SUM(B%d:B%d)').number_format='#,##0.0'\n", kmRow, kmHeaderRow+1, kmRow-1));
             py.append(String.format("for ci in range(1,5):\n  c=ws2.cell(row=%d,column=ci);c.font=tot_font;c.fill=tot_fill;c.border=border\n", kmRow));
         }
         py.append("for col,w in zip('ABCD',[14,16,44,18]):\n  ws2.column_dimensions[col].width=w\n");
-        py.append("ws2.row_dimensions[10].height=20\n");
-        py.append("ws2.freeze_panes='A11'\n\n");
+        py.append(String.format("ws2.row_dimensions[%d].height=20\n", kmHeaderRow));
+        py.append(String.format("ws2.freeze_panes='A%d'\n\n", kmHeaderRow + 1));
 
         // Save
         py.append(String.format("wb.save(r'%s')\n", outputPath.replace("\\", "\\\\")));
