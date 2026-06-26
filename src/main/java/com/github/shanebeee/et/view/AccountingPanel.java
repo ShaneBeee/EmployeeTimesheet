@@ -3,6 +3,7 @@ package com.github.shanebeee.et.view;
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.ExcelExporter;
+import com.github.shanebeee.et.util.YearArchiver;
 
 import javax.swing.*;
 import java.awt.BasicStroke;
@@ -116,6 +117,31 @@ public class AccountingPanel extends JPanel {
             new Color(245, 158, 11), this::exportReceiptZip
         ), gbc);
 
+        // ── Section divider ───────────────────────────────────────────────────
+        gbc.gridy++;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        JLabel archiveSection = new JLabel("YEAR ARCHIVE");
+        archiveSection.setFont(archiveSection.getFont().deriveFont(Font.BOLD, 10f));
+        archiveSection.setForeground(new Color(148, 163, 184));
+        body.add(archiveSection, gbc);
+        gbc.insets = new Insets(0, 0, 16, 0);
+
+        // ── Export archive card ───────────────────────────────────────────────
+        gbc.gridy++;
+        body.add(makeExportCard(
+            "📦", "Export Year Archive",
+            "Full backup of all data and receipts for the selected year",
+            new Color(16, 185, 129), this::exportYearArchive
+        ), gbc);
+
+        // ── Import archive card ───────────────────────────────────────────────
+        gbc.gridy++;
+        body.add(makeExportCard(
+            "📥", "Import Year Archive",
+            "Restore a previously exported year archive into the app",
+            new Color(139, 92, 246), "Import", this::importYearArchive
+        ), gbc);
+
         // Push cards to top
         gbc.gridy++;
         gbc.weighty = 1.0;
@@ -127,6 +153,11 @@ public class AccountingPanel extends JPanel {
 
     private JPanel makeExportCard(String icon, String title, String subtitle,
                                    Color accentColor, Runnable action) {
+        return makeExportCard(icon, title, subtitle, accentColor, "Export", action);
+    }
+
+    private JPanel makeExportCard(String icon, String title, String subtitle,
+                                   Color accentColor, String buttonLabel, Runnable action) {
         JPanel card = makeCard();
         card.setLayout(new BorderLayout(16, 0));
 
@@ -164,7 +195,7 @@ public class AccountingPanel extends JPanel {
         text.add(subLbl);
 
         // Button
-        JButton btn = new JButton("Export");
+        JButton btn = new JButton(buttonLabel);
         btn.putClientProperty("JButton.buttonType", "roundRect");
         btn.setBackground(accentColor);
         btn.setForeground(Color.WHITE);
@@ -269,6 +300,130 @@ public class AccountingPanel extends JPanel {
             }
         }).start();
         progress2.setVisible(true);
+    }
+
+    private void exportYearArchive() {
+        int year = (int) yearSpinner.getValue();
+        int currentYear = LocalDate.now().getYear();
+
+        // Native save dialog
+        java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
+        java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Save Year Archive", java.awt.FileDialog.SAVE);
+        fd.setFile("EmployeeTimesheet_Archive_" + year + ".zip");
+        fd.setVisible(true);
+        if (fd.getFile() == null) return;
+        String zipPath = fd.getDirectory() + fd.getFile();
+        if (!zipPath.endsWith(".zip")) zipPath += ".zip";
+        final String finalZipPath = zipPath;
+
+        JDialog progress = makeProgressDialog("Creating year archive...");
+        new Thread(() -> {
+            try {
+                YearArchiver archiver = new YearArchiver(storage);
+                YearArchiver.ExportResult result = archiver.exportYear(year, finalZipPath);
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    // Offer to clear local data — but never for current year
+                    String clearMsg = year < currentYear
+                        ? "\n\nWould you like to remove this year's data from local storage?\n"
+                          + "You can restore it later using Import Year Archive."
+                        : "";
+                    boolean canClear = year < currentYear;
+                    int opt = JOptionPane.showOptionDialog(this,
+                        result.fileCount() + " files archived to:\n" + finalZipPath
+                            + clearMsg,
+                        "Archive Complete",
+                        canClear ? JOptionPane.YES_NO_CANCEL_OPTION : JOptionPane.YES_NO_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        null,
+                        canClear ? new String[]{"Open Folder", "Clear Local Data", "Done"}
+                                 : new String[]{"Open Folder", "Done"},
+                        canClear ? "Done" : "Done");
+
+                    if (opt == 0 && Desktop.isDesktopSupported()) {
+                        try { Desktop.getDesktop().open(new File(finalZipPath).getParentFile()); }
+                        catch (IOException ex) { ex.printStackTrace(); }
+                    } else if (canClear && opt == 1) {
+                        confirmAndClearYear(year, finalZipPath);
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        "Archive failed:\n" + ex.getMessage(),
+                        "Archive Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }).start();
+        progress.setVisible(true);
+    }
+
+    private void confirmAndClearYear(int year, String archivePath) {
+        // Safety: require typing the year to confirm
+        String input = JOptionPane.showInputDialog(this,
+            "This will permanently delete all local data for " + year + ".\n"
+            + "A backup exists at:\n" + archivePath + "\n\n"
+            + "Type " + year + " to confirm:",
+            "Confirm Delete", JOptionPane.WARNING_MESSAGE);
+        if (input == null || !input.trim().equals(String.valueOf(year))) {
+            JOptionPane.showMessageDialog(this, "Deletion cancelled.",
+                "Cancelled", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        try {
+            new YearArchiver(storage).clearYear(year);
+            JOptionPane.showMessageDialog(this,
+                year + " data removed from local storage.",
+                "Cleared", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Failed to clear data:\n" + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void importYearArchive() {
+        java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
+        java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Open Year Archive", java.awt.FileDialog.LOAD);
+        fd.setFile("*.zip");
+        fd.setVisible(true);
+        if (fd.getFile() == null) return;
+        final String zipPath = fd.getDirectory() + fd.getFile();
+
+        JDialog progress = makeProgressDialog("Importing year archive...");
+        new Thread(() -> {
+            try {
+                YearArchiver archiver = new YearArchiver(storage);
+                YearArchiver.ImportResult result = archiver.importYear(zipPath);
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        result.fileCount() + " files restored for " + result.year() + ".\n"
+                        + "Switch to the relevant panel to view your data.",
+                        "Import Complete", JOptionPane.INFORMATION_MESSAGE);
+                    // Update year spinner to the imported year
+                    yearSpinner.setValue(result.year());
+                });
+            } catch (YearArchiver.DataConflictException ex) {
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        "Data already exists for " + ex.getYear() + ".\n"
+                        + "To import, first clear the existing " + ex.getYear() + " data\n"
+                        + "by exporting it as an archive and choosing 'Clear Local Data'.",
+                        "Import Conflict", JOptionPane.WARNING_MESSAGE);
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        "Import failed:\n" + ex.getMessage(),
+                        "Import Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }).start();
+        progress.setVisible(true);
     }
 
     private int buildReceiptZip(List<Expenditure> expenses, int year, String zipPath) throws IOException {

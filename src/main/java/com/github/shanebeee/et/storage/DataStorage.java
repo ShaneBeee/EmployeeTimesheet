@@ -196,6 +196,10 @@ public class DataStorage {
         }
     }
 
+    public String getBaseDir() {
+        return BASE_DIR;
+    }
+
     public String getReceiptsDir() {
         return RECEIPTS_DIR;
     }
