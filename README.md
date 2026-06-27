@@ -27,6 +27,7 @@ Landing screen with at-a-glance stats and recent activity.
 
 - **This Month** — Gross Income, Hours Logged, Expenses, KMs Driven, KMs Billed; each card links to the relevant panel
 - **Year to Date** — Gross Income, Total Expenses, Est. Net Income
+- **Year over Year** — compares the current calendar month to the same month last year; shows Gross Income, Hours Logged, and Expenses side by side with colour-coded delta indicators (▲/▼); section is hidden until last year's data exists
 - **Outstanding Invoices** — any invoices marked Sent but not yet Paid appear here with a one-click **Mark Paid** button; section is hidden when nothing is outstanding
 - **Recent Activity** — last 6 events across work logs, expenses, and KM trips
 
@@ -41,7 +42,7 @@ Calendar-based monthly view for logging daily work entries. Three entry types pe
 Two-tab panel for generating and tracking invoices.
 
 **Generate tab**
-- Choose boss and date range, then generate a standard or itemized PDF invoice
+- Choose boss and date range, then generate a **Standard** invoice or a **With Breakdown** invoice (two-page PDF: page 1 is the standard invoice, page 2 is a supplementary work log detail for the client's reference)
 - Preview invoice before generating
 - Preview monthly summary with vibe-check emoji (🤑/😊/😐/😬 based on income)
 - Export full monthly summary PDF
@@ -57,6 +58,15 @@ Two-tab panel for generating and tracking invoices.
 - All generated invoices are recorded in `invoices/invoice_log.json`
 - Status changes persist immediately to disk
 - Outstanding (Sent) invoices surface on the Dashboard
+
+**Tax set-aside dialog**
+Shown automatically when marking an invoice as Paid (from either the History tab or the Dashboard). Breaks down the received amount into:
+- GST to remit to CRA (5%)
+- Federal income tax to set aside (15%)
+- BC provincial tax to set aside (5.06%)
+- CPP contributions to set aside (11.9% both sides)
+- Total to set aside (all four combined)
+- Yours to keep (pre-GST amount minus income tax and CPP)
 
 ### 💸 Expenses
 Track business expenses for CRA T2125 reporting.
@@ -84,9 +94,9 @@ Track business KMs for vehicle expense deduction at tax time.
 ### 📊 Accounting
 Year-based export and archival tools for handing off to an accountant or storing for CRA's 7-year retention requirement.
 
-- **Export to Excel** — formatted `.xlsx` workbook with two sheets, both including employee info header:
-  - *Expenses* — expenses grouped by category with coloured T2125 header rows, alternating row shading, per-category subtotals, and a grand total; sorted oldest-first
-  - *Kilometre Log* — odometer summary block (start/end, total KM, business KM, business use %) followed by full trip list with auto vs manual source tracking
+- **Export Accounting Data** — click Export to choose the format:
+  - *Excel (.xlsx)* — formatted workbook with two sheets (Expenses by T2125 category, Kilometre Log with odometer summary)
+  - *CSV (.csv)* — plain text zip containing two files (`Expenses_{year}.csv` and `KilometreLog_{year}.csv`); useful for accountants who prefer raw data
 - **Export Receipt Archive** — zip of all receipt files for the selected year, organized by month; one-click audit-ready package
 - **Annual Tax Report** — full multi-page PDF for handing to an accountant:
   - *Cover page* — name, company, year, generated date, and table of contents
