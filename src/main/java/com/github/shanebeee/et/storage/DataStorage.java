@@ -3,6 +3,7 @@ package com.github.shanebeee.et.storage;
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.ExpenseCategory;
+import com.github.shanebeee.et.model.ExpenseTemplate;
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.model.KmOdometer;
 import com.github.shanebeee.et.model.KmTrip;
@@ -34,6 +35,7 @@ public class DataStorage {
     private static final String EMPLOYEE_FILE    = SETTINGS_DIR + "employee.json";
     private static final String SETTINGS_FILE    = SETTINGS_DIR + "settings.json";
     private static final String CATEGORIES_FILE  = SETTINGS_DIR + "expense_categories.json";
+    private static final String TEMPLATES_FILE   = SETTINGS_DIR + "expense_templates.json";
     private static final String LOGS_DIR     = BASE_DIR + "logs/";
     private static final String INVOICES_DIR = BASE_DIR + "invoices/";
     private static final String RECEIPTS_DIR = BASE_DIR + "receipts/";
@@ -161,6 +163,29 @@ public class DataStorage {
         cats.add(new ExpenseCategory("Home Office",              "Business-use-of-home expenses (% of home)",      "9945", "#8B5CF6", true));
         cats.add(new ExpenseCategory("Other",                    "Miscellaneous business expenses (line 9270)",    "9270", "#94A3B8", true));
         return cats;
+    }
+
+    // Expense Templates
+    public List<ExpenseTemplate> loadTemplates() {
+        return loadList(TEMPLATES_FILE, new TypeToken<List<ExpenseTemplate>>() {}.getType());
+    }
+
+    public void saveTemplates(List<ExpenseTemplate> templates) {
+        saveToFile(TEMPLATES_FILE, templates);
+    }
+
+    /** Upserts a template — updates existing by name, or adds new. */
+    public void upsertTemplate(ExpenseTemplate template) {
+        List<ExpenseTemplate> templates = loadTemplates();
+        templates.removeIf(t -> t.getName().equalsIgnoreCase(template.getName()));
+        templates.add(0, template); // most recent at top
+        saveTemplates(templates);
+    }
+
+    public void deleteTemplate(String templateId) {
+        List<ExpenseTemplate> templates = loadTemplates();
+        templates.removeIf(t -> t.getId().equals(templateId));
+        saveTemplates(templates);
     }
 
     // Bosses
