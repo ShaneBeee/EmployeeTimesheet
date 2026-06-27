@@ -27,25 +27,75 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 public class DataStorage {
 
-    private static final String BASE_DIR = System.getProperty("user.home") + File.separator + "ShaneApps" + File.separator + "EmployeeTimesheet" + File.separator;
-    private static final String SETTINGS_DIR = BASE_DIR + "settings/";
-    private static final String BOSSES_FILE      = SETTINGS_DIR + "bosses.json";
-    private static final String EMPLOYEE_FILE    = SETTINGS_DIR + "employee.json";
-    private static final String SETTINGS_FILE    = SETTINGS_DIR + "settings.json";
-    private static final String CATEGORIES_FILE  = SETTINGS_DIR + "expense_categories.json";
-    private static final String TEMPLATES_FILE   = SETTINGS_DIR + "expense_templates.json";
-    private static final String LOGS_DIR     = BASE_DIR + "logs/";
-    private static final String INVOICES_DIR = BASE_DIR + "invoices/";
-    private static final String RECEIPTS_DIR = BASE_DIR + "receipts/";
-    private static final String KM_DIR       = BASE_DIR + "km/";
+    private static final String PREFS_KEY = "dataDirectory";
+    private static final String APP_NAME  = "EmployeeTimesheet";
+
+    /** iCloud Drive root on macOS */
+    public static final String ICLOUD_BASE =
+        System.getProperty("user.home") + "/Library/Mobile Documents/com~apple~CloudDocs/";
+
+    /** Default local path (used when iCloud is unavailable or user picks Local) */
+    public static final String DEFAULT_LOCAL_BASE =
+        System.getProperty("user.home") + File.separator + APP_NAME + File.separator;
+
+    /** Returns true if iCloud Drive is available on this machine. */
+    public static boolean isICloudAvailable() {
+        return new File(ICLOUD_BASE).exists();
+    }
+
+    /** Reads the saved data directory from Preferences, or returns the default local path. */
+    public static String getSavedDataDirectory() {
+        Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
+        return prefs.get(PREFS_KEY, DEFAULT_LOCAL_BASE);
+    }
+
+    /** Persists the chosen data directory to Preferences. */
+    public static void saveDataDirectory(String path) {
+        Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
+        prefs.put(PREFS_KEY, path.endsWith(File.separator) ? path : path + File.separator);
+    }
+
+    /** Returns true if a data directory has been explicitly chosen (onboarding completed). */
+    public static boolean isOnboardingComplete() {
+        Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
+        return prefs.get(PREFS_KEY, null) != null;
+    }
+
+    // ── Instance paths (derived from saved preference at construction time) ───
+
+    private final String BASE_DIR;
+    private final String SETTINGS_DIR;
+    private final String BOSSES_FILE;
+    private final String EMPLOYEE_FILE;
+    private final String SETTINGS_FILE;
+    private final String CATEGORIES_FILE;
+    private final String TEMPLATES_FILE;
+    private final String LOGS_DIR;
+    private final String INVOICES_DIR;
+    private final String RECEIPTS_DIR;
+    private final String KM_DIR;
 
     private final Gson gson;
 
     public DataStorage() {
         this.gson = new GsonBuilder().setPrettyPrinting().create();
+        String base = getSavedDataDirectory();
+        if (!base.endsWith(File.separator)) base = base + File.separator;
+        BASE_DIR      = base;
+        SETTINGS_DIR  = BASE_DIR + "settings/";
+        BOSSES_FILE   = SETTINGS_DIR + "bosses.json";
+        EMPLOYEE_FILE = SETTINGS_DIR + "employee.json";
+        SETTINGS_FILE = SETTINGS_DIR + "settings.json";
+        CATEGORIES_FILE = SETTINGS_DIR + "expense_categories.json";
+        TEMPLATES_FILE  = SETTINGS_DIR + "expense_templates.json";
+        LOGS_DIR     = BASE_DIR + "logs/";
+        INVOICES_DIR = BASE_DIR + "invoices/";
+        RECEIPTS_DIR = BASE_DIR + "receipts/";
+        KM_DIR       = BASE_DIR + "km/";
         initDirectories();
     }
 
@@ -286,6 +336,31 @@ public class DataStorage {
         return BASE_DIR;
     }
 
+    /**
+     * Copies all existing data from the current BASE_DIR to a new destination,
+     * then saves the new path to Preferences. The caller should restart the app.
+     */
+    public void migrateDataTo(String newBasePath) throws IOException {
+        if (!newBasePath.endsWith(File.separator)) newBasePath = newBasePath + File.separator;
+        Path src  = Paths.get(BASE_DIR);
+        Path dest = Paths.get(newBasePath);
+        if (Files.exists(src)) {
+            Files.walk(src).forEach(source -> {
+                try {
+                    Path target = dest.resolve(src.relativize(source));
+                    if (Files.isDirectory(source)) {
+                        Files.createDirectories(target);
+                    } else {
+                        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        saveDataDirectory(newBasePath);
+    }
+
     public String getReceiptsDir() {
         return RECEIPTS_DIR;
     }
@@ -451,14 +526,13 @@ public class DataStorage {
     }
 
     // Invoice log
-    private static final String INVOICE_LOG_FILE = INVOICES_DIR + "invoice_log.json";
 
     public List<Invoice> loadInvoices() {
-        return loadList(INVOICE_LOG_FILE, new TypeToken<List<Invoice>>() {}.getType());
+        return loadList(INVOICES_DIR + "invoice_log.json", new TypeToken<List<Invoice>>() {}.getType());
     }
 
     public void saveInvoices(List<Invoice> invoices) {
-        saveToFile(INVOICE_LOG_FILE, invoices);
+        saveToFile(INVOICES_DIR + "invoice_log.json", invoices);
     }
 
     /** Appends a newly generated invoice record to the log. */

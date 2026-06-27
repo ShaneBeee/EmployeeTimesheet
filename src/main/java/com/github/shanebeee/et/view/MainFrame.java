@@ -252,7 +252,17 @@ public class MainFrame extends JFrame {
         // Refresh dashboard whenever it becomes visible
         dashBtn.addActionListener(e -> dashboardPanel.refresh());
 
-        checkFirstTimeSetup();
+        // Show onboarding wizard on first launch
+        SwingUtilities.invokeLater(() -> {
+            if (!DataStorage.isOnboardingComplete()) {
+                OnboardingWizard wizard = new OnboardingWizard(this);
+                wizard.setVisible(true);
+                // After wizard closes, reinitialize storage and refresh
+                dashboardPanel.refresh();
+            } else {
+                checkBosses();
+            }
+        });
     }
 
     private JPanel wrapInCard(JPanel panel) {
@@ -295,29 +305,6 @@ public class MainFrame extends JFrame {
         card.add(wrapper);
 
         return card;
-    }
-
-    private void checkFirstTimeSetup() {
-        EmployeeInfo info = storage.loadEmployeeInfo();
-        if (info.getFullName() == null || info.getFullName().trim().isEmpty()) {
-            SwingUtilities.invokeLater(() -> {
-                int option = JOptionPane.showConfirmDialog(this,
-                    "Welcome to Employee Timesheet!\n\nIt looks like you haven't set up your employee information yet.\nWould you like to do that now?",
-                    "First Time Setup",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.INFORMATION_MESSAGE);
-
-                if (option == JOptionPane.YES_OPTION) {
-                    showPanel("SETTINGS");
-                } else {
-                    // Even if they skip employee info, check for bosses
-                    checkBosses();
-                }
-            });
-        } else {
-            // Employee info is set, now check bosses
-            checkBosses();
-        }
     }
 
     public void checkBosses() {

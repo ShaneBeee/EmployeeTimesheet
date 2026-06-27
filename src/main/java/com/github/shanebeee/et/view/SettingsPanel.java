@@ -225,6 +225,60 @@ public class SettingsPanel extends JPanel {
         card.add(makeFieldRow("Default End Time",   endField));
         tab.add(card);
 
+        tab.add(Box.createVerticalStrut(16));
+
+        // ── Data Location card ─────────────────────────────────────────
+        JPanel locationCard = makeCard();
+        locationCard.setLayout(new BoxLayout(locationCard, BoxLayout.Y_AXIS));
+        locationCard.add(makeSectionRow("Data Location"));
+        locationCard.add(makeDivider());
+
+        JTextField pathField = new JTextField(DataStorage.getSavedDataDirectory());
+        pathField.setEditable(false);
+        pathField.setFont(pathField.getFont().deriveFont(Font.PLAIN, 11f));
+        pathField.setForeground(new Color(71, 85, 105));
+
+        JPanel pathRow = new JPanel(new java.awt.BorderLayout(8, 0));
+        pathRow.setOpaque(false);
+        pathRow.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+        pathRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+
+        JButton changeBtn = new JButton("Change...");
+        changeBtn.putClientProperty("JButton.buttonType", "roundRect");
+        changeBtn.setFont(changeBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        changeBtn.addActionListener(e -> {
+            java.awt.FileDialog fd = new java.awt.FileDialog(
+                (java.awt.Frame) SwingUtilities.getWindowAncestor(this),
+                "Choose Data Folder", java.awt.FileDialog.LOAD);
+            fd.setVisible(true);
+            if (fd.getDirectory() == null) return;
+            String newPath = fd.getDirectory() + "EmployeeTimesheet";
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "<html>Move your data to:<br><b>" + newPath + "</b><br><br>"
+                + "Your existing data will be copied there and the app will need to restart.</html>",
+                "Change Data Location", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+            if (confirm != JOptionPane.OK_OPTION) return;
+
+            try {
+                storage.migrateDataTo(newPath);
+                pathField.setText(newPath);
+                JOptionPane.showMessageDialog(this,
+                    "Data moved successfully. Please restart the app.",
+                    "Restart Required", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                    "Failed to move data: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        pathRow.add(pathField,  java.awt.BorderLayout.CENTER);
+        pathRow.add(changeBtn,  java.awt.BorderLayout.EAST);
+        locationCard.add(pathRow);
+        tab.add(locationCard);
+
         JScrollPane scroll = new JScrollPane(tab);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setOpaque(false);
