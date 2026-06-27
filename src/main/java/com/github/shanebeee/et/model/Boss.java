@@ -6,6 +6,16 @@ import java.util.UUID;
 
 public class Boss {
 
+    public enum IncomeType {
+        SELF_EMPLOYED("Self-Employed (T2125)"),
+        T4_EMPLOYMENT("T4 Employment");
+
+        private final String label;
+        IncomeType(String label) { this.label = label; }
+        public String getLabel() { return label; }
+        @Override public String toString() { return label; }
+    }
+
     private final String id;
     private String name;
     private String address;
@@ -15,7 +25,8 @@ public class Boss {
     private String email;
     private double hourlyRate;
     private double taxRate;
-    private Double kmRate; // Optional
+    private Double kmRate;
+    private IncomeType incomeType = IncomeType.SELF_EMPLOYED; // default
     private List<RateChange> rateHistory = new ArrayList<>();
 
     public Boss(String name) {
@@ -92,13 +103,12 @@ public class Boss {
         this.taxRate = taxRate;
     }
 
-    public Double getKmRate() {
-        return kmRate;
-    }
+    public Double getKmRate() { return kmRate; }
+    public void setKmRate(Double kmRate) { this.kmRate = kmRate; }
 
-    public void setKmRate(Double kmRate) {
-        this.kmRate = kmRate;
-    }
+    public IncomeType getIncomeType() { return incomeType != null ? incomeType : IncomeType.SELF_EMPLOYED; }
+    public void setIncomeType(IncomeType incomeType) { this.incomeType = incomeType; }
+    public boolean isSelfEmployed() { return getIncomeType() == IncomeType.SELF_EMPLOYED; }
 
     public List<RateChange> getRateHistory() {
         return rateHistory;

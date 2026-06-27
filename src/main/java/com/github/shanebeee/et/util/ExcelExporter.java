@@ -30,6 +30,9 @@ public class ExcelExporter {
         List<KmTrip>          trips    = storage.loadKmTrips(String.valueOf(year));
         trips.sort((a, b) -> a.getDate().compareTo(b.getDate()));
         KmOdometer odometer = storage.loadKmOdometer(String.valueOf(year));
+        List<com.github.shanebeee.et.model.Boss> allBosses = storage.loadBosses();
+        List<com.github.shanebeee.et.model.Boss> selfEmployedBosses = allBosses.stream()
+            .filter(com.github.shanebeee.et.model.Boss::isSelfEmployed).toList();
 
         double businessKm = trips.stream().mapToDouble(KmTrip::getKm).sum();
         double totalKm    = odometer.totalKm();
@@ -258,6 +261,141 @@ public class ExcelExporter {
         py.append("for col,w in zip('ABCD',[14,16,44,18]):\n  ws2.column_dimensions[col].width=w\n");
         py.append(String.format("ws2.row_dimensions[%d].height=20\n", kmHeaderRow));
         py.append(String.format("ws2.freeze_panes='A%d'\n\n", kmHeaderRow + 1));
+
+        // ── Sheet 3: Income Summary ───────────────────────────────────────────
+        if (!selfEmployedBosses.isEmpty()) {
+            py.append("ws3 = wb.create_sheet('Income Summary')\n");
+            py.append(String.format("ws3['A1']='Income Summary \u2014 %d'\n", year));
+            py.append("ws3['A1'].font=Font(name='Arial',bold=True,size=14,color='1E3A5F')\n");
+            py.append("ws3.merge_cells('A1:F1')\n\n");
+
+            // Employee info
+            int iRow = 2;
+            if (info.getFullName() != null && !info.getFullName().isBlank()) {
+                py.append(String.format("ws3.cell(row=%d,column=1,value=%s).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", iRow, pyStr(info.getFullName())));
+                py.append(String.format("ws3.merge_cells('A%d:F%d')\n", iRow, iRow));
+                iRow++;
+            }
+            if (!contactLine.isEmpty()) {
+                py.append(String.format("ws3.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", iRow, pyStr(contactLine)));
+                py.append(String.format("ws3.merge_cells('A%d:F%d')\n", iRow, iRow));
+                iRow++;
+            }
+            iRow++; // blank separator
+
+            // Column headers
+            py.append(String.format("for ci,h in enumerate(['Boss','Company','Total Hours','Total KMs','Total Extras ($)','Gross Income ($)','GST Collected ($)'],1):\n"));
+            py.append(String.format("  c=ws3.cell(row=%d,column=ci,value=h)\n", iRow));
+            py.append("  c.font=hdr_font;c.fill=hdr_fill;c.alignment=hdr_align;c.border=border\n\n");
+            iRow++;
+
+            int incDataStart = iRow;
+            int bi = 0;
+            for (com.github.shanebeee.et.model.Boss boss : selfEmployedBosses) {
+                // Calculate totals from all log months in the year
+                double totalHours  = 0;
+                double totalKmsBilled = 0;
+                double totalExtras = 0;
+                for (int m = 1; m <= 12; m++) {
+                    String monthKey = String.format("%d-%02d", year, m);
+                    List<com.github.shanebeee.et.model.LogEntry> logs = storage.loadLogs(monthKey);
+                    for (com.github.shanebeee.et.model.LogEntry entry : logs) {
+                        if (!boss.getId().equals(entry.getBossUuid()) &&
+                            !boss.getName().equals(entry.getBossUuid())) {
+                            // Check allocations for time entries
+                            if (entry.getBossPercentages() != null &&
+                                entry.getBossPercentages().containsKey(boss.getId())) {
+                                double pct2 = entry.getBossPercentages().get(boss.getId()) / 100.0;
+                                if (entry.getType() == com.github.shanebeee.et.model.LogEntry.EntryType.TIME
+                                    && entry.getStartTime() != null && entry.getEndTime() != null) {
+                                    try {
+                                        long mins = java.time.Duration.between(
+                                            java.time.LocalTime.parse(entry.getStartTime()),
+                                            java.time.LocalTime.parse(entry.getEndTime())).toMinutes();
+                                        totalHours += (mins / 60.0) * pct2;
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                            continue;
+                        }
+                        switch (entry.getType()) {
+                            case TIME -> {
+                                if (entry.getStartTime() != null && entry.getEndTime() != null) {
+                                    try {
+                                        long mins = java.time.Duration.between(
+                                            java.time.LocalTime.parse(entry.getStartTime()),
+                                            java.time.LocalTime.parse(entry.getEndTime())).toMinutes();
+                                        totalHours += mins / 60.0;
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                            case KILOMETER -> {
+                                if (entry.getKilometers() != null) totalKmsBilled += entry.getKilometers();
+                            }
+                            case EXTRA -> {
+                                if (entry.getUnits() != null && entry.getCostPerUnit() != null)
+                                    totalExtras += entry.getUnits() * entry.getCostPerUnit();
+                            }
+                        }
+                    }
+                }
+                double grossIncome = (totalHours * boss.getHourlyRate())
+                    + (totalKmsBilled * (boss.getKmRate() != null ? boss.getKmRate() : 0))
+                    + totalExtras;
+                double gstCollected = grossIncome * (boss.getTaxRate() / 100.0);
+
+                boolean alt = (bi % 2 == 1);
+                py.append(String.format("ws3.cell(row=%d,column=1,value=%s)\n", iRow, pyStr(boss.getName())));
+                py.append(String.format("ws3.cell(row=%d,column=2,value=%s)\n", iRow, pyStr(boss.getCompany())));
+                py.append(String.format("ws3.cell(row=%d,column=3,value=%.2f).number_format='#,##0.00'\n", iRow, totalHours));
+                py.append(String.format("ws3.cell(row=%d,column=4,value=%.1f).number_format='#,##0.0'\n", iRow, totalKmsBilled));
+                py.append(String.format("ws3.cell(row=%d,column=5,value=%.2f).number_format='$#,##0.00'\n", iRow, totalExtras));
+                py.append(String.format("ws3.cell(row=%d,column=6,value=%.2f).number_format='$#,##0.00'\n", iRow, grossIncome));
+                py.append(String.format("ws3.cell(row=%d,column=7,value=%.2f).number_format='$#,##0.00'\n", iRow, gstCollected));
+                py.append(String.format("for ci in range(1,8):\n  c=ws3.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
+                    iRow, alt ? ";c.fill=alt_fill" : ""));
+                iRow++; bi++;
+            }
+
+            // Grand total row
+            if (!selfEmployedBosses.isEmpty()) {
+                int incDataEnd = iRow - 1;
+                py.append(String.format("ws3.cell(row=%d,column=1,value='TOTAL GROSS INCOME')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=3,value='=SUM(C%d:C%d)').number_format='#,##0.00'\n", iRow, incDataStart, incDataEnd));
+                py.append(String.format("ws3.cell(row=%d,column=4,value='=SUM(D%d:D%d)').number_format='#,##0.0'\n", iRow, incDataStart, incDataEnd));
+                py.append(String.format("ws3.cell(row=%d,column=5,value='=SUM(E%d:E%d)').number_format='$#,##0.00'\n", iRow, incDataStart, incDataEnd));
+                py.append(String.format("ws3.cell(row=%d,column=6,value='=SUM(F%d:F%d)').number_format='$#,##0.00'\n", iRow, incDataStart, incDataEnd));
+                py.append(String.format("ws3.cell(row=%d,column=7,value='=SUM(G%d:G%d)').number_format='$#,##0.00'\n", iRow, incDataStart, incDataEnd));
+                py.append(String.format("for ci in range(1,8):\n  c=ws3.cell(row=%d,column=ci);c.font=tot_font;c.fill=tot_fill;c.border=border\n", iRow));
+                int totalRow = iRow;
+                iRow += 3; // gap before GST reconciliation block
+
+                // GST reconciliation block
+                // Total GST collected (from income summary)
+                double totalGstPaid = expenses.stream().mapToDouble(Expenditure::getGst).sum();
+                py.append(String.format("ws3.cell(row=%d,column=1,value='GST RECONCILIATION').font=Font(name='Arial',bold=True,size=10,color='64748B')\n", iRow));
+                iRow++;
+                py.append(String.format("ws3.cell(row=%d,column=1,value='GST Collected (from clients)')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=2,value='=G%d').number_format='$#,##0.00'\n", iRow, totalRow));
+                py.append(String.format("ws3.cell(row=%d,column=1).font=Font(name='Arial',size=10,color='64748B')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=10)\n", iRow));
+                iRow++;
+                py.append(String.format("ws3.cell(row=%d,column=1,value='GST Paid on Expenses (ITCs)')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=2,value=%.2f).number_format='$#,##0.00'\n", iRow, totalGstPaid));
+                py.append(String.format("ws3.cell(row=%d,column=1).font=Font(name='Arial',size=10,color='64748B')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=10)\n", iRow));
+                int gstPaidRow = iRow;
+                iRow++;
+                // Net GST owing
+                py.append(String.format("ws3.cell(row=%d,column=1,value='Net GST Owing to CRA')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=2,value='=B%d-B%d').number_format='$#,##0.00'\n", iRow, iRow-2, gstPaidRow));
+                py.append(String.format("ws3.cell(row=%d,column=1).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", iRow));
+                py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", iRow));
+            }
+
+            py.append("for col,w in zip('ABCDEFG',[22,22,14,12,16,16,16]):\n  ws3.column_dimensions[col].width=w\n");
+            py.append("ws3.freeze_panes='A" + incDataStart + "'\n\n");
+        }
 
         // Save
         py.append(String.format("wb.save(r'%s')\n", outputPath.replace("\\", "\\\\")));

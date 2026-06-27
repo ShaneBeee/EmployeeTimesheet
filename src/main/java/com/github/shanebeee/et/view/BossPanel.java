@@ -223,7 +223,13 @@ public class BossPanel extends JPanel {
         });
 
         topRow.add(avatar, BorderLayout.WEST);
+        // Income type badge
+        JLabel incomeBadge = new JLabel(boss.isSelfEmployed() ? "Self-Employed" : "T4");
+        incomeBadge.setFont(incomeBadge.getFont().deriveFont(Font.BOLD, 10f));
+        incomeBadge.setForeground(boss.isSelfEmployed() ? new Color(16, 185, 129) : new Color(245, 158, 11));
+        incomeBadge.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 4));
         topRow.add(nameBlock, BorderLayout.CENTER);
+        topRow.add(incomeBadge, BorderLayout.EAST);
 
         // ── Info chips row ───────────────────────────────────────────────────
         JPanel chipsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -381,6 +387,26 @@ public class BossPanel extends JPanel {
         rateRow.add(makeFieldBlock("Tax Rate (%)", taxField));
         rateRow.add(makeFieldBlock("KM Rate ($)", kmField));
         form.add(rateRow);
+        form.add(Box.createVerticalStrut(12));
+        form.add(makeSectionLabel("Income Type"));
+        form.add(Box.createVerticalStrut(8));
+        JComboBox<Boss.IncomeType> incomeCombo = new JComboBox<>(Boss.IncomeType.values());
+        incomeCombo.setSelectedItem(b.getIncomeType());
+        incomeCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        JLabel incomeHint = new JLabel(b.isSelfEmployed()
+            ? "Included in T2125 income summary export"
+            : "T4 slip provided by employer — excluded from T2125 export");
+        incomeHint.setFont(incomeHint.getFont().deriveFont(Font.ITALIC, 11f));
+        incomeHint.setForeground(new Color(148, 163, 184));
+        incomeCombo.addActionListener(e -> {
+            boolean se = incomeCombo.getSelectedItem() == Boss.IncomeType.SELF_EMPLOYED;
+            incomeHint.setText(se
+                ? "Included in T2125 income summary export"
+                : "T4 slip provided by employer — excluded from T2125 export");
+        });
+        form.add(incomeCombo);
+        form.add(Box.createVerticalStrut(4));
+        form.add(incomeHint);
 
         JScrollPane formScroll = new JScrollPane(form);
         formScroll.setBorder(BorderFactory.createEmptyBorder());
@@ -420,6 +446,7 @@ public class BossPanel extends JPanel {
                 b.setTaxRate(Double.parseDouble(taxField.getText()));
                 String km = kmField.getText();
                 b.setKmRate(km.isEmpty() ? null : Double.parseDouble(km));
+                b.setIncomeType((Boss.IncomeType) incomeCombo.getSelectedItem());
                 if (isNew) bosses.add(b);
                 storage.saveBosses(bosses);
                 refreshCards();
