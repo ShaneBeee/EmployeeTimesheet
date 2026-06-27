@@ -31,6 +31,7 @@ public class MainFrame extends JFrame {
     private CardLayout cardLayout;
     private final Map<String, JButton> navButtons = new HashMap<>();
     private static final Map<String, Color> NAV_COLORS = Map.of(
+        "DASHBOARD",  new Color(30,  41,  59),
         "LOGS",       new Color(59,  130, 246),
         "INVOICES",   new Color(139, 92,  246),
         "EXPENSES",   new Color(245, 158, 11),
@@ -82,6 +83,11 @@ public class MainFrame extends JFrame {
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebarContent.add(titleLabel);
 
+        JButton dashBtn = createNavButton("Dashboard", "DASHBOARD", "dashboard.svg");
+        sidebarContent.add(dashBtn);
+        navButtons.put("DASHBOARD", dashBtn);
+        sidebarContent.add(Box.createVerticalStrut(5));
+
         JButton logsBtn = createNavButton("Work Logs", "LOGS", "logs.svg");
         sidebarContent.add(logsBtn);
         navButtons.put("LOGS", logsBtn);
@@ -124,6 +130,9 @@ public class MainFrame extends JFrame {
         contentPanel.setBackground(UIManager.getColor("MainContent.background"));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
+        DashboardPanel dashboardPanel = new DashboardPanel(storage);
+        dashboardPanel.setMainFrame(this);
+        contentPanel.add(wrapInCard(dashboardPanel), "DASHBOARD");
         contentPanel.add(wrapInCard(new LogPanel(storage)),      "LOGS");
         contentPanel.add(wrapInCard(new InvoicePanel(storage)),   "INVOICES");
         contentPanel.add(wrapInCard(new ExpensesPanel(storage)),  "EXPENSES");
@@ -135,8 +144,13 @@ public class MainFrame extends JFrame {
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
 
-        // Highlight first panel
-        updateNavButtons(logsBtn);
+        // Show dashboard by default and refresh it each time it becomes visible
+        updateNavButtons(dashBtn);
+        cardLayout.show(contentPanel, "DASHBOARD");
+        dashboardPanel.refresh();
+
+        // Refresh dashboard whenever it becomes visible
+        dashBtn.addActionListener(e -> dashboardPanel.refresh());
 
         checkFirstTimeSetup();
     }
