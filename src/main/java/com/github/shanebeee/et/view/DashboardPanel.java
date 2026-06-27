@@ -519,6 +519,8 @@ public class DashboardPanel extends JPanel {
             inv.setPaidDate(LocalDate.now().toString());
             storage.updateInvoice(inv);
             refresh(); // rebuild dashboard
+            // Show tax set-aside dialog via MainFrame → InvoicePanel
+            if (mainFrame != null) mainFrame.showTaxSetAside(inv);
         });
 
         right.add(amtLbl);

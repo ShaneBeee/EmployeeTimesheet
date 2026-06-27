@@ -128,24 +128,24 @@ public class InvoicePanel extends JPanel {
         btnPreviewInvoice.setBackground(new Color(241, 245, 249));
         btnPreviewInvoice.setForeground(new Color(30, 41, 59));
 
-        JButton btnItemized = new JButton("Itemized Invoice");
-        btnItemized.putClientProperty("JButton.buttonType", "roundRect");
-        btnItemized.setBackground(new Color(241, 245, 249));
-        btnItemized.setForeground(new Color(30, 41, 59));
-
         JButton btnGenerate = new JButton("Generate Invoice");
         btnGenerate.putClientProperty("JButton.buttonType", "roundRect");
         btnGenerate.setBackground(new Color(59, 130, 246));
         btnGenerate.setForeground(Color.WHITE);
 
+        JButton btnWithBreakdown = new JButton("With Breakdown");
+        btnWithBreakdown.putClientProperty("JButton.buttonType", "roundRect");
+        btnWithBreakdown.setBackground(new Color(99, 102, 241));
+        btnWithBreakdown.setForeground(Color.WHITE);
+
         invoiceBtns.add(btnPreviewInvoice);
-        invoiceBtns.add(btnItemized);
         invoiceBtns.add(btnGenerate);
+        invoiceBtns.add(btnWithBreakdown);
         invoiceCard.add(invoiceBtns);
         invoiceCard.add(Box.createVerticalStrut(4));
 
-        btnGenerate.addActionListener(e -> generate(false));
-        btnItemized.addActionListener(e -> generate(true));
+        btnGenerate.addActionListener(e -> generate(InvoiceGenerator.InvoiceMode.STANDARD));
+        btnWithBreakdown.addActionListener(e -> generate(InvoiceGenerator.InvoiceMode.WITH_BREAKDOWN));
         btnPreviewInvoice.addActionListener(e -> showInvoicePreview());
 
         content.add(invoiceCard);
@@ -319,6 +319,7 @@ public class InvoicePanel extends JPanel {
             inv.setPaidDate(date);
             storage.updateInvoice(inv);
             refreshHistory();
+            showTaxSetAsideDialog(inv);
         });
 
         // Double-click row → open PDF
@@ -329,6 +330,128 @@ public class InvoicePanel extends JPanel {
         });
 
         return root;
+    }
+
+    void showTaxSetAsideDialog(Invoice inv) {
+        double total    = inv.getTotalAmount();
+        double gstRate  = 0.05;
+        double preGst   = total / (1 + gstRate);
+        double gst      = total - preGst;
+
+        double fedTax   = preGst * 0.15;
+        double bcTax    = preGst * 0.0506;
+        double cpp      = preGst * 0.119;
+        double totalSetAside = gst + fedTax + bcTax + cpp;
+        double keepAmount    = preGst - (fedTax + bcTax + cpp);
+
+        JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
+            "Invoice #" + inv.getInvoiceNumber() + " — Paid!", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(420, 500);
+        dialog.setResizable(false);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBackground(Color.WHITE);
+        body.setBorder(BorderFactory.createEmptyBorder(24, 28, 12, 28));
+
+        JLabel titleLbl = new JLabel("💰  " + String.format("$%.2f received", total));
+        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 18f));
+        titleLbl.setForeground(new Color(30, 41, 59));
+        titleLbl.setAlignmentX(LEFT_ALIGNMENT);
+        body.add(titleLbl);
+        body.add(Box.createVerticalStrut(6));
+
+        JLabel subLbl = new JLabel("Here's how to split it up:");
+        subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 12f));
+        subLbl.setForeground(new Color(100, 116, 139));
+        subLbl.setAlignmentX(LEFT_ALIGNMENT);
+        body.add(subLbl);
+        body.add(Box.createVerticalStrut(16));
+
+        // GST row
+        body.add(makeTaxRow("☁️  Remit to CRA (GST)",
+            String.format("$%.2f", gst),
+            "5% GST you collected",
+            new Color(59, 130, 246), new Color(219, 234, 254)));
+        body.add(Box.createVerticalStrut(6));
+
+        // Individual tax rows
+        body.add(makeTaxRow("🏦  Federal Income Tax",
+            String.format("$%.2f", fedTax),
+            "15% federal rate",
+            new Color(245, 158, 11), new Color(254, 243, 199)));
+        body.add(Box.createVerticalStrut(4));
+        body.add(makeTaxRow("🏦  BC Provincial Tax",
+            String.format("$%.2f", bcTax),
+            "5.06% BC rate",
+            new Color(245, 158, 11), new Color(254, 243, 199)));
+        body.add(Box.createVerticalStrut(4));
+        body.add(makeTaxRow("💼  CPP Contributions",
+            String.format("$%.2f", cpp),
+            "11.9% (employee + employer)",
+            new Color(245, 158, 11), new Color(254, 243, 199)));
+        body.add(Box.createVerticalStrut(6));
+
+        // Total set aside
+        body.add(makeTaxRow("🎯  Total to Set Aside",
+            String.format("$%.2f", totalSetAside),
+            "GST + Fed + BC + CPP combined",
+            new Color(220, 38, 38), new Color(254, 226, 226)));
+        body.add(Box.createVerticalStrut(6));
+
+        // Yours to keep
+        body.add(makeTaxRow("✅  Yours to Keep",
+            String.format("$%.2f", keepAmount),
+            "After income tax and CPP",
+            new Color(16, 185, 129), new Color(209, 250, 229)));
+
+        dialog.add(body, BorderLayout.CENTER);
+
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        footer.setBackground(Color.WHITE);
+        footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
+        JButton btnClose = new JButton("Got it!");
+        btnClose.putClientProperty("JButton.buttonType", "roundRect");
+        btnClose.setBackground(new Color(59, 130, 246));
+        btnClose.setForeground(Color.WHITE);
+        btnClose.addActionListener(e -> dialog.dispose());
+        footer.add(btnClose);
+        dialog.add(footer, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+    private JPanel makeTaxRow(String label, String amount, String note, Color textColor, Color bgColor) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setBackground(bgColor);
+        row.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(bgColor.darker(), 0),
+            BorderFactory.createEmptyBorder(10, 14, 10, 14)));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 62));
+        row.setAlignmentX(LEFT_ALIGNMENT);
+
+        JPanel left = new JPanel();
+        left.setOpaque(false);
+        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 12f));
+        lbl.setForeground(textColor.darker());
+        JLabel noteLbl = new JLabel(note);
+        noteLbl.setFont(noteLbl.getFont().deriveFont(Font.PLAIN, 10f));
+        noteLbl.setForeground(textColor.darker());
+        left.add(lbl);
+        left.add(noteLbl);
+
+        JLabel amtLbl = new JLabel(amount);
+        amtLbl.setFont(amtLbl.getFont().deriveFont(Font.BOLD, 15f));
+        amtLbl.setForeground(textColor.darker());
+
+        row.add(left,   BorderLayout.CENTER);
+        row.add(amtLbl, BorderLayout.EAST);
+        return row;
     }
 
     /** Reloads invoice list from storage and repopulates the table. */
@@ -387,7 +510,7 @@ public class InvoicePanel extends JPanel {
 
     // ── Generate logic ────────────────────────────────────────────────────────
 
-    private void generate(boolean itemized) {
+    private void generate(InvoiceGenerator.InvoiceMode mode) {
         try {
             Boss boss = (Boss) bossCombo.getSelectedItem();
             if (boss == null) return;
@@ -411,11 +534,11 @@ public class InvoicePanel extends JPanel {
                 .toList();
 
             // Calculate total for the invoice record
-            double total = calculateTotal(boss, filteredLogs, start, end);
+            InvoiceGenerator.Totals totals = InvoiceGenerator.computeTotals(boss, filteredLogs);
 
             int invNum = storage.getNextInvoiceNumber();
             String path = storage.getInvoicePath(boss, invNum);
-            InvoiceGenerator.generateInvoice(boss, employee, filteredLogs, start.toString(), end.toString(), invNum, path, itemized);
+            InvoiceGenerator.generateInvoice(boss, employee, filteredLogs, start.toString(), end.toString(), invNum, path, mode);
 
             // Record the invoice in the log
             Invoice record = new Invoice();
@@ -426,11 +549,11 @@ public class InvoicePanel extends JPanel {
             record.setEndDate(end.toString());
             record.setGeneratedDate(LocalDate.now().toString());
             record.setStatus(Invoice.Status.DRAFT);
-            record.setTotalAmount(total);
+            record.setTotalAmount(totals.total());
             record.setPdfPath(path);
             storage.recordInvoice(record);
 
-            JOptionPane.showMessageDialog(this, (itemized ? "Itemized " : "") + "Invoice #" + invNum + " generated at:\n" + path);
+            JOptionPane.showMessageDialog(this, "Invoice #" + invNum + " generated at:\n" + path);
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error generating invoice: " + ex.getMessage());
@@ -438,34 +561,7 @@ public class InvoicePanel extends JPanel {
     }
 
     private double calculateTotal(Boss boss, List<LogEntry> logs, LocalDate start, LocalDate end) {
-        double totalHours = 0, totalKm = 0, totalExtras = 0;
-        for (LogEntry log : logs) {
-            LocalDate d = LocalDate.parse(log.getDate());
-            if (d.isBefore(start) || d.isAfter(end)) continue;
-
-            if (log.getType() == LogEntry.EntryType.TIME) {
-                double perc = log.getBossPercentages() != null
-                    ? log.getBossPercentages().getOrDefault(boss.getId(),
-                        log.getBossPercentages().getOrDefault(boss.getName(), 0.0)) / 100.0
-                    : 0;
-                if (perc > 0) {
-                    java.time.LocalTime s = TimePickerPanel.parseTime(log.getStartTime());
-                    java.time.LocalTime e = TimePickerPanel.parseTime(log.getEndTime());
-                    totalHours += java.time.Duration.between(s, e).toMinutes() / 60.0 * perc;
-                }
-            } else if (log.getType() == LogEntry.EntryType.KILOMETER) {
-                if (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))
-                    totalKm += log.getKilometers() != null ? log.getKilometers() : 0;
-            } else if (log.getType() == LogEntry.EntryType.EXTRA) {
-                if (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))
-                    totalExtras += (log.getUnits() != null ? log.getUnits() : 0)
-                        * (log.getCostPerUnit() != null ? log.getCostPerUnit() : 0);
-            }
-        }
-        double subtotal = (totalHours * boss.getHourlyRate())
-            + (totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0))
-            + totalExtras;
-        return subtotal + subtotal * (boss.getTaxRate() / 100.0);
+        return InvoiceGenerator.computeTotals(boss, logs).total();
     }
 
     // ── Monthly summary (unchanged logic, just extracted) ─────────────────────
@@ -786,7 +882,7 @@ public class InvoicePanel extends JPanel {
         btnGenerate2.putClientProperty("JButton.buttonType", "roundRect");
         btnGenerate2.setBackground(new Color(59, 130, 246));
         btnGenerate2.setForeground(Color.WHITE);
-        btnGenerate2.addActionListener(ev -> { dialog.dispose(); generate(false); });
+        btnGenerate2.addActionListener(ev -> { dialog.dispose(); generate(InvoiceGenerator.InvoiceMode.STANDARD); });
         footer.add(btnClose);
         footer.add(btnGenerate2);
         dialog.add(footer, BorderLayout.SOUTH);

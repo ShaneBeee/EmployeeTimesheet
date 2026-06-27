@@ -335,6 +335,10 @@ public class MainFrame extends JFrame {
         }
     }
 
+    public void showTaxSetAside(com.github.shanebeee.et.model.Invoice inv) {
+        invoicePanel.showTaxSetAsideDialog(inv);
+    }
+
     private JButton createNavButton(String text, String cardName, String iconName) {
         Color navColor = NAV_COLORS.getOrDefault(cardName, new Color(100, 116, 139));
         final boolean[] hovered = {false};
