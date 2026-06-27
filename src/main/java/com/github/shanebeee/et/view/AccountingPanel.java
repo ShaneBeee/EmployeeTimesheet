@@ -2,6 +2,7 @@ package com.github.shanebeee.et.view;
 
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.storage.DataStorage;
+import com.github.shanebeee.et.util.AnnualTaxReportGenerator;
 import com.github.shanebeee.et.util.ExcelExporter;
 import com.github.shanebeee.et.util.YearArchiver;
 
@@ -115,6 +116,14 @@ public class AccountingPanel extends JPanel {
             "🗂", "Export Receipt Archive",
             "Zip of all receipts for the selected year, organized by month",
             new Color(245, 158, 11), this::exportReceiptZip
+        ), gbc);
+
+        // ── Annual tax report card ─────────────────────────────────────────────
+        gbc.gridy++;
+        body.add(makeExportCard(
+            "📋", "Annual Tax Report",
+            "Full PDF summary for your accountant — income, expenses, KMs, GST",
+            new Color(99, 102, 241), this::exportAnnualTaxReport
         ), gbc);
 
         // ── Section divider ───────────────────────────────────────────────────
@@ -300,6 +309,45 @@ public class AccountingPanel extends JPanel {
             }
         }).start();
         progress2.setVisible(true);
+    }
+
+    private void exportAnnualTaxReport() {
+        int year = (int) yearSpinner.getValue();
+
+        java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
+        java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Save Annual Tax Report", java.awt.FileDialog.SAVE);
+        fd.setFile("TaxReport_" + year + ".pdf");
+        fd.setVisible(true);
+        if (fd.getFile() == null) return;
+        String outputPath = fd.getDirectory() + fd.getFile();
+        if (!outputPath.endsWith(".pdf")) outputPath += ".pdf";
+        final String finalPath = outputPath;
+
+        JDialog progress = makeProgressDialog("Generating tax report...");
+        new Thread(() -> {
+            try {
+                AnnualTaxReportGenerator.generate(year, storage, finalPath);
+                final String path = finalPath;
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    int opt = JOptionPane.showConfirmDialog(this,
+                        "Annual Tax Report saved to:\n" + path + "\n\nOpen it now?",
+                        "Report Complete", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                    if (opt == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
+                        try { Desktop.getDesktop().open(new File(path)); }
+                        catch (IOException ex) { ex.printStackTrace(); }
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        "Failed to generate report:\n" + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }).start();
+        progress.setVisible(true);
     }
 
     private void exportYearArchive() {
