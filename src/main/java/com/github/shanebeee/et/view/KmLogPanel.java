@@ -485,9 +485,16 @@ public class KmLogPanel extends JPanel {
             btnDelete.setForeground(Color.WHITE);
             btnDelete.addActionListener(e -> {
                 currentTrips.remove(trip);
-                storage.saveKmTrips(String.valueOf(currentYear), currentTrips);
                 refresh();
                 dialog.dispose();
+                new UndoBar(KmLogPanel.this, "Trip deleted.", () -> {
+                    storage.saveKmTrips(String.valueOf(currentYear), currentTrips);
+                }).show(() -> {
+                    currentTrips.add(trip);
+                    currentTrips.sort((a, b) -> b.getDate().compareTo(a.getDate()));
+                    storage.saveKmTrips(String.valueOf(currentYear), currentTrips);
+                    refresh();
+                });
             });
             footerLeft.add(btnDelete);
         }

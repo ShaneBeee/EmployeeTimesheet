@@ -519,18 +519,31 @@ public class LogPanel extends JPanel {
         btnDelete.addActionListener(e -> {
             if (selectedIdx[0] >= 0) {
                 LogEntry toDelete = dayLogs.get(selectedIdx[0]);
-                // If it was a KM entry, remove the auto-logged KM trip
-                if (toDelete.getType() == LogEntry.EntryType.KILOMETER) {
-                    String year = toDelete.getDate().substring(0, 4);
-                    storage.removeAutoKmTrip(year, toDelete.getId());
-                }
+                // Remove from UI immediately
                 currentLogs.remove(toDelete);
                 dayLogs.remove(selectedIdx[0]);
-                storage.saveLogs(currentMonth.toString(), currentLogs);
                 selectedIdx[0] = dayLogs.isEmpty() ? -1 : Math.min(selectedIdx[0], dayLogs.size() - 1);
                 headerSub.setText(dayLogs.size() + (dayLogs.size() == 1 ? " entry" : " entries"));
                 rebuildRef[0].get();
                 refreshCalendar();
+                dialog.dispose();
+
+                // Undo bar — commit to disk only after timeout
+                String type = toDelete.getType() == LogEntry.EntryType.TIME ? "Work log entry"
+                    : toDelete.getType() == LogEntry.EntryType.KILOMETER ? "KM entry" : "Extra entry";
+                new UndoBar(LogPanel.this, type + " deleted.", () -> {
+                    // Commit: save without the deleted entry, remove auto KM trip if needed
+                    if (toDelete.getType() == LogEntry.EntryType.KILOMETER) {
+                        String year = toDelete.getDate().substring(0, 4);
+                        storage.removeAutoKmTrip(year, toDelete.getId());
+                    }
+                    storage.saveLogs(currentMonth.toString(), currentLogs);
+                }).show(() -> {
+                    // Restore: put it back
+                    currentLogs.add(toDelete);
+                    storage.saveLogs(currentMonth.toString(), currentLogs);
+                    refreshCalendar();
+                });
             }
         });
 

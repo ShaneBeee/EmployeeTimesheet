@@ -1037,11 +1037,20 @@ public class ExpensesPanel extends JPanel {
             btnDelete.addActionListener(e -> {
                 storage.deleteReceiptFiles(exp);
                 currentExpenses.remove(exp);
-                storage.saveExpenditures(String.valueOf(currentYear), currentExpenses);
+                dialog.dispose();
                 refreshSummary();
                 buildGridView();
                 if (inDetail && detailMonth != null) buildDetailView(detailMonth);
-                dialog.dispose();
+                new UndoBar(ExpensesPanel.this, "Expense deleted.", () -> {
+                    storage.saveExpenditures(String.valueOf(currentYear), currentExpenses);
+                }).show(() -> {
+                    currentExpenses.add(exp);
+                    currentExpenses.sort((a, b) -> b.getDate().compareTo(a.getDate()));
+                    storage.saveExpenditures(String.valueOf(currentYear), currentExpenses);
+                    refreshSummary();
+                    buildGridView();
+                    if (inDetail && detailMonth != null) buildDetailView(detailMonth);
+                });
             });
             footerLeft.add(btnDelete);
         }
