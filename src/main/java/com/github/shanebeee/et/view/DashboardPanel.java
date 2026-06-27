@@ -39,6 +39,8 @@ public class DashboardPanel extends JPanel {
     private static final Color AMBER  = new Color(245, 158, 11);
     private static final Color PURPLE = new Color(139, 92,  246);
     private static final Color NAVY   = new Color(30,  41,  59);
+    private static final Color RED    = new Color(239, 68,  68);
+    private static final Color SLATE  = new Color(100, 116, 139);
 
     private final DataStorage storage;
     private MainFrame mainFrame;
@@ -48,40 +50,34 @@ public class DashboardPanel extends JPanel {
         setLayout(new BorderLayout());
     }
 
-    /** Called after the frame is set up so we can navigate on button clicks. */
     public void setMainFrame(MainFrame frame) {
         this.mainFrame = frame;
     }
 
-    /** Rebuild the dashboard — called every time the panel becomes visible. */
     public void refresh() {
         removeAll();
 
-        LocalDate today       = LocalDate.now();
-        int       year        = today.getYear();
-        YearMonth thisMonth   = YearMonth.from(today);
-        String    monthKey    = thisMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"));
-        String    greeting    = greeting();
+        LocalDate today     = LocalDate.now();
+        int       year      = today.getYear();
+        YearMonth thisMonth = YearMonth.from(today);
+        String    monthKey  = thisMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-        EmployeeInfo info = storage.loadEmployeeInfo();
-        List<Boss>   bosses = storage.loadBosses();
-        List<Boss>   selfEmployed = bosses.stream()
-            .filter(Boss::isSelfEmployed).toList();
+        EmployeeInfo info        = storage.loadEmployeeInfo();
+        List<Boss>   bosses      = storage.loadBosses();
+        List<Boss>   selfEmployed = bosses.stream().filter(Boss::isSelfEmployed).toList();
 
-        // ── Header ────────────────────────────────────────────────────────────
+        // Header
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
-
         String name = info.getFullName() != null && !info.getFullName().isBlank()
             ? info.getFullName().split(" ")[0] : "there";
-        JLabel titleLbl = new JLabel(greeting + ", " + name + " 👋");
+        JLabel titleLbl = new JLabel(greeting() + ", " + name + " \uD83D\uDC4B");
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 22f));
         titleLbl.setForeground(NAVY);
         JLabel dateLbl = new JLabel(today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")));
         dateLbl.setFont(dateLbl.getFont().deriveFont(Font.PLAIN, 13f));
-        dateLbl.setForeground(new Color(100, 116, 139));
-
+        dateLbl.setForeground(SLATE);
         JPanel headerText = new JPanel();
         headerText.setOpaque(false);
         headerText.setLayout(new BoxLayout(headerText, BoxLayout.Y_AXIS));
@@ -91,7 +87,6 @@ public class DashboardPanel extends JPanel {
         header.add(headerText, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
-        // ── Scrollable body ───────────────────────────────────────────────────
         JPanel body = new JPanel(new GridBagLayout());
         body.setOpaque(false);
         GridBagConstraints gc = new GridBagConstraints();
@@ -101,65 +96,9 @@ public class DashboardPanel extends JPanel {
         gc.gridy = 0;
         gc.insets = new Insets(0, 0, 16, 0);
 
-        // ── This Month section ────────────────────────────────────────────────
-        body.add(makeSectionLabel("THIS MONTH — " +
-            thisMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")).toUpperCase()), gc);
-        gc.gridy++;
-
-        // Calculate this month's stats
+        // This Month
         List<LogEntry> monthLogs = storage.loadLogs(monthKey);
-        double monthHours = 0;
-        double monthKmsBilled = 0;
-        for (Boss boss : selfEmployed) {
-            for (LogEntry entry : monthLogs) {
-                if (entry.getType() == LogEntry.EntryType.TIME
-                    && entry.getBossPercentages() != null
-                    && entry.getBossPercentages().containsKey(boss.getId())) {
-                    if (entry.getStartTime() != null && entry.getEndTime() != null) {
-                        try {
-                            long mins = java.time.Duration.between(
-                                LocalTime.parse(entry.getStartTime()),
-                                LocalTime.parse(entry.getEndTime())).toMinutes();
-                            monthHours += (mins / 60.0) * entry.getBossPercentages().get(boss.getId()) / 100.0;
-                        } catch (Exception ignored) {}
-                    }
-                } else if (entry.getType() == LogEntry.EntryType.TIME
-                    && entry.getBossPercentages() == null) {
-                    if (entry.getStartTime() != null && entry.getEndTime() != null) {
-                        try {
-                            long mins = java.time.Duration.between(
-                                LocalTime.parse(entry.getStartTime()),
-                                LocalTime.parse(entry.getEndTime())).toMinutes();
-                            monthHours += mins / 60.0;
-                        } catch (Exception ignored) {}
-                    }
-                }
-                if (entry.getType() == LogEntry.EntryType.KILOMETER
-                    && boss.getId().equals(entry.getBossUuid())
-                    && entry.getKilometers() != null) {
-                    monthKmsBilled += entry.getKilometers();
-                }
-            }
-        }
-
-        List<Expenditure> monthExpenses = storage.loadExpenditures(String.valueOf(year))
-            .stream().filter(e -> e.getDate().startsWith(monthKey)).toList();
-        double monthExpTotal = monthExpenses.stream().mapToDouble(Expenditure::getTotal).sum();
-
-        List<KmTrip> monthTrips = storage.loadKmTrips(String.valueOf(year))
-            .stream().filter(t -> t.getDate().startsWith(monthKey)).toList();
-        double monthKmTrips = monthTrips.stream().mapToDouble(KmTrip::getKm).sum();
-
-        // Stat cards row
-        JPanel statsRow = new JPanel(new GridBagLayout());
-        statsRow.setOpaque(false);
-        GridBagConstraints sg = new GridBagConstraints();
-        sg.fill = GridBagConstraints.BOTH;
-        sg.weighty = 1.0;
-        sg.insets = new Insets(0, 0, 0, 12);
-
-        // Calculate month gross income
-        double monthIncome = 0;
+        double monthHours = 0, monthKmsBilled = 0, monthIncome = 0;
         for (Boss boss : selfEmployed) {
             for (LogEntry entry : monthLogs) {
                 if (entry.getType() == LogEntry.EntryType.TIME
@@ -171,16 +110,19 @@ public class DashboardPanel extends JPanel {
                         double hrs = mins / 60.0;
                         if (entry.getBossPercentages() != null
                             && entry.getBossPercentages().containsKey(boss.getId())) {
-                            monthIncome += hrs * boss.getHourlyRate()
-                                * entry.getBossPercentages().get(boss.getId()) / 100.0;
+                            double perc = entry.getBossPercentages().get(boss.getId()) / 100.0;
+                            monthIncome += hrs * boss.getHourlyRate() * perc;
+                            monthHours  += hrs * perc;
                         } else if (boss.getId().equals(entry.getBossUuid())) {
                             monthIncome += hrs * boss.getHourlyRate();
+                            monthHours  += hrs;
                         }
                     } catch (Exception ignored) {}
                 } else if (entry.getType() == LogEntry.EntryType.KILOMETER
                     && boss.getId().equals(entry.getBossUuid())
-                    && entry.getKilometers() != null && boss.getKmRate() != null) {
-                    monthIncome += entry.getKilometers() * boss.getKmRate();
+                    && entry.getKilometers() != null) {
+                    monthKmsBilled += entry.getKilometers();
+                    if (boss.getKmRate() != null) monthIncome += entry.getKilometers() * boss.getKmRate();
                 } else if (entry.getType() == LogEntry.EntryType.EXTRA
                     && boss.getId().equals(entry.getBossUuid())
                     && entry.getUnits() != null && entry.getCostPerUnit() != null) {
@@ -188,38 +130,42 @@ public class DashboardPanel extends JPanel {
                 }
             }
         }
+        List<Expenditure> monthExpenses = storage.loadExpenditures(String.valueOf(year))
+            .stream().filter(e -> e.getDate().startsWith(monthKey)).toList();
+        double monthExpTotal = monthExpenses.stream().mapToDouble(Expenditure::getTotal).sum();
+        List<KmTrip> monthTrips = storage.loadKmTrips(String.valueOf(year))
+            .stream().filter(t -> t.getDate().startsWith(monthKey)).toList();
+        double monthKmTrips = monthTrips.stream().mapToDouble(KmTrip::getKm).sum();
 
+        body.add(makeSectionLabel("THIS MONTH — " +
+            thisMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")).toUpperCase()), gc);
+        gc.gridy++;
+
+        JPanel statsRow = new JPanel(new GridBagLayout());
+        statsRow.setOpaque(false);
+        GridBagConstraints sg = new GridBagConstraints();
+        sg.fill = GridBagConstraints.BOTH; sg.weighty = 1.0;
+        sg.insets = new Insets(0, 0, 0, 12);
         sg.weightx = 1.0; sg.gridx = 0;
-        statsRow.add(makeStatCard("Gross Income", String.format("$%.2f", monthIncome),
-            "this month", GREEN, "Work Logs", "LOGS"), sg);
+        statsRow.add(makeStatCard("Gross Income",  String.format("$%.2f", monthIncome),  "this month",       GREEN,  "Work Logs",  "LOGS"),       sg);
         sg.gridx = 1;
-        statsRow.add(makeStatCard("Hours Logged", String.format("%.1f hrs", monthHours),
-            "this month", BLUE, "Work Logs", "LOGS"), sg);
+        statsRow.add(makeStatCard("Hours Logged",  String.format("%.1f hrs", monthHours), "this month",      BLUE,   "Work Logs",  "LOGS"),       sg);
         sg.gridx = 2;
-        statsRow.add(makeStatCard("Expenses", String.format("$%.2f", monthExpTotal),
-            "this month", AMBER, "View Expenses", "EXPENSES"), sg);
+        statsRow.add(makeStatCard("Expenses",      String.format("$%.2f", monthExpTotal), "this month",      AMBER,  "Expenses",   "EXPENSES"),   sg);
         sg.gridx = 3;
-        statsRow.add(makeStatCard("KMs Driven", String.format("%.1f km", monthKmTrips),
-            "this month", new Color(16, 185, 129), "KM Log", "KM"), sg);
+        statsRow.add(makeStatCard("KMs Driven",    String.format("%.1f km", monthKmTrips),"this month",      GREEN,  "KM Log",     "KM"),         sg);
         sg.gridx = 4; sg.insets = new Insets(0, 0, 0, 0);
-        statsRow.add(makeStatCard("KMs Billed", String.format("%.1f km", monthKmsBilled),
-            "billed to clients", PURPLE, "Work Logs", "LOGS"), sg);
-
+        statsRow.add(makeStatCard("KMs Billed",    String.format("%.1f km", monthKmsBilled),"billed to clients", PURPLE, "Work Logs", "LOGS"),    sg);
         body.add(statsRow, gc);
         gc.gridy++;
         gc.insets = new Insets(0, 0, 16, 0);
 
-        // ── Year to date section ──────────────────────────────────────────────
-        body.add(makeSectionLabel("YEAR TO DATE — " + year), gc);
-        gc.gridy++;
-
-        // YTD income
+        // Year to Date
         double ytdIncome = 0;
         for (Boss boss : selfEmployed) {
             for (int m = 1; m <= today.getMonthValue(); m++) {
                 String mk = String.format("%d-%02d", year, m);
-                List<LogEntry> logs = storage.loadLogs(mk);
-                for (LogEntry entry : logs) {
+                for (LogEntry entry : storage.loadLogs(mk)) {
                     if (entry.getType() == LogEntry.EntryType.TIME
                         && entry.getStartTime() != null && entry.getEndTime() != null) {
                         try {
@@ -247,64 +193,104 @@ public class DashboardPanel extends JPanel {
                 }
             }
         }
-        List<Expenditure> ytdExpenses = storage.loadExpenditures(String.valueOf(year));
-        double ytdExpTotal = ytdExpenses.stream().mapToDouble(Expenditure::getTotal).sum();
-        double ytdNet      = ytdIncome - ytdExpTotal;
+        double ytdExpTotal = storage.loadExpenditures(String.valueOf(year))
+            .stream().mapToDouble(Expenditure::getTotal).sum();
+        double ytdNet = ytdIncome - ytdExpTotal;
+
+        body.add(makeSectionLabel("YEAR TO DATE — " + year), gc);
+        gc.gridy++;
 
         JPanel ytdRow = new JPanel(new GridBagLayout());
         ytdRow.setOpaque(false);
         GridBagConstraints yg = new GridBagConstraints();
-        yg.fill = GridBagConstraints.BOTH;
-        yg.weighty = 1.0;
+        yg.fill = GridBagConstraints.BOTH; yg.weighty = 1.0;
         yg.insets = new Insets(0, 0, 0, 12);
-
         yg.weightx = 1.0; yg.gridx = 0;
-        ytdRow.add(makeStatCard("Gross Income", String.format("$%.2f", ytdIncome),
-            "self-employed only", BLUE, "Accounting", "ACCOUNTING"), yg);
+        ytdRow.add(makeStatCard("Gross Income",   String.format("$%.2f", ytdIncome),  "self-employed only",                   BLUE,  "Accounting", "ACCOUNTING"), yg);
         yg.gridx = 1;
-        ytdRow.add(makeStatCard("Total Expenses", String.format("$%.2f", ytdExpTotal),
-            "all categories", AMBER, "Expenses", "EXPENSES"), yg);
+        ytdRow.add(makeStatCard("Total Expenses", String.format("$%.2f", ytdExpTotal),"all categories",                       AMBER, "Expenses",   "EXPENSES"),   yg);
         yg.gridx = 2; yg.insets = new Insets(0, 0, 0, 0);
         ytdRow.add(makeNetCard(ytdNet), yg);
-
         body.add(ytdRow, gc);
         gc.gridy++;
         gc.insets = new Insets(0, 0, 16, 0);
 
-        // ── Outstanding invoices ──────────────────────────────────────────────
-        List<Invoice> outstanding = storage.loadInvoices().stream()
-            .filter(inv -> inv.getStatus() == Invoice.Status.SENT)
-            .sorted((a, b) -> a.getGeneratedDate().compareTo(b.getGeneratedDate()))
-            .toList();
+        // Year over Year
+        String lastMonthKey = String.format("%d-%02d", year - 1, today.getMonthValue());
+        List<LogEntry>    lastLogs     = storage.loadLogs(lastMonthKey);
+        List<Expenditure> lastExpenses = storage.loadExpenditures(String.valueOf(year - 1))
+            .stream().filter(e -> e.getDate().startsWith(lastMonthKey)).toList();
 
-        if (!outstanding.isEmpty()) {
-            body.add(makeSectionLabel("OUTSTANDING INVOICES"), gc);
-            gc.gridy++;
-
-            JPanel outstandingCard = makeCard();
-            outstandingCard.setLayout(new BoxLayout(outstandingCard, BoxLayout.Y_AXIS));
-
-            for (int i = 0; i < outstanding.size(); i++) {
-                Invoice inv = outstanding.get(i);
-                outstandingCard.add(makeOutstandingRow(inv));
-                if (i < outstanding.size() - 1) outstandingCard.add(makeDivider());
+        if (!lastLogs.isEmpty() || !lastExpenses.isEmpty()) {
+            double lastIncome = 0, lastHours = 0;
+            for (Boss boss : selfEmployed) {
+                for (LogEntry entry : lastLogs) {
+                    if (entry.getType() == LogEntry.EntryType.TIME
+                        && entry.getStartTime() != null && entry.getEndTime() != null) {
+                        try {
+                            long mins = java.time.Duration.between(
+                                LocalTime.parse(entry.getStartTime()),
+                                LocalTime.parse(entry.getEndTime())).toMinutes();
+                            double hrs = mins / 60.0;
+                            if (entry.getBossPercentages() != null
+                                && entry.getBossPercentages().containsKey(boss.getId())) {
+                                double perc = entry.getBossPercentages().get(boss.getId()) / 100.0;
+                                lastIncome += hrs * boss.getHourlyRate() * perc;
+                                lastHours  += hrs * perc;
+                            } else if (boss.getId().equals(entry.getBossUuid())) {
+                                lastIncome += hrs * boss.getHourlyRate();
+                                lastHours  += hrs;
+                            }
+                        } catch (Exception ignored) {}
+                    } else if (entry.getType() == LogEntry.EntryType.KILOMETER
+                        && boss.getId().equals(entry.getBossUuid())
+                        && entry.getKilometers() != null && boss.getKmRate() != null) {
+                        lastIncome += entry.getKilometers() * boss.getKmRate();
+                    } else if (entry.getType() == LogEntry.EntryType.EXTRA
+                        && boss.getId().equals(entry.getBossUuid())
+                        && entry.getUnits() != null && entry.getCostPerUnit() != null) {
+                        lastIncome += entry.getUnits() * entry.getCostPerUnit();
+                    }
+                }
             }
+            double lastExpTotal = lastExpenses.stream().mapToDouble(Expenditure::getTotal).sum();
 
-            body.add(outstandingCard, gc);
+            String monthName = today.format(DateTimeFormatter.ofPattern("MMMM")).toUpperCase();
+            body.add(makeSectionLabel("YEAR OVER YEAR \u2014 " + monthName), gc);
+            gc.gridy++;
+            body.add(makeYoyCard(year - 1, year, lastIncome, monthIncome,
+                lastHours, monthHours, lastExpTotal, monthExpTotal), gc);
             gc.gridy++;
             gc.insets = new Insets(0, 0, 16, 0);
         }
 
-        // ── Recent activity ───────────────────────────────────────────────────
+        // Outstanding invoices
+        List<Invoice> outstanding = storage.loadInvoices().stream()
+            .filter(inv -> inv.getStatus() == Invoice.Status.SENT)
+            .sorted((a, b) -> a.getGeneratedDate().compareTo(b.getGeneratedDate()))
+            .toList();
+        if (!outstanding.isEmpty()) {
+            body.add(makeSectionLabel("OUTSTANDING INVOICES"), gc);
+            gc.gridy++;
+            JPanel outCard = makeCard();
+            outCard.setLayout(new BoxLayout(outCard, BoxLayout.Y_AXIS));
+            for (int i = 0; i < outstanding.size(); i++) {
+                outCard.add(makeOutstandingRow(outstanding.get(i)));
+                if (i < outstanding.size() - 1) outCard.add(makeDivider());
+            }
+            body.add(outCard, gc);
+            gc.gridy++;
+            gc.insets = new Insets(0, 0, 16, 0);
+        }
+
+        // Recent activity
         body.add(makeSectionLabel("RECENT ACTIVITY"), gc);
         gc.gridy++;
-
         JPanel activityCard = makeCard();
         activityCard.setLayout(new BoxLayout(activityCard, BoxLayout.Y_AXIS));
-
         List<ActivityItem> activity = buildRecentActivity(year, today);
         if (activity.isEmpty()) {
-            JLabel empty = new JLabel("No recent activity — start logging to see it here.");
+            JLabel empty = new JLabel("No recent activity \u2014 start logging to see it here.");
             empty.setFont(empty.getFont().deriveFont(Font.ITALIC, 12f));
             empty.setForeground(new Color(148, 163, 184));
             activityCard.add(Box.createVerticalStrut(8));
@@ -317,7 +303,6 @@ public class DashboardPanel extends JPanel {
         }
         body.add(activityCard, gc);
 
-        // Push everything up
         gc.gridy++;
         gc.weighty = 1.0;
         gc.fill = GridBagConstraints.BOTH;
@@ -329,13 +314,100 @@ public class DashboardPanel extends JPanel {
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(12);
         add(scroll, BorderLayout.CENTER);
-
         revalidate();
         repaint();
     }
 
-    // ── Stat card ─────────────────────────────────────────────────────────────
+    // Year over year card
+    private JPanel makeYoyCard(int lastYear, int thisYear,
+                                double lastIncome, double thisIncome,
+                                double lastHours,  double thisHours,
+                                double lastExp,    double thisExp) {
+        JPanel card = makeCard();
+        card.setLayout(new GridBagLayout());
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.insets = new Insets(0, 4, 0, 4);
 
+        // Header row
+        gc.gridy = 0;
+        gc.gridx = 0; gc.weightx = 2.0;
+        card.add(makeYoyCell("", Font.BOLD, SLATE, false), gc);
+        gc.gridx = 1; gc.weightx = 1.0;
+        card.add(makeYoyCell(String.valueOf(lastYear), Font.BOLD, SLATE, true), gc);
+        gc.gridx = 2;
+        card.add(makeYoyCell(String.valueOf(thisYear), Font.BOLD, SLATE, true), gc);
+        gc.gridx = 3;
+        card.add(makeYoyCell("Change", Font.BOLD, SLATE, true), gc);
+
+        // Divider
+        gc.gridy = 1; gc.gridx = 0; gc.gridwidth = 4; gc.insets = new Insets(4, 0, 4, 0);
+        card.add(makeDivider(), gc);
+        gc.gridwidth = 1; gc.insets = new Insets(2, 4, 2, 4);
+
+        // Income row
+        gc.gridy = 2;
+        gc.gridx = 0; gc.weightx = 2.0;
+        card.add(makeYoyCell("Gross Income", Font.PLAIN, NAVY, false), gc);
+        gc.gridx = 1; gc.weightx = 1.0;
+        card.add(makeYoyCell(String.format("$%.2f", lastIncome), Font.PLAIN, NAVY, true), gc);
+        gc.gridx = 2;
+        card.add(makeYoyCell(String.format("$%.2f", thisIncome), Font.PLAIN, NAVY, true), gc);
+        gc.gridx = 3;
+        card.add(makeDeltaLabel(lastIncome, thisIncome, true), gc);
+
+        // Hours row
+        gc.gridy = 3;
+        gc.gridx = 0; gc.weightx = 2.0;
+        card.add(makeYoyCell("Hours Logged", Font.PLAIN, NAVY, false), gc);
+        gc.gridx = 1; gc.weightx = 1.0;
+        card.add(makeYoyCell(String.format("%.1f hrs", lastHours), Font.PLAIN, NAVY, true), gc);
+        gc.gridx = 2;
+        card.add(makeYoyCell(String.format("%.1f hrs", thisHours), Font.PLAIN, NAVY, true), gc);
+        gc.gridx = 3;
+        card.add(makeDeltaLabel(lastHours, thisHours, true), gc);
+
+        // Expenses row
+        gc.gridy = 4;
+        gc.gridx = 0; gc.weightx = 2.0;
+        card.add(makeYoyCell("Expenses", Font.PLAIN, NAVY, false), gc);
+        gc.gridx = 1; gc.weightx = 1.0;
+        card.add(makeYoyCell(String.format("$%.2f", lastExp), Font.PLAIN, NAVY, true), gc);
+        gc.gridx = 2;
+        card.add(makeYoyCell(String.format("$%.2f", thisExp), Font.PLAIN, NAVY, true), gc);
+        gc.gridx = 3;
+        // For expenses, up is bad (red), down is good (green) — so invert
+        card.add(makeDeltaLabel(lastExp, thisExp, false), gc);
+
+        return card;
+    }
+
+    private JLabel makeYoyCell(String text, int style, Color color, boolean rightAlign) {
+        JLabel lbl = new JLabel(text, rightAlign ? JLabel.RIGHT : JLabel.LEFT);
+        lbl.setFont(lbl.getFont().deriveFont(style, 12f));
+        lbl.setForeground(color);
+        return lbl;
+    }
+
+    private JLabel makeDeltaLabel(double oldVal, double newVal, boolean upIsGood) {
+        if (oldVal == 0 && newVal == 0) {
+            JLabel lbl = new JLabel("—", JLabel.RIGHT);
+            lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
+            lbl.setForeground(SLATE);
+            return lbl;
+        }
+        double pct = oldVal == 0 ? 100.0 : ((newVal - oldVal) / oldVal) * 100.0;
+        boolean increased = pct > 0;
+        boolean isGood    = upIsGood ? increased : !increased;
+        String arrow = increased ? "\u25B2 " : "\u25BC ";
+        Color  color = pct == 0 ? SLATE : (isGood ? GREEN : RED);
+        JLabel lbl = new JLabel(String.format("%s%.1f%%", arrow, Math.abs(pct)), JLabel.RIGHT);
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 12f));
+        lbl.setForeground(color);
+        return lbl;
+    }
+
+    // Stat card
     private JPanel makeStatCard(String title, String value, String sub,
                                  Color accent, String linkLabel, String navTarget) {
         final boolean[] hovered = {false};
@@ -348,7 +420,6 @@ public class DashboardPanel extends JPanel {
                 g2.setColor(new Color(226, 232, 240));
                 g2.setStroke(new BasicStroke(1f));
                 g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 14, 14);
-                // accent bar top
                 g2.setColor(accent);
                 g2.fillRoundRect(0, 0, getWidth(), 4, 4, 4);
                 g2.dispose();
@@ -359,19 +430,15 @@ public class DashboardPanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         card.setPreferredSize(new Dimension(0, 110));
-
         JLabel titleLbl = new JLabel(title.toUpperCase());
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 10f));
         titleLbl.setForeground(new Color(148, 163, 184));
-
         JLabel valueLbl = new JLabel(value);
         valueLbl.setFont(valueLbl.getFont().deriveFont(Font.BOLD, 22f));
         valueLbl.setForeground(NAVY);
-
         JLabel subLbl = new JLabel(sub);
         subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 11f));
         subLbl.setForeground(new Color(148, 163, 184));
-
         JPanel text = new JPanel();
         text.setOpaque(false);
         text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
@@ -381,61 +448,44 @@ public class DashboardPanel extends JPanel {
         text.add(Box.createVerticalStrut(2));
         text.add(subLbl);
         card.add(text, BorderLayout.CENTER);
-
         card.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
             public void mouseExited(MouseEvent e)  { hovered[0] = false; card.repaint(); }
-            public void mousePressed(MouseEvent e) {
-                if (mainFrame != null) mainFrame.showPanel(navTarget);
-            }
+            public void mousePressed(MouseEvent e) { if (mainFrame != null) mainFrame.showPanel(navTarget); }
         });
         return card;
     }
 
     private JPanel makeNetCard(double net) {
-        boolean positive = net >= 0;
-        Color accent = positive ? GREEN : new Color(239, 68, 68);
+        Color accent = net >= 0 ? GREEN : RED;
         String value = String.format("%s$%.2f", net < 0 ? "-" : "", Math.abs(net));
-        JPanel card = makeStatCard("Est. Net Income", value,
+        return makeStatCard("Est. Net Income", value,
             "before vehicle & home office deductions", accent, "Accounting", "ACCOUNTING");
-        return card;
     }
 
-    // ── Recent activity ───────────────────────────────────────────────────────
-
+    // Recent activity
     private record ActivityItem(String date, String title, String sub, Color accent, String emoji) {}
 
     private List<ActivityItem> buildRecentActivity(int year, LocalDate today) {
         List<ActivityItem> items = new ArrayList<>();
-
-        // Scan last 3 months of work logs
         for (int m = today.getMonthValue(); m >= Math.max(1, today.getMonthValue() - 2); m--) {
-            String mk = String.format("%d-%02d", year, m);
-            List<LogEntry> logs = storage.loadLogs(mk);
-            for (LogEntry entry : logs) {
+            for (LogEntry entry : storage.loadLogs(String.format("%d-%02d", year, m))) {
                 String title = switch (entry.getType()) {
                     case TIME      -> "Work log entry";
                     case KILOMETER -> String.format("%.0f km billed", entry.getKilometers() != null ? entry.getKilometers() : 0);
                     case EXTRA     -> "Extra billed";
                 };
-                items.add(new ActivityItem(entry.getDate(), title,
-                    "Work Log", BLUE, "📅"));
+                items.add(new ActivityItem(entry.getDate(), title, "Work Log", BLUE, "\uD83D\uDCC5"));
             }
         }
-
-        // Expenses this year
         storage.loadExpenditures(String.valueOf(year)).forEach(e ->
             items.add(new ActivityItem(e.getDate(),
                 e.getDescription() != null && !e.getDescription().isBlank() ? e.getDescription() : "Expense",
-                String.format("$%.2f", e.getTotal()), AMBER, "💸")));
-
-        // KM trips this year
+                String.format("$%.2f", e.getTotal()), AMBER, "\uD83D\uDCB8")));
         storage.loadKmTrips(String.valueOf(year)).forEach(t ->
             items.add(new ActivityItem(t.getDate(),
                 t.getNote() != null && !t.getNote().isBlank() ? t.getNote() : "Trip",
-                String.format("%.1f km", t.getKm()), GREEN, "🚗")));
-
-        // Sort by date desc, take top 6
+                String.format("%.1f km", t.getKm()), GREEN, "\uD83D\uDE97")));
         items.sort(Comparator.comparing(ActivityItem::date).reversed());
         return items.stream().limit(6).toList();
     }
@@ -445,11 +495,9 @@ public class DashboardPanel extends JPanel {
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(10, 4, 10, 4));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-
         JLabel emoji = new JLabel(item.emoji());
         emoji.setFont(emoji.getFont().deriveFont(16f));
         emoji.setPreferredSize(new Dimension(28, 28));
-
         JPanel text = new JPanel(new BorderLayout(0, 2));
         text.setOpaque(false);
         JLabel titleLbl = new JLabel(item.title());
@@ -460,54 +508,40 @@ public class DashboardPanel extends JPanel {
         subLbl.setForeground(new Color(148, 163, 184));
         text.add(titleLbl, BorderLayout.NORTH);
         text.add(subLbl,   BorderLayout.SOUTH);
-
         JLabel dateLbl = new JLabel(item.date(), JLabel.RIGHT);
         dateLbl.setFont(dateLbl.getFont().deriveFont(Font.PLAIN, 11f));
         dateLbl.setForeground(new Color(148, 163, 184));
-
-        row.add(emoji,  BorderLayout.WEST);
-        row.add(text,   BorderLayout.CENTER);
+        row.add(emoji,   BorderLayout.WEST);
+        row.add(text,    BorderLayout.CENTER);
         row.add(dateLbl, BorderLayout.EAST);
         return row;
     }
 
-    // ── Outstanding invoice row ─────────────────────────────────────────────
-
+    // Outstanding invoice row
     private JPanel makeOutstandingRow(Invoice inv) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(10, 4, 10, 4));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-
-        // Left: invoice # + boss
         JPanel left = new JPanel();
         left.setOpaque(false);
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-
-        JLabel invLbl = new JLabel("Invoice #" + inv.getInvoiceNumber() + "  •  " + inv.getBossName());
+        JLabel invLbl = new JLabel("Invoice #" + inv.getInvoiceNumber() + "  \u2022  " + inv.getBossName());
         invLbl.setFont(invLbl.getFont().deriveFont(Font.BOLD, 12f));
         invLbl.setForeground(NAVY);
-
-        String period = formatInvPeriod(inv.getStartDate(), inv.getEndDate());
         String sentStr = inv.getSentDate() != null
-            ? "Sent " + LocalDate.parse(inv.getSentDate()).format(DateTimeFormatter.ofPattern("MMM d"))
-            : "Sent";
-        JLabel subLbl = new JLabel(period + "  ·  " + sentStr);
+            ? "Sent " + LocalDate.parse(inv.getSentDate()).format(DateTimeFormatter.ofPattern("MMM d")) : "Sent";
+        JLabel subLbl = new JLabel(formatInvPeriod(inv.getStartDate(), inv.getEndDate()) + "  \u00B7  " + sentStr);
         subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 11f));
         subLbl.setForeground(new Color(148, 163, 184));
-
         left.add(invLbl);
         left.add(Box.createVerticalStrut(2));
         left.add(subLbl);
-
-        // Right: amount + Mark Paid button
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
-
         JLabel amtLbl = new JLabel(String.format("$%.2f", inv.getTotalAmount()));
         amtLbl.setFont(amtLbl.getFont().deriveFont(Font.BOLD, 13f));
         amtLbl.setForeground(new Color(37, 99, 235));
-
         JButton markPaid = new JButton("Mark Paid");
         markPaid.putClientProperty("JButton.buttonType", "roundRect");
         markPaid.setBackground(new Color(209, 250, 229));
@@ -518,14 +552,11 @@ public class DashboardPanel extends JPanel {
             inv.setStatus(Invoice.Status.PAID);
             inv.setPaidDate(LocalDate.now().toString());
             storage.updateInvoice(inv);
-            refresh(); // rebuild dashboard
-            // Show tax set-aside dialog via MainFrame → InvoicePanel
+            refresh();
             if (mainFrame != null) mainFrame.showTaxSetAside(inv);
         });
-
         right.add(amtLbl);
         right.add(markPaid);
-
         row.add(left,  BorderLayout.CENTER);
         row.add(right, BorderLayout.EAST);
         return row;
@@ -538,11 +569,10 @@ public class DashboardPanel extends JPanel {
             LocalDate e = LocalDate.parse(end);
             if (s.getMonth() == e.getMonth() && s.getYear() == e.getYear())
                 return s.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
-            return s.format(DateTimeFormatter.ofPattern("MMM d")) + " – " + e.format(DateTimeFormatter.ofPattern("MMM d"));
+            return s.format(DateTimeFormatter.ofPattern("MMM d"))
+                + " \u2013 " + e.format(DateTimeFormatter.ofPattern("MMM d"));
         } catch (Exception ex) { return start; }
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String greeting() {
         int hour = LocalTime.now().getHour();
