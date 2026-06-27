@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.storage.DataStorage;
+import com.github.shanebeee.et.util.SearchEngine;
 import com.github.shanebeee.et.util.UIUtils;
 
 import javax.swing.*;
@@ -82,6 +83,103 @@ public class MainFrame extends JFrame {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebarContent.add(titleLabel);
+
+        // ── Search bar ────────────────────────────────────────────────────────
+        SearchEngine searchEngine = new SearchEngine(storage);
+        JTextField searchField = new JTextField();
+        searchField.putClientProperty("JTextField.placeholderText", "🔍  Search...");
+        searchField.setFont(searchField.getFont().deriveFont(Font.PLAIN, 13f));
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(226, 232, 240), 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)));
+        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        searchField.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel searchWrap = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 0, 0));
+        searchWrap.setOpaque(false);
+        searchWrap.setBorder(BorderFactory.createEmptyBorder(0, 12, 12, 12));
+        searchWrap.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        searchWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        searchField.setPreferredSize(new Dimension(210, 34));
+        searchWrap.add(searchField);
+        sidebarContent.add(searchWrap);
+
+        // Search results popup
+        JPopupMenu searchPopup = new JPopupMenu();
+        searchPopup.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
+
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { runSearch(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { runSearch(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { runSearch(); }
+            void runSearch() {
+                SwingUtilities.invokeLater(() -> {
+                    String q = searchField.getText().trim();
+                    searchPopup.setVisible(false);
+                    searchPopup.removeAll();
+                    if (q.isEmpty()) return;
+
+                    List<SearchEngine.SearchResult> results = searchEngine.search(q, 8);
+                    if (results.isEmpty()) {
+                        JMenuItem none = new JMenuItem("No results for \"" + q + "\"");
+                        none.setEnabled(false);
+                        none.setFont(none.getFont().deriveFont(Font.ITALIC, 12f));
+                        searchPopup.add(none);
+                    } else {
+                        String lastPanel = null;
+                        for (SearchEngine.SearchResult r : results) {
+                            // Section separator when panel changes
+                            if (!r.panel().equals(lastPanel)) {
+                                if (lastPanel != null) searchPopup.addSeparator();
+                                JLabel section = new JLabel("  " + panelLabel(r.panel()));
+                                section.setFont(section.getFont().deriveFont(Font.BOLD, 10f));
+                                section.setForeground(new Color(148, 163, 184));
+                                section.setBorder(BorderFactory.createEmptyBorder(4, 4, 2, 4));
+                                searchPopup.add(section);
+                                lastPanel = r.panel();
+                            }
+                            JMenuItem item = new JMenuItem();
+                            item.setLayout(new BorderLayout(8, 0));
+                            JLabel emoji = new JLabel(r.emoji());
+                            emoji.setFont(emoji.getFont().deriveFont(14f));
+                            JPanel text = new JPanel();
+                            text.setOpaque(false);
+                            text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+                            JLabel title = new JLabel(r.title());
+                            title.setFont(title.getFont().deriveFont(Font.PLAIN, 12f));
+                            title.setForeground(new Color(30, 41, 59));
+                            JLabel sub = new JLabel(r.subtitle() + "  ·  " + r.date());
+                            sub.setFont(sub.getFont().deriveFont(Font.PLAIN, 10f));
+                            sub.setForeground(new Color(148, 163, 184));
+                            text.add(title);
+                            text.add(sub);
+                            item.add(emoji, BorderLayout.WEST);
+                            item.add(text,  BorderLayout.CENTER);
+                            item.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
+                            item.addActionListener(ae -> {
+                                showPanel(r.panel());
+                                searchField.setText("");
+                                searchPopup.setVisible(false);
+                            });
+                            searchPopup.add(item);
+                        }
+                    }
+                    searchPopup.show(searchField, 0, searchField.getHeight());
+                    searchPopup.setPreferredSize(new Dimension(searchField.getWidth(), -1));
+                    searchField.requestFocusInWindow();
+                });
+            }
+        });
+
+        // Escape closes popup
+        searchField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                    searchPopup.setVisible(false);
+                    searchField.setText("");
+                }
+            }
+        });
 
         JButton dashBtn = createNavButton("Dashboard", "DASHBOARD", "dashboard.svg");
         sidebarContent.add(dashBtn);
@@ -305,6 +403,17 @@ public class MainFrame extends JFrame {
             updateNavButtons(btn);
         });
         return btn;
+    }
+
+    private String panelLabel(String panel) {
+        return switch (panel) {
+            case "LOGS"       -> "WORK LOGS";
+            case "EXPENSES"   -> "EXPENSES";
+            case "KM"         -> "KILOMETRE LOG";
+            case "INVOICES"   -> "INVOICES";
+            case "ACCOUNTING" -> "ACCOUNTING";
+            default           -> panel;
+        };
     }
 
     private void updateNavButtons(JButton activeBtn) {
