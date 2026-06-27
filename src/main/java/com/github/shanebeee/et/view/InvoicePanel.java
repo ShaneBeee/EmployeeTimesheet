@@ -6,6 +6,7 @@ import com.github.shanebeee.et.model.Invoice;
 import com.github.shanebeee.et.model.LogEntry;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.InvoiceGenerator;
+import com.github.shanebeee.et.util.InvoiceMailer;
 import com.github.shanebeee.et.util.SummaryGenerator;
 
 import javax.swing.*;
@@ -268,6 +269,11 @@ public class InvoicePanel extends JPanel {
         btnOpenPdf.setBackground(new Color(241, 245, 249));
         btnOpenPdf.setForeground(new Color(30, 41, 59));
 
+        JButton btnEmail = new JButton("✉ Email Invoice");
+        btnEmail.putClientProperty("JButton.buttonType", "roundRect");
+        btnEmail.setBackground(new Color(234, 231, 255));
+        btnEmail.setForeground(new Color(99, 102, 241));
+
         JButton btnMarkSent = new JButton("Mark as Sent");
         btnMarkSent.putClientProperty("JButton.buttonType", "roundRect");
         btnMarkSent.setBackground(new Color(219, 234, 254));
@@ -278,9 +284,16 @@ public class InvoicePanel extends JPanel {
         btnMarkPaid.setBackground(new Color(209, 250, 229));
         btnMarkPaid.setForeground(new Color(5, 150, 105));
 
+        JButton btnDelete = new JButton("Delete");
+        btnDelete.putClientProperty("JButton.buttonType", "roundRect");
+        btnDelete.setBackground(new Color(254, 226, 226));
+        btnDelete.setForeground(new Color(220, 38, 38));
+
         bar.add(btnOpenPdf);
+        bar.add(btnEmail);
         bar.add(btnMarkSent);
         bar.add(btnMarkPaid);
+        bar.add(btnDelete);
         root.add(bar, BorderLayout.SOUTH);
 
         // ── Button actions ────────────────────────────────────────────────────
@@ -293,6 +306,27 @@ public class InvoicePanel extends JPanel {
                 return;
             }
             try { Desktop.getDesktop().open(pdf); } catch (IOException ex) { ex.printStackTrace(); }
+        });
+
+        btnEmail.addActionListener(e -> {
+            Invoice inv = selectedInvoice();
+            if (inv == null) return;
+            // Find the boss for this invoice
+            Boss boss = storage.loadBosses().stream()
+                .filter(b -> b.getId().equals(inv.getBossId()))
+                .findFirst().orElse(null);
+            if (boss == null) {
+                JOptionPane.showMessageDialog(this, "Could not find boss for this invoice.");
+                return;
+            }
+            EmployeeInfo employee = storage.loadEmployeeInfo();
+            try {
+                InvoiceMailer.composeEmail(inv, boss, employee);
+            } catch (IllegalStateException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Cannot Email Invoice", JOptionPane.WARNING_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Failed to open Mail:\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         btnMarkSent.addActionListener(e -> {
@@ -320,6 +354,20 @@ public class InvoicePanel extends JPanel {
             storage.updateInvoice(inv);
             refreshHistory();
             showTaxSetAsideDialog(inv);
+        });
+
+        btnDelete.addActionListener(e -> {
+            Invoice inv = selectedInvoice();
+            if (inv == null) return;
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Delete Invoice #" + inv.getInvoiceNumber() + " (" + inv.getBossName() + ")?\n"
+                + "The PDF will not be deleted from disk.",
+                "Delete Invoice", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.OK_OPTION) return;
+            List<Invoice> invoices = storage.loadInvoices();
+            invoices.removeIf(i -> i.getId().equals(inv.getId()));
+            storage.saveInvoices(invoices);
+            refreshHistory();
         });
 
         // Double-click row → open PDF
