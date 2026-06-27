@@ -3,6 +3,7 @@ package com.github.shanebeee.et.view;
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.AnnualTaxReportGenerator;
+import com.github.shanebeee.et.util.CsvExporter;
 import com.github.shanebeee.et.util.ExcelExporter;
 import com.github.shanebeee.et.util.YearArchiver;
 
@@ -102,12 +103,12 @@ public class AccountingPanel extends JPanel {
         yearCard.add(yearSpinner, BorderLayout.EAST);
         body.add(yearCard, gbc);
 
-        // ── Excel export card ────────────────────────────────────────────────
+        // ── Accounting data export card ──────────────────────────────────────
         gbc.gridy++;
         body.add(makeExportCard(
-            "📊", "Export to Excel",
-            "Expenses, KM log, and KM summary as a formatted .xlsx workbook",
-            ACCENT, this::exportExcel
+            "📊", "Export Accounting Data",
+            "Expenses and KM log as Excel (.xlsx) or CSV (.csv)",
+            ACCENT, this::showExportFormatPicker
         ), gbc);
 
         // ── Receipt zip card ─────────────────────────────────────────────────
@@ -219,6 +220,93 @@ public class AccountingPanel extends JPanel {
     }
 
     // ── Export actions ────────────────────────────────────────────────────────
+
+    private void showExportFormatPicker() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+        JLabel lbl = new JLabel("Choose export format:");
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 13f));
+        lbl.setAlignmentX(LEFT_ALIGNMENT);
+        panel.add(lbl);
+        panel.add(Box.createVerticalStrut(12));
+
+        JButton btnExcel = new JButton("📊  Excel (.xlsx)  —  Formatted workbook");
+        btnExcel.putClientProperty("JButton.buttonType", "roundRect");
+        btnExcel.setBackground(ACCENT);
+        btnExcel.setForeground(Color.WHITE);
+        btnExcel.setAlignmentX(LEFT_ALIGNMENT);
+        btnExcel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        JButton btnCsv = new JButton("📄  CSV (.csv)  —  Plain text, two files in a zip");
+        btnCsv.putClientProperty("JButton.buttonType", "roundRect");
+        btnCsv.setBackground(new Color(16, 185, 129));
+        btnCsv.setForeground(Color.WHITE);
+        btnCsv.setAlignmentX(LEFT_ALIGNMENT);
+        btnCsv.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        panel.add(btnExcel);
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(btnCsv);
+
+        JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
+            "Export Accounting Data", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(380, 180);
+        dialog.setResizable(false);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(Color.WHITE);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(Color.WHITE);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        wrapper.add(panel);
+        dialog.add(wrapper);
+
+        btnExcel.addActionListener(e -> { dialog.dispose(); exportExcel(); });
+        btnCsv.addActionListener(e   -> { dialog.dispose(); exportCsv(); });
+
+        dialog.setVisible(true);
+    }
+
+    private void exportCsv() {
+        int year = (int) yearSpinner.getValue();
+
+        java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
+        java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Save CSV Export", java.awt.FileDialog.SAVE);
+        fd.setFile("EmployeeTimesheet_" + year + "_CSV.zip");
+        fd.setVisible(true);
+        if (fd.getFile() == null) return;
+        String outputPath = fd.getDirectory() + fd.getFile();
+        if (!outputPath.endsWith(".zip")) outputPath += ".zip";
+        final String finalPath = outputPath;
+
+        JDialog progress = makeProgressDialog("Generating CSV files...");
+        new Thread(() -> {
+            try {
+                CsvExporter exporter = new CsvExporter(storage);
+                File out = exporter.export(year, finalPath);
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    int opt = JOptionPane.showConfirmDialog(this,
+                        "CSV files saved to:\n" + out.getAbsolutePath() + "\n\nOpen folder?",
+                        "Export Complete", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                    if (opt == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
+                        try { Desktop.getDesktop().open(out.getParentFile()); }
+                        catch (IOException ex) { ex.printStackTrace(); }
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    progress.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        "Export failed:\n" + ex.getMessage(),
+                        "Export Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }).start();
+        progress.setVisible(true);
+    }
 
     private void exportExcel() {
         int year = (int) yearSpinner.getValue();
