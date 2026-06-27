@@ -1,6 +1,7 @@
 package com.github.shanebeee.et.storage;
 
 import com.github.shanebeee.et.model.Boss;
+import com.github.shanebeee.et.model.Invoice;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.ExpenseTemplate;
@@ -447,6 +448,36 @@ public class DataStorage {
 
     public String getSummaryPath(String yearMonth) {
         return INVOICES_DIR + "Summary_" + yearMonth + ".pdf";
+    }
+
+    // Invoice log
+    private static final String INVOICE_LOG_FILE = INVOICES_DIR + "invoice_log.json";
+
+    public List<Invoice> loadInvoices() {
+        return loadList(INVOICE_LOG_FILE, new TypeToken<List<Invoice>>() {}.getType());
+    }
+
+    public void saveInvoices(List<Invoice> invoices) {
+        saveToFile(INVOICE_LOG_FILE, invoices);
+    }
+
+    /** Appends a newly generated invoice record to the log. */
+    public void recordInvoice(Invoice invoice) {
+        List<Invoice> invoices = loadInvoices();
+        invoices.add(invoice);
+        saveInvoices(invoices);
+    }
+
+    /** Persists a status change (or any field change) for an existing invoice. */
+    public void updateInvoice(Invoice updated) {
+        List<Invoice> invoices = loadInvoices();
+        for (int i = 0; i < invoices.size(); i++) {
+            if (invoices.get(i).getId().equals(updated.getId())) {
+                invoices.set(i, updated);
+                break;
+            }
+        }
+        saveInvoices(invoices);
     }
 
     private static class Settings {

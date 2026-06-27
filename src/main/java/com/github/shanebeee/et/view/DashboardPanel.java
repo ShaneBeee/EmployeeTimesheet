@@ -3,6 +3,7 @@ package com.github.shanebeee.et.view;
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.Expenditure;
+import com.github.shanebeee.et.model.Invoice;
 import com.github.shanebeee.et.model.KmTrip;
 import com.github.shanebeee.et.model.LogEntry;
 import com.github.shanebeee.et.storage.DataStorage;
@@ -270,6 +271,30 @@ public class DashboardPanel extends JPanel {
         gc.gridy++;
         gc.insets = new Insets(0, 0, 16, 0);
 
+        // ── Outstanding invoices ──────────────────────────────────────────────
+        List<Invoice> outstanding = storage.loadInvoices().stream()
+            .filter(inv -> inv.getStatus() == Invoice.Status.SENT)
+            .sorted((a, b) -> a.getGeneratedDate().compareTo(b.getGeneratedDate()))
+            .toList();
+
+        if (!outstanding.isEmpty()) {
+            body.add(makeSectionLabel("OUTSTANDING INVOICES"), gc);
+            gc.gridy++;
+
+            JPanel outstandingCard = makeCard();
+            outstandingCard.setLayout(new BoxLayout(outstandingCard, BoxLayout.Y_AXIS));
+
+            for (int i = 0; i < outstanding.size(); i++) {
+                Invoice inv = outstanding.get(i);
+                outstandingCard.add(makeOutstandingRow(inv));
+                if (i < outstanding.size() - 1) outstandingCard.add(makeDivider());
+            }
+
+            body.add(outstandingCard, gc);
+            gc.gridy++;
+            gc.insets = new Insets(0, 0, 16, 0);
+        }
+
         // ── Recent activity ───────────────────────────────────────────────────
         body.add(makeSectionLabel("RECENT ACTIVITY"), gc);
         gc.gridy++;
@@ -444,6 +469,75 @@ public class DashboardPanel extends JPanel {
         row.add(text,   BorderLayout.CENTER);
         row.add(dateLbl, BorderLayout.EAST);
         return row;
+    }
+
+    // ── Outstanding invoice row ─────────────────────────────────────────────
+
+    private JPanel makeOutstandingRow(Invoice inv) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(10, 4, 10, 4));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+
+        // Left: invoice # + boss
+        JPanel left = new JPanel();
+        left.setOpaque(false);
+        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+
+        JLabel invLbl = new JLabel("Invoice #" + inv.getInvoiceNumber() + "  •  " + inv.getBossName());
+        invLbl.setFont(invLbl.getFont().deriveFont(Font.BOLD, 12f));
+        invLbl.setForeground(NAVY);
+
+        String period = formatInvPeriod(inv.getStartDate(), inv.getEndDate());
+        String sentStr = inv.getSentDate() != null
+            ? "Sent " + LocalDate.parse(inv.getSentDate()).format(DateTimeFormatter.ofPattern("MMM d"))
+            : "Sent";
+        JLabel subLbl = new JLabel(period + "  ·  " + sentStr);
+        subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 11f));
+        subLbl.setForeground(new Color(148, 163, 184));
+
+        left.add(invLbl);
+        left.add(Box.createVerticalStrut(2));
+        left.add(subLbl);
+
+        // Right: amount + Mark Paid button
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.setOpaque(false);
+
+        JLabel amtLbl = new JLabel(String.format("$%.2f", inv.getTotalAmount()));
+        amtLbl.setFont(amtLbl.getFont().deriveFont(Font.BOLD, 13f));
+        amtLbl.setForeground(new Color(37, 99, 235));
+
+        JButton markPaid = new JButton("Mark Paid");
+        markPaid.putClientProperty("JButton.buttonType", "roundRect");
+        markPaid.setBackground(new Color(209, 250, 229));
+        markPaid.setForeground(new Color(5, 150, 105));
+        markPaid.setFont(markPaid.getFont().deriveFont(Font.BOLD, 11f));
+        markPaid.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        markPaid.addActionListener(e -> {
+            inv.setStatus(Invoice.Status.PAID);
+            inv.setPaidDate(LocalDate.now().toString());
+            storage.updateInvoice(inv);
+            refresh(); // rebuild dashboard
+        });
+
+        right.add(amtLbl);
+        right.add(markPaid);
+
+        row.add(left,  BorderLayout.CENTER);
+        row.add(right, BorderLayout.EAST);
+        return row;
+    }
+
+    private String formatInvPeriod(String start, String end) {
+        if (start == null || end == null) return "";
+        try {
+            LocalDate s = LocalDate.parse(start);
+            LocalDate e = LocalDate.parse(end);
+            if (s.getMonth() == e.getMonth() && s.getYear() == e.getYear())
+                return s.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+            return s.format(DateTimeFormatter.ofPattern("MMM d")) + " – " + e.format(DateTimeFormatter.ofPattern("MMM d"));
+        } catch (Exception ex) { return start; }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

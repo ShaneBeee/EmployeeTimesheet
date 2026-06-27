@@ -30,6 +30,7 @@ public class MainFrame extends JFrame {
     private final DataStorage storage;
     private JPanel contentPanel;
     private CardLayout cardLayout;
+    private InvoicePanel invoicePanel;
     private final Map<String, JButton> navButtons = new HashMap<>();
     private static final Map<String, Color> NAV_COLORS = Map.of(
         "DASHBOARD",  new Color(30,  41,  59),
@@ -230,9 +231,10 @@ public class MainFrame extends JFrame {
 
         DashboardPanel dashboardPanel = new DashboardPanel(storage);
         dashboardPanel.setMainFrame(this);
+        invoicePanel = new InvoicePanel(storage);
         contentPanel.add(wrapInCard(dashboardPanel), "DASHBOARD");
         contentPanel.add(wrapInCard(new LogPanel(storage)),      "LOGS");
-        contentPanel.add(wrapInCard(new InvoicePanel(storage)),   "INVOICES");
+        contentPanel.add(wrapInCard(invoicePanel),               "INVOICES");
         contentPanel.add(wrapInCard(new ExpensesPanel(storage)),  "EXPENSES");
         contentPanel.add(wrapInCard(new KmLogPanel(storage)),      "KM");
         contentPanel.add(wrapInCard(new AccountingPanel(storage)),  "ACCOUNTING");
@@ -340,6 +342,9 @@ public class MainFrame extends JFrame {
         JButton btn = navButtons.get(cardName);
         if (btn != null) {
             updateNavButtons(btn);
+        }
+        if ("INVOICES".equals(cardName)) {
+            invoicePanel.refreshHistory();
         }
     }
 

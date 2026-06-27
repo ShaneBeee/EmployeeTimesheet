@@ -2,23 +2,29 @@ package com.github.shanebeee.et.view;
 
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
+import com.github.shanebeee.et.model.Invoice;
 import com.github.shanebeee.et.model.LogEntry;
 import com.github.shanebeee.et.storage.DataStorage;
 import com.github.shanebeee.et.util.InvoiceGenerator;
 import com.github.shanebeee.et.util.SummaryGenerator;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -27,10 +33,18 @@ import java.util.List;
 
 public class InvoicePanel extends JPanel {
 
+    private static final DateTimeFormatter DISPLAY_FMT = DateTimeFormatter.ofPattern("MMM d, yyyy");
+    private static final DateTimeFormatter SHORT_FMT   = DateTimeFormatter.ofPattern("MMM d");
+
     private final DataStorage storage;
     private JComboBox<Boss> bossCombo;
     private JButton startBtn;
     private JButton endBtn;
+
+    // History tab
+    private DefaultTableModel historyModel;
+    private JTable historyTable;
+    private List<Invoice> invoiceCache = new ArrayList<>();
 
     public InvoicePanel(DataStorage storage) {
         this.storage = storage;
@@ -49,7 +63,27 @@ public class InvoicePanel extends JPanel {
         header.add(titleLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
-        // ── Content area ─────────────────────────────────────────────────────
+        // ── Tabs ─────────────────────────────────────────────────────────────
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setOpaque(false);
+        tabs.addTab("Generate", buildGenerateTab());
+        tabs.addTab("History", buildHistoryTab());
+
+        // Refresh history whenever user switches to it
+        tabs.addChangeListener(e -> {
+            if (tabs.getSelectedIndex() == 1) refreshHistory();
+        });
+
+        add(tabs, BorderLayout.CENTER);
+    }
+
+    // ── Generate tab ─────────────────────────────────────────────────────────
+
+    private JPanel buildGenerateTab() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setOpaque(false);
+        root.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setOpaque(false);
@@ -61,7 +95,6 @@ public class InvoicePanel extends JPanel {
         invoiceCard.add(makeSectionLabel("GENERATE INVOICE"));
         invoiceCard.add(makeDivider());
 
-        // Boss selector row
         bossCombo = new JComboBox<>();
         List<Boss> bosses = storage.loadBosses();
         for (Boss b : bosses) bossCombo.addItem(b);
@@ -76,9 +109,8 @@ public class InvoicePanel extends JPanel {
         invoiceCard.add(makeFieldRow("Boss", bossCombo));
         invoiceCard.add(makeDivider());
 
-        // Date range rows
         startBtn = makeDateButton(YearMonth.now().atDay(1).toString());
-        endBtn = makeDateButton(YearMonth.now().atEndOfMonth().toString());
+        endBtn   = makeDateButton(YearMonth.now().atEndOfMonth().toString());
         startBtn.addActionListener(e -> DatePicker.showPicker(InvoicePanel.this, startBtn));
         endBtn.addActionListener(e -> DatePicker.showPicker(InvoicePanel.this, endBtn));
 
@@ -86,7 +118,6 @@ public class InvoicePanel extends JPanel {
         invoiceCard.add(makeDivider());
         invoiceCard.add(makeFieldRow("End Date", endBtn));
 
-        // Invoice action buttons
         invoiceCard.add(Box.createVerticalStrut(12));
         JPanel invoiceBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         invoiceBtns.setOpaque(false);
@@ -156,38 +187,7 @@ public class InvoicePanel extends JPanel {
         summaryCard.add(Box.createVerticalStrut(4));
 
         btnPreview.addActionListener(e -> showSummaryPreview());
-        btnSummary.addActionListener(e -> {
-            try {
-                JComboBox<YearMonth> monthCombo = new JComboBox<>();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy");
-                monthCombo.setRenderer(new DefaultListCellRenderer() {
-                    @Override
-                    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                        super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                        if (value instanceof YearMonth ym) setText(ym.format(formatter));
-                        return this;
-                    }
-                });
-                YearMonth current = YearMonth.now();
-                for (int i = 0; i < 24; i++) monthCombo.addItem(current.minusMonths(i));
-
-                int result = JOptionPane.showConfirmDialog(this, monthCombo, "Select Month", JOptionPane.OK_CANCEL_OPTION);
-                if (result != JOptionPane.OK_OPTION) return;
-
-                YearMonth ym = (YearMonth) monthCombo.getSelectedItem();
-                if (ym == null) return;
-
-                List<LogEntry> logs = storage.loadLogs(ym.toString());
-                EmployeeInfo employee = storage.loadEmployeeInfo();
-                List<Boss> allBosses = storage.loadBosses();
-                String path = storage.getSummaryPath(ym.toString());
-                SummaryGenerator.generateMonthlySummary(allBosses, employee, logs, ym.toString(), path);
-                JOptionPane.showMessageDialog(this, "Monthly Summary generated at: " + path);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error generating summary: " + ex.getMessage());
-            }
-        });
+        btnSummary.addActionListener(e -> exportMonthlySummary());
 
         content.add(summaryCard);
 
@@ -196,11 +196,316 @@ public class InvoicePanel extends JPanel {
         scroll.getViewport().setOpaque(false);
         scroll.setOpaque(false);
         scroll.getVerticalScrollBar().setUnitIncrement(12);
-        add(scroll, BorderLayout.CENTER);
+        root.add(scroll, BorderLayout.CENTER);
+        return root;
     }
 
+    // ── History tab ──────────────────────────────────────────────────────────
+
+    private JPanel buildHistoryTab() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setOpaque(false);
+        root.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
+        // Table
+        String[] columns = {"#", "Boss", "Period", "Generated", "Status", "Amount"};
+        historyModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        historyTable = new JTable(historyModel);
+        historyTable.setRowHeight(36);
+        historyTable.setShowGrid(false);
+        historyTable.setIntercellSpacing(new Dimension(0, 0));
+        historyTable.getTableHeader().setReorderingAllowed(false);
+        historyTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        // Column widths
+        historyTable.getColumnModel().getColumn(0).setMaxWidth(50);   // #
+        historyTable.getColumnModel().getColumn(0).setPreferredWidth(50);
+        historyTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Generated
+        historyTable.getColumnModel().getColumn(4).setPreferredWidth(90);  // Status
+        historyTable.getColumnModel().getColumn(5).setPreferredWidth(90);  // Amount
+
+        // Status badge renderer
+        historyTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel lbl = new JLabel();
+                lbl.setOpaque(true);
+                lbl.setHorizontalAlignment(CENTER);
+                lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 11f));
+                if (value instanceof Invoice.Status status) {
+                    lbl.setText(status.getLabel());
+                    switch (status) {
+                        case DRAFT -> { lbl.setBackground(new Color(241, 245, 249)); lbl.setForeground(new Color(100, 116, 139)); }
+                        case SENT  -> { lbl.setBackground(new Color(219, 234, 254)); lbl.setForeground(new Color(37, 99, 235)); }
+                        case PAID  -> { lbl.setBackground(new Color(209, 250, 229)); lbl.setForeground(new Color(5, 150, 105)); }
+                    }
+                }
+                if (isSelected) {
+                    lbl.setBackground(lbl.getBackground().darker());
+                }
+                return lbl;
+            }
+        });
+
+        // Amount right-aligned
+        DefaultTableCellRenderer rightAlign = new DefaultTableCellRenderer();
+        rightAlign.setHorizontalAlignment(SwingConstants.RIGHT);
+        historyTable.getColumnModel().getColumn(5).setCellRenderer(rightAlign);
+
+        JScrollPane tableScroll = new JScrollPane(historyTable);
+        tableScroll.setBorder(BorderFactory.createEmptyBorder());
+        root.add(tableScroll, BorderLayout.CENTER);
+
+        // ── Action buttons bar ────────────────────────────────────────────────
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        bar.setOpaque(false);
+        bar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
+
+        JButton btnOpenPdf = new JButton("Open PDF");
+        btnOpenPdf.putClientProperty("JButton.buttonType", "roundRect");
+        btnOpenPdf.setBackground(new Color(241, 245, 249));
+        btnOpenPdf.setForeground(new Color(30, 41, 59));
+
+        JButton btnMarkSent = new JButton("Mark as Sent");
+        btnMarkSent.putClientProperty("JButton.buttonType", "roundRect");
+        btnMarkSent.setBackground(new Color(219, 234, 254));
+        btnMarkSent.setForeground(new Color(37, 99, 235));
+
+        JButton btnMarkPaid = new JButton("Mark as Paid");
+        btnMarkPaid.putClientProperty("JButton.buttonType", "roundRect");
+        btnMarkPaid.setBackground(new Color(209, 250, 229));
+        btnMarkPaid.setForeground(new Color(5, 150, 105));
+
+        bar.add(btnOpenPdf);
+        bar.add(btnMarkSent);
+        bar.add(btnMarkPaid);
+        root.add(bar, BorderLayout.SOUTH);
+
+        // ── Button actions ────────────────────────────────────────────────────
+        btnOpenPdf.addActionListener(e -> {
+            Invoice inv = selectedInvoice();
+            if (inv == null) return;
+            File pdf = new File(inv.getPdfPath());
+            if (!pdf.exists()) {
+                JOptionPane.showMessageDialog(this, "PDF not found at:\n" + inv.getPdfPath());
+                return;
+            }
+            try { Desktop.getDesktop().open(pdf); } catch (IOException ex) { ex.printStackTrace(); }
+        });
+
+        btnMarkSent.addActionListener(e -> {
+            Invoice inv = selectedInvoice();
+            if (inv == null) return;
+            if (inv.getStatus() == Invoice.Status.PAID) {
+                JOptionPane.showMessageDialog(this, "This invoice is already marked as Paid.");
+                return;
+            }
+            String date = pickDate("Sent Date", LocalDate.now().toString());
+            if (date == null) return;
+            inv.setStatus(Invoice.Status.SENT);
+            inv.setSentDate(date);
+            storage.updateInvoice(inv);
+            refreshHistory();
+        });
+
+        btnMarkPaid.addActionListener(e -> {
+            Invoice inv = selectedInvoice();
+            if (inv == null) return;
+            String date = pickDate("Paid Date", LocalDate.now().toString());
+            if (date == null) return;
+            inv.setStatus(Invoice.Status.PAID);
+            inv.setPaidDate(date);
+            storage.updateInvoice(inv);
+            refreshHistory();
+        });
+
+        // Double-click row → open PDF
+        historyTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) btnOpenPdf.doClick();
+            }
+        });
+
+        return root;
+    }
+
+    /** Reloads invoice list from storage and repopulates the table. */
+    public void refreshHistory() {
+        invoiceCache = storage.loadInvoices();
+        // Sort newest first
+        invoiceCache.sort((a, b) -> Integer.compare(b.getInvoiceNumber(), a.getInvoiceNumber()));
+
+        historyModel.setRowCount(0);
+        for (Invoice inv : invoiceCache) {
+            String period = formatPeriod(inv.getStartDate(), inv.getEndDate());
+            String generated = inv.getGeneratedDate() != null
+                ? LocalDate.parse(inv.getGeneratedDate()).format(DISPLAY_FMT) : "—";
+            historyModel.addRow(new Object[]{
+                "#" + inv.getInvoiceNumber(),
+                inv.getBossName(),
+                period,
+                generated,
+                inv.getStatus(),
+                String.format("$%.2f", inv.getTotalAmount())
+            });
+        }
+    }
+
+    private Invoice selectedInvoice() {
+        int row = historyTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Please select an invoice first.");
+            return null;
+        }
+        return invoiceCache.get(row);
+    }
+
+    /** Shows a simple date-picker dialog and returns the chosen ISO date string, or null if cancelled. */
+    private String pickDate(String label, String initialDate) {
+        JButton btn = makeDateButton(initialDate);
+        btn.addActionListener(e -> DatePicker.showPicker(InvoicePanel.this, btn));
+        int result = JOptionPane.showConfirmDialog(this, btn, label, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) return null;
+        return btn.getText();
+    }
+
+    private String formatPeriod(String start, String end) {
+        if (start == null || end == null) return "—";
+        try {
+            LocalDate s = LocalDate.parse(start);
+            LocalDate e = LocalDate.parse(end);
+            if (s.getYear() == e.getYear() && s.getMonth() == e.getMonth()) {
+                return s.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+            }
+            return s.format(SHORT_FMT) + " – " + e.format(SHORT_FMT);
+        } catch (Exception ex) {
+            return start + " – " + end;
+        }
+    }
+
+    // ── Generate logic ────────────────────────────────────────────────────────
+
+    private void generate(boolean itemized) {
+        try {
+            Boss boss = (Boss) bossCombo.getSelectedItem();
+            if (boss == null) return;
+            EmployeeInfo employee = storage.loadEmployeeInfo();
+
+            LocalDate start = LocalDate.parse(startBtn.getText());
+            LocalDate end   = LocalDate.parse(endBtn.getText());
+
+            List<LogEntry> allLogs = new ArrayList<>();
+            LocalDate curr = start.withDayOfMonth(1);
+            while (!curr.isAfter(end)) {
+                allLogs.addAll(storage.loadLogs(YearMonth.from(curr).toString()));
+                curr = curr.plusMonths(1);
+            }
+
+            List<LogEntry> filteredLogs = allLogs.stream()
+                .filter(l -> {
+                    LocalDate d = LocalDate.parse(l.getDate());
+                    return !d.isBefore(start) && !d.isAfter(end);
+                })
+                .toList();
+
+            // Calculate total for the invoice record
+            double total = calculateTotal(boss, filteredLogs, start, end);
+
+            int invNum = storage.getNextInvoiceNumber();
+            String path = storage.getInvoicePath(boss, invNum);
+            InvoiceGenerator.generateInvoice(boss, employee, filteredLogs, start.toString(), end.toString(), invNum, path, itemized);
+
+            // Record the invoice in the log
+            Invoice record = new Invoice();
+            record.setInvoiceNumber(invNum);
+            record.setBossId(boss.getId());
+            record.setBossName(boss.getName());
+            record.setStartDate(start.toString());
+            record.setEndDate(end.toString());
+            record.setGeneratedDate(LocalDate.now().toString());
+            record.setStatus(Invoice.Status.DRAFT);
+            record.setTotalAmount(total);
+            record.setPdfPath(path);
+            storage.recordInvoice(record);
+
+            JOptionPane.showMessageDialog(this, (itemized ? "Itemized " : "") + "Invoice #" + invNum + " generated at:\n" + path);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error generating invoice: " + ex.getMessage());
+        }
+    }
+
+    private double calculateTotal(Boss boss, List<LogEntry> logs, LocalDate start, LocalDate end) {
+        double totalHours = 0, totalKm = 0, totalExtras = 0;
+        for (LogEntry log : logs) {
+            LocalDate d = LocalDate.parse(log.getDate());
+            if (d.isBefore(start) || d.isAfter(end)) continue;
+
+            if (log.getType() == LogEntry.EntryType.TIME) {
+                double perc = log.getBossPercentages() != null
+                    ? log.getBossPercentages().getOrDefault(boss.getId(),
+                        log.getBossPercentages().getOrDefault(boss.getName(), 0.0)) / 100.0
+                    : 0;
+                if (perc > 0) {
+                    java.time.LocalTime s = TimePickerPanel.parseTime(log.getStartTime());
+                    java.time.LocalTime e = TimePickerPanel.parseTime(log.getEndTime());
+                    totalHours += java.time.Duration.between(s, e).toMinutes() / 60.0 * perc;
+                }
+            } else if (log.getType() == LogEntry.EntryType.KILOMETER) {
+                if (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))
+                    totalKm += log.getKilometers() != null ? log.getKilometers() : 0;
+            } else if (log.getType() == LogEntry.EntryType.EXTRA) {
+                if (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))
+                    totalExtras += (log.getUnits() != null ? log.getUnits() : 0)
+                        * (log.getCostPerUnit() != null ? log.getCostPerUnit() : 0);
+            }
+        }
+        double subtotal = (totalHours * boss.getHourlyRate())
+            + (totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0))
+            + totalExtras;
+        return subtotal + subtotal * (boss.getTaxRate() / 100.0);
+    }
+
+    // ── Monthly summary (unchanged logic, just extracted) ─────────────────────
+
+    private void exportMonthlySummary() {
+        try {
+            JComboBox<YearMonth> monthCombo = new JComboBox<>();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy");
+            monthCombo.setRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                    if (value instanceof YearMonth ym) setText(ym.format(formatter));
+                    return this;
+                }
+            });
+            YearMonth current = YearMonth.now();
+            for (int i = 0; i < 24; i++) monthCombo.addItem(current.minusMonths(i));
+
+            int result = JOptionPane.showConfirmDialog(this, monthCombo, "Select Month", JOptionPane.OK_CANCEL_OPTION);
+            if (result != JOptionPane.OK_OPTION) return;
+
+            YearMonth ym = (YearMonth) monthCombo.getSelectedItem();
+            if (ym == null) return;
+
+            List<LogEntry> logs = storage.loadLogs(ym.toString());
+            EmployeeInfo employee = storage.loadEmployeeInfo();
+            List<Boss> allBosses = storage.loadBosses();
+            String path = storage.getSummaryPath(ym.toString());
+            SummaryGenerator.generateMonthlySummary(allBosses, employee, logs, ym.toString(), path);
+            JOptionPane.showMessageDialog(this, "Monthly Summary generated at: " + path);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error generating summary: " + ex.getMessage());
+        }
+    }
+
+    // ── Preview dialogs (unchanged) ───────────────────────────────────────────
+
     private void showSummaryPreview() {
-        // Month picker
         JComboBox<YearMonth> monthCombo = new JComboBox<>();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy");
         monthCombo.setRenderer(new DefaultListCellRenderer() {
@@ -220,9 +525,8 @@ public class InvoicePanel extends JPanel {
         List<LogEntry> logs = storage.loadLogs(ym.toString());
         List<Boss> bosses = storage.loadBosses();
 
-        // Calculate totals per boss
         double grandTotal = 0;
-        java.util.List<double[]> bossData = new java.util.ArrayList<>(); // [hours, km, extras, subtotal, tax, total]
+        java.util.List<double[]> bossData = new java.util.ArrayList<>();
         for (Boss boss : bosses) {
             double totalHours = 0, totalKm = 0, totalExtras = 0;
             double bossSub = 0, bossTax = 0;
@@ -256,13 +560,11 @@ public class InvoicePanel extends JPanel {
             bossData.add(new double[]{totalHours, totalKm, totalExtras, bossSub, bossTax, bossTotal});
         }
 
-        // Build the dialog
         JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
             ym.format(fmt) + " Summary", true);
         dialog.setLayout(new BorderLayout());
         dialog.setSize(560, 680);
         dialog.setResizable(false);
-        dialog.setMaximumSize(new java.awt.Dimension(560, (int) java.awt.Toolkit.getDefaultToolkit().getScreenSize().getHeight() - 100));
         dialog.getContentPane().setBackground(new Color(248, 250, 252));
 
         JPanel body = new JPanel();
@@ -270,10 +572,9 @@ public class InvoicePanel extends JPanel {
         body.setOpaque(false);
         body.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Big total at top with vibe check
         String vibeEmoji = grandTotal > 5000 ? "🤑" : grandTotal > 2000 ? "😊" : grandTotal > 500 ? "😐" : "😬";
-        String vibeText = grandTotal > 5000 ? "YAY I'M RICH" : grandTotal > 2000 ? "Not bad!" : grandTotal > 500 ? "Getting there..." : "AHHH SHIT I'M BROKE";
-        Color vibeColor = grandTotal > 5000 ? new Color(34, 197, 94) : grandTotal > 2000 ? new Color(59, 130, 246) : grandTotal > 500 ? new Color(245, 158, 11) : new Color(239, 68, 68);
+        String vibeText  = grandTotal > 5000 ? "YAY I'M RICH" : grandTotal > 2000 ? "Not bad!" : grandTotal > 500 ? "Getting there..." : "AHHH SHIT I'M BROKE";
+        Color  vibeColor = grandTotal > 5000 ? new Color(34, 197, 94) : grandTotal > 2000 ? new Color(59, 130, 246) : grandTotal > 500 ? new Color(245, 158, 11) : new Color(239, 68, 68);
 
         JLabel emojiLabel = new JLabel(vibeEmoji, JLabel.CENTER);
         emojiLabel.setFont(emojiLabel.getFont().deriveFont(Font.PLAIN, 48f));
@@ -295,11 +596,10 @@ public class InvoicePanel extends JPanel {
         body.add(totalLabel);
         body.add(Box.createVerticalStrut(20));
 
-        // Per-boss breakdown
         for (int i = 0; i < bosses.size(); i++) {
             Boss boss = bosses.get(i);
             double[] d = bossData.get(i);
-            if (d[5] == 0) continue; // skip bosses with no earnings
+            if (d[5] == 0) continue;
 
             JPanel bossCard = makeCard();
             bossCard.setLayout(new BoxLayout(bossCard, BoxLayout.Y_AXIS));
@@ -347,30 +647,13 @@ public class InvoicePanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private JPanel makeSummaryRow(String label, String value) {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
-        row.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 11f));
-        lbl.setForeground(new Color(100, 116, 139));
-        JLabel val = new JLabel(value);
-        val.setFont(val.getFont().deriveFont(Font.PLAIN, 11f));
-        val.setForeground(new Color(71, 85, 105));
-        row.add(lbl, BorderLayout.WEST);
-        row.add(val, BorderLayout.EAST);
-        return row;
-    }
-
     private void showInvoicePreview() {
         Boss boss = (Boss) bossCombo.getSelectedItem();
         if (boss == null) return;
         EmployeeInfo employee = storage.loadEmployeeInfo();
         LocalDate start = LocalDate.parse(startBtn.getText());
-        LocalDate end = LocalDate.parse(endBtn.getText());
+        LocalDate end   = LocalDate.parse(endBtn.getText());
 
-        // Collect logs
         List<LogEntry> allLogs = new ArrayList<>();
         LocalDate curr = start.withDayOfMonth(1);
         while (!curr.isAfter(end)) {
@@ -382,7 +665,6 @@ public class InvoicePanel extends JPanel {
             .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
             .toList();
 
-        // Calculate totals
         double totalHours = 0, totalKm = 0, totalExtras = 0;
         for (LogEntry log : logs) {
             if (log.getType() == LogEntry.EntryType.TIME) {
@@ -402,17 +684,13 @@ public class InvoicePanel extends JPanel {
                     totalExtras += (log.getUnits() != null ? log.getUnits() : 0) * (log.getCostPerUnit() != null ? log.getCostPerUnit() : 0);
             }
         }
-        double subtotalHours  = totalHours * boss.getHourlyRate();
-        double subtotalKm     = totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0);
-        double subtotal       = subtotalHours + subtotalKm + totalExtras;
-        double tax            = subtotal * (boss.getTaxRate() / 100.0);
-        double grandTotal     = subtotal + tax;
+        double subtotalHours = totalHours * boss.getHourlyRate();
+        double subtotalKm    = totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0);
+        double subtotal      = subtotalHours + subtotalKm + totalExtras;
+        double tax           = subtotal * (boss.getTaxRate() / 100.0);
+        double grandTotal    = subtotal + tax;
 
-        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy");
-
-        // ── Dialog ───────────────────────────────────────────────────────────
-        JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
-            "Invoice Preview", true);
+        JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this), "Invoice Preview", true);
         dialog.setLayout(new BorderLayout());
         dialog.setSize(560, 680);
         dialog.setResizable(false);
@@ -423,12 +701,10 @@ public class InvoicePanel extends JPanel {
         body.setBackground(Color.WHITE);
         body.setBorder(BorderFactory.createEmptyBorder(28, 28, 28, 28));
 
-        // ── Invoice header ───────────────────────────────────────────────────
         JPanel invoiceHeader = new JPanel(new BorderLayout());
         invoiceHeader.setOpaque(false);
         invoiceHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
-        // Left: employee info
         JPanel fromPanel = new JPanel();
         fromPanel.setLayout(new BoxLayout(fromPanel, BoxLayout.Y_AXIS));
         fromPanel.setOpaque(false);
@@ -441,7 +717,6 @@ public class InvoicePanel extends JPanel {
         fromPanel.add(fromName);
         fromPanel.add(fromEmail);
 
-        // Right: INVOICE label + date range
         JPanel invoiceMeta = new JPanel();
         invoiceMeta.setLayout(new BoxLayout(invoiceMeta, BoxLayout.Y_AXIS));
         invoiceMeta.setOpaque(false);
@@ -449,7 +724,7 @@ public class InvoicePanel extends JPanel {
         invoiceTitle.setFont(invoiceTitle.getFont().deriveFont(Font.BOLD, 20f));
         invoiceTitle.setForeground(new Color(59, 130, 246));
         invoiceTitle.setAlignmentX(RIGHT_ALIGNMENT);
-        JLabel dateRange = new JLabel(start.format(dateFmt) + " – " + end.format(dateFmt), JLabel.RIGHT);
+        JLabel dateRange = new JLabel(start.format(DISPLAY_FMT) + " – " + end.format(DISPLAY_FMT), JLabel.RIGHT);
         dateRange.setFont(dateRange.getFont().deriveFont(Font.PLAIN, 11f));
         dateRange.setForeground(new Color(100, 116, 139));
         dateRange.setAlignmentX(RIGHT_ALIGNMENT);
@@ -460,12 +735,9 @@ public class InvoicePanel extends JPanel {
         invoiceHeader.add(invoiceMeta, BorderLayout.EAST);
         body.add(invoiceHeader);
         body.add(Box.createVerticalStrut(12));
-
-        // Divider
         body.add(makeThinDivider(new Color(59, 130, 246)));
         body.add(Box.createVerticalStrut(12));
 
-        // Bill To
         JLabel billToLbl = new JLabel("BILL TO");
         billToLbl.setFont(billToLbl.getFont().deriveFont(Font.BOLD, 9f));
         billToLbl.setForeground(new Color(148, 163, 184));
@@ -479,32 +751,17 @@ public class InvoicePanel extends JPanel {
         body.add(bossNameLbl);
         body.add(Box.createVerticalStrut(16));
 
-        // ── Line items table ─────────────────────────────────────────────────
         body.add(makeTableHeader());
         body.add(makeThinDivider(new Color(226, 232, 240)));
         body.add(Box.createVerticalStrut(4));
 
-        if (totalHours > 0) {
-            body.add(makeLineItem(
-                "Labour",
-                String.format("%.2f hrs @ $%.2f/hr", totalHours, boss.getHourlyRate()),
-                String.format("$%.2f", subtotalHours)));
-        }
-        if (totalKm > 0) {
-            body.add(makeLineItem(
-                "Travel",
-                String.format("%.1f km @ $%.2f/km", totalKm, boss.getKmRate() != null ? boss.getKmRate() : 0),
-                String.format("$%.2f", subtotalKm)));
-        }
-        if (totalExtras > 0) {
-            body.add(makeLineItem("Extras", "Miscellaneous", String.format("$%.2f", totalExtras)));
-        }
+        if (totalHours > 0) body.add(makeLineItem("Labour", String.format("%.2f hrs @ $%.2f/hr", totalHours, boss.getHourlyRate()), String.format("$%.2f", subtotalHours)));
+        if (totalKm > 0)    body.add(makeLineItem("Travel", String.format("%.1f km @ $%.2f/km", totalKm, boss.getKmRate() != null ? boss.getKmRate() : 0), String.format("$%.2f", subtotalKm)));
+        if (totalExtras > 0) body.add(makeLineItem("Extras", "Miscellaneous", String.format("$%.2f", totalExtras)));
 
         body.add(Box.createVerticalStrut(4));
         body.add(makeThinDivider(new Color(226, 232, 240)));
         body.add(Box.createVerticalStrut(8));
-
-        // ── Totals ───────────────────────────────────────────────────────────
         body.add(makeTotalRow("Subtotal", String.format("$%.2f", subtotal), false));
         body.add(Box.createVerticalStrut(4));
         body.add(makeTotalRow(String.format("GST/HST (%.0f%%)", boss.getTaxRate()), String.format("$%.2f", tax), false));
@@ -519,7 +776,6 @@ public class InvoicePanel extends JPanel {
         scroll.setOpaque(false);
         dialog.add(scroll, BorderLayout.CENTER);
 
-        // ── Footer ───────────────────────────────────────────────────────────
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         footer.setBackground(Color.WHITE);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
@@ -539,6 +795,53 @@ public class InvoicePanel extends JPanel {
         dialog.setVisible(true);
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private JPanel makeCard() {
+        JPanel card = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0, 0, 0, 8));
+                g2.fillRoundRect(2, 3, getWidth() - 4, getHeight() - 2, 14, 14);
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 14, 14);
+                g2.setColor(new Color(226, 232, 240));
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 14, 14);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(4, 20, 12, 20));
+        card.setAlignmentX(LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        return card;
+    }
+
+    private JPanel makeSectionLabel(String text) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(10, 0, 6, 0));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 10f));
+        lbl.setForeground(new Color(148, 163, 184));
+        row.add(lbl, BorderLayout.WEST);
+        return row;
+    }
+
+    private JPanel makeDivider() {
+        JPanel div = new JPanel();
+        div.setOpaque(false);
+        div.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        div.setPreferredSize(new Dimension(0, 1));
+        div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
+        return div;
+    }
+
     private JPanel makeThinDivider(Color color) {
         JPanel div = new JPanel();
         div.setOpaque(false);
@@ -547,6 +850,47 @@ public class InvoicePanel extends JPanel {
         div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, color));
         div.setAlignmentX(LEFT_ALIGNMENT);
         return div;
+    }
+
+    private JPanel makeFieldRow(String label, JComponent field) {
+        JPanel row = new JPanel(new BorderLayout(16, 0));
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(7, 0, 7, 0));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
+        lbl.setForeground(new Color(71, 85, 105));
+        lbl.setPreferredSize(new Dimension(80, 20));
+        row.add(lbl, BorderLayout.WEST);
+        row.add(field, BorderLayout.CENTER);
+        return row;
+    }
+
+    private JButton makeDateButton(String date) {
+        JButton btn = new JButton(date);
+        btn.putClientProperty("JButton.buttonType", "roundRect");
+        btn.setBackground(new Color(241, 245, 249));
+        btn.setForeground(new Color(30, 41, 59));
+        btn.setFont(btn.getFont().deriveFont(Font.PLAIN, 12f));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        return btn;
+    }
+
+    private JPanel makeSummaryRow(String label, String value) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 11f));
+        lbl.setForeground(new Color(100, 116, 139));
+        JLabel val = new JLabel(value);
+        val.setFont(val.getFont().deriveFont(Font.PLAIN, 11f));
+        val.setForeground(new Color(71, 85, 105));
+        row.add(lbl, BorderLayout.WEST);
+        row.add(val, BorderLayout.EAST);
+        return row;
     }
 
     private JPanel makeTableHeader() {
@@ -608,110 +952,4 @@ public class InvoicePanel extends JPanel {
         row.add(amt, BorderLayout.EAST);
         return row;
     }
-
-    private void generate(boolean itemized) {
-        try {
-            Boss boss = (Boss) bossCombo.getSelectedItem();
-            if (boss == null) return;
-            EmployeeInfo employee = storage.loadEmployeeInfo();
-
-            LocalDate start = LocalDate.parse(startBtn.getText());
-            LocalDate end = LocalDate.parse(endBtn.getText());
-
-            List<LogEntry> allLogs = new ArrayList<>();
-            LocalDate curr = start.withDayOfMonth(1);
-            while (!curr.isAfter(end)) {
-                allLogs.addAll(storage.loadLogs(YearMonth.from(curr).toString()));
-                curr = curr.plusMonths(1);
-            }
-
-            List<LogEntry> filteredLogs = allLogs.stream()
-                .filter(l -> {
-                    LocalDate d = LocalDate.parse(l.getDate());
-                    return !d.isBefore(start) && !d.isAfter(end);
-                })
-                .toList();
-
-            int invNum = storage.getNextInvoiceNumber();
-            String path = storage.getInvoicePath(boss, invNum);
-            InvoiceGenerator.generateInvoice(boss, employee, filteredLogs, start.toString(), end.toString(), invNum, path, itemized);
-            JOptionPane.showMessageDialog(this, (itemized ? "Itemized " : "") + "Invoice generated at: " + path);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error generating invoice: " + ex.getMessage());
-        }
-    }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private JPanel makeCard() {
-        JPanel card = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(0, 0, 0, 8));
-                g2.fillRoundRect(2, 3, getWidth() - 4, getHeight() - 2, 14, 14);
-                g2.setColor(Color.WHITE);
-                g2.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 14, 14);
-                g2.setColor(new Color(226, 232, 240));
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 14, 14);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        card.setOpaque(false);
-        card.setBorder(BorderFactory.createEmptyBorder(4, 20, 12, 20));
-        card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        return card;
-    }
-
-    private JPanel makeSectionLabel(String text) {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
-        row.setBorder(BorderFactory.createEmptyBorder(10, 0, 6, 0));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        JLabel lbl = new JLabel(text);
-        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 10f));
-        lbl.setForeground(new Color(148, 163, 184));
-        row.add(lbl, BorderLayout.WEST);
-        return row;
-    }
-
-    private JPanel makeDivider() {
-        JPanel div = new JPanel();
-        div.setOpaque(false);
-        div.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        div.setPreferredSize(new Dimension(0, 1));
-        div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
-        return div;
-    }
-
-    private JPanel makeFieldRow(String label, JComponent field) {
-        JPanel row = new JPanel(new BorderLayout(16, 0));
-        row.setOpaque(false);
-        row.setBorder(BorderFactory.createEmptyBorder(7, 0, 7, 0));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
-        lbl.setForeground(new Color(71, 85, 105));
-        lbl.setPreferredSize(new Dimension(80, 20));
-        row.add(lbl, BorderLayout.WEST);
-        row.add(field, BorderLayout.CENTER);
-        return row;
-    }
-
-    private JButton makeDateButton(String date) {
-        JButton btn = new JButton(date);
-        btn.putClientProperty("JButton.buttonType", "roundRect");
-        btn.setBackground(new Color(241, 245, 249));
-        btn.setForeground(new Color(30, 41, 59));
-        btn.setFont(btn.getFont().deriveFont(Font.PLAIN, 12f));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        return btn;
-    }
 }
-
