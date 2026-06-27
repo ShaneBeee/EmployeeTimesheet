@@ -403,6 +403,16 @@ public class LogPanel extends JPanel {
                 textPanel.add(titleLbl);
                 textPanel.add(Box.createVerticalStrut(3));
                 textPanel.add(subLbl);
+                // Show notes if present on TIME entries
+                if (l.getType() == LogEntry.EntryType.TIME
+                    && l.getDescription() != null && !l.getDescription().isBlank()) {
+                    JLabel notesLbl = new JLabel("📝 " + l.getDescription());
+                    notesLbl.setFont(notesLbl.getFont().deriveFont(Font.ITALIC, 11f));
+                    notesLbl.setForeground(new Color(100, 116, 139));
+                    textPanel.add(Box.createVerticalStrut(2));
+                    textPanel.add(notesLbl);
+                    card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+                }
 
                 card.add(iconCircle, BorderLayout.WEST);
                 card.add(textPanel, BorderLayout.CENTER);
@@ -742,6 +752,15 @@ public class LogPanel extends JPanel {
         }
         updateAlloc.run();
 
+        // Notes field
+        gbc.gridy++; gbc.insets = new java.awt.Insets(8, 0, 4, 0);
+        gbc.weighty = 0; gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        timeCard.add(makeFormSection("Notes"), gbc);
+        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 10, 0);
+        JTextField timeNotesField = new JTextField(entry.getDescription() != null ? entry.getDescription() : "");
+        timeNotesField.putClientProperty("JTextField.placeholderText", "e.g. Showed 3 properties on Pine St");
+        timeCard.add(timeNotesField, gbc);
+
         // Filler row to push content to top
         gbc.gridy++;
         gbc.weighty = 1.0;
@@ -848,9 +867,9 @@ public class LogPanel extends JPanel {
                     }
                 }
                 entry.setBossPercentages(percs);
+                entry.setDescription(timeNotesField.getText().trim().isEmpty() ? null : timeNotesField.getText().trim());
                 entry.setBossUuid(null);
                 entry.setKilometers(null);
-                entry.setDescription(null);
                 entry.setUnits(null);
                 entry.setCostPerUnit(null);
             } else if (selectedType == LogEntry.EntryType.KILOMETER) {
