@@ -22,15 +22,41 @@ Built specifically for use at Century 21 Amos Realty in the South Okanagan, BC.
 
 ## Features
 
+### 🏠 Dashboard
+Landing screen with at-a-glance stats and recent activity.
+
+- **This Month** — Gross Income, Hours Logged, Expenses, KMs Driven, KMs Billed; each card links to the relevant panel
+- **Year to Date** — Gross Income, Total Expenses, Est. Net Income
+- **Outstanding Invoices** — any invoices marked Sent but not yet Paid appear here with a one-click **Mark Paid** button; section is hidden when nothing is outstanding
+- **Recent Activity** — last 6 events across work logs, expenses, and KM trips
+
 ### 📅 Work Logs
 Calendar-based monthly view for logging daily work entries. Three entry types per day:
 
-- **Time** — start/end time with boss allocation sliders (split % across multiple bosses, with "Split Evenly" button and live progress bar)
+- **Time** — start/end time with boss allocation sliders (split % across multiple bosses, with "Split Evenly" button and live progress bar); optional notes/description field
 - **Kilometre** — distance billed to a specific boss (auto-syncs to the Kilometre Log)
 - **Extra** — miscellaneous billable items with units and cost per unit
 
 ### 🧾 Invoice Management
-Generate professional PDF invoices and monthly summaries per boss, with auto-incrementing invoice numbers.
+Two-tab panel for generating and tracking invoices.
+
+**Generate tab**
+- Choose boss and date range, then generate a standard or itemized PDF invoice
+- Preview invoice before generating
+- Preview monthly summary with vibe-check emoji (🤑/😊/😐/😬 based on income)
+- Export full monthly summary PDF
+
+**History tab**
+- Table of all generated invoices showing #, boss, period, generated date, status badge, and amount
+- Status badges: **Draft** (grey), **Sent** (blue), **Paid** (green)
+- **Mark as Sent** and **Mark as Paid** buttons with date picker
+- Double-click any row to open the PDF
+- History refreshes automatically every time the panel is opened
+
+**Invoice tracking**
+- All generated invoices are recorded in `invoices/invoice_log.json`
+- Status changes persist immediately to disk
+- Outstanding (Sent) invoices surface on the Dashboard
 
 ### 💸 Expenses
 Track business expenses for CRA T2125 reporting.
@@ -38,6 +64,7 @@ Track business expenses for CRA T2125 reporting.
 - **Month grid view** — all 12 months at a glance with per-category colour bars and totals; single-click any month to slide into the detail view with a 200ms ease-out animation
 - **Amount fields** — subtotal, GST (5%, auto-calculated with override), and total after tax; PST rolls into total
 - **Receipt attachments** — attach JPG, PNG, PDF, or HEIC files per expense via drag & drop or native macOS file picker; files organized on disk by `receipts/{year}/{month}/`
+- **Expense templates** — save frequently used expenses as templates for one-click re-entry
 - **Year summary sidebar** — total spent and per-category breakdown
 - **Per-year categories** — expense categories are stored independently per tax year, so CRA line number changes in future years never affect past data
 
@@ -61,38 +88,71 @@ Year-based export and archival tools for handing off to an accountant or storing
   - *Expenses* — expenses grouped by category with coloured T2125 header rows, alternating row shading, per-category subtotals, and a grand total; sorted oldest-first
   - *Kilometre Log* — odometer summary block (start/end, total KM, business KM, business use %) followed by full trip list with auto vs manual source tracking
 - **Export Receipt Archive** — zip of all receipt files for the selected year, organized by month; one-click audit-ready package
+- **Annual Tax Report** — full multi-page PDF for handing to an accountant:
+  - *Cover page* — name, company, year, generated date, and table of contents
+  - *Income Summary* — monthly breakdown per boss with hours, labour income, KMs, KM income, and extras; GST collected total
+  - *Expense Summary* — all expenses grouped by T2125 category with line numbers; GST reconciliation block (collected, ITCs, net owing/refund)
+  - *Kilometre Summary* — full trip log plus per-boss billed KM breakdown
+  - *Net Summary* — at-a-glance page with gross income, total expenses, estimated net income, GST reconciliation, and KM totals
 - **Export Year Archive** — full backup zip of all data for the selected year (logs, expenses + receipts, KM data, invoices, and that year's category definitions); includes a `manifest.json` with year, export date, and app version
 - **Import Year Archive** — restore a previously exported year archive back into the app; refuses to import if data already exists for that year (conflict protection)
 - **Clear local data** — after exporting a year archive, optionally remove that year's data from local storage to keep the app folder lean; requires typing the year to confirm; never offered for the current year
 - **Year picker** — all exports scoped to the selected year (2020 → current)
-- Excel export uses a local Python venv (`~/ShaneApps/EmployeeTimesheet/python_venv/`) auto-created on first run; no manual Python setup required
+- Excel export uses a local Python venv auto-created on first run; no manual Python setup required
 
 ### 👥 Boss Management
 Add and manage clients/bosses used across Work Logs and Invoices.
 
+- **Income Type** — each boss is marked as Self-Employed (T2125) or T4 Employment; T4 bosses are excluded from self-employed income calculations and the Annual Tax Report
+
+### 🔍 Search
+Sidebar search bar with live dropdown results across work logs, expenses, and KM trips. Click any result to navigate directly to the relevant panel.
+
 ### ⚙️ Settings
 Three tabs:
 
-- **Profile** — employee info (name, company, address, phone, email) used on invoices and Excel exports
-- **Preferences** — default start/end times for new log entries
+- **Profile** — employee info (name, company, address, phone, email) used on invoices and exports
+- **Preferences** — default start/end times for new log entries; Data Location showing current save path with a **Change...** button to migrate data to a new folder (copies all existing data, then prompts restart)
 - **Expense Categories** — per-year category management with `< year >` navigation; add, edit, or delete categories; built-in categories can be edited but not deleted; "Reset to Defaults" restores the full T2125-aligned list for the selected year; new years auto-seed from the previous year's categories
+
+---
+
+## First-Run Onboarding
+
+On first launch the app shows a 5-step setup wizard:
+
+1. **Welcome** — introduction screen
+2. **Data Location** — choose iCloud Drive (recommended, auto-detected) or Local Only; custom folder also supported; path shown live
+3. **Profile** — enter your name, company, address, phone, and email
+4. **First Boss** — add your first client with hourly rate, KM rate, tax rate, and income type
+5. **Done** — confirmation with a summary of the chosen save location
+
+The wizard only appears once. Existing users who already have a data directory preference saved skip it entirely.
 
 ---
 
 ## Data Storage
 
-All data is stored locally under `~/ShaneApps/EmployeeTimesheet/`:
+Data directory is chosen during onboarding and saved to macOS `Preferences` (`~/Library/Preferences/com.github.shanebeee.et.plist`) so the app always knows where to look on startup, independent of the data folder itself.
+
+**Default paths:**
+- iCloud Drive: `~/Library/Mobile Documents/com~apple~CloudDocs/EmployeeTimesheet/`
+- Local: `~/EmployeeTimesheet/`
+
+The data directory can be changed at any time in **Settings → Preferences → Data Location**. Changing it copies all existing data to the new location and saves the new path to Preferences; the app prompts for a restart.
 
 ```
-~/ShaneApps/EmployeeTimesheet/
+{data_directory}/
 ├── settings/
 │   ├── employee.json                    # Employee info
 │   ├── bosses.json                      # Boss list
 │   ├── settings.json                    # App settings (invoice counter, default times)
-│   └── expense_categories_{year}.json   # Per-year expense categories (e.g. expense_categories_2026.json)
+│   └── expense_categories_{year}.json   # Per-year expense categories
 ├── logs/
 │   └── yyyy-MM.json                     # Work log entries per month
-├── invoices/                            # Generated PDF invoices and summaries
+├── invoices/
+│   ├── invoice_log.json                 # Invoice history and status tracking
+│   └── *.pdf                            # Generated invoice and summary PDFs
 ├── receipts/
 │   └── {year}/
 │       ├── expenses.json                # Expense records for the year
@@ -104,21 +164,21 @@ All data is stored locally under `~/ShaneApps/EmployeeTimesheet/`:
 └── python_venv/                         # Auto-created Python venv for Excel export
 ```
 
-No database, no cloud, no accounts — everything is plain JSON on disk.
+No database, no accounts — everything is plain JSON on disk, synced automatically if stored in iCloud Drive.
 
 ### Year Archives
 Full-year backups are self-contained zip files with the structure:
 
 ```
 EmployeeTimesheet_Archive_{year}.zip
-├── manifest.json                        # Year, export date, app version
-├── logs/yyyy-MM.json                    # Work logs for the year
-├── receipts/{year}/expenses.json        # Expense records
-├── receipts/{year}/{month}/...          # Receipt files
-├── km/{year}/trips.json                 # KM trips
-├── km/{year}/odometer.json              # Odometer readings
+├── manifest.json                            # Year, export date, app version
+├── logs/yyyy-MM.json                        # Work logs for the year
+├── receipts/{year}/expenses.json            # Expense records
+├── receipts/{year}/{month}/...              # Receipt files
+├── km/{year}/trips.json                     # KM trips
+├── km/{year}/odometer.json                  # Odometer readings
 ├── settings/expense_categories_{year}.json  # Category snapshot for the year
-└── invoices/...                         # Invoice PDFs for the year
+└── invoices/...                             # Invoice PDFs for the year
 ```
 
 ---
