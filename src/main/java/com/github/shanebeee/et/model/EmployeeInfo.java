@@ -8,6 +8,8 @@ public class EmployeeInfo {
     private String address2;
     private String phoneNumber;
     private String email;
+    private double homeOfficeSqFt = 0;
+    private double homeTotalSqFt = 0;
 
     // Getters and Setters
     public String getFullName() {
@@ -58,4 +60,27 @@ public class EmployeeInfo {
         this.email = email;
     }
 
+    public double getHomeOfficeSqFt() {
+        return homeOfficeSqFt;
+    }
+
+    public void setHomeOfficeSqFt(double v) {
+        this.homeOfficeSqFt = v;
+    }
+
+    public double getHomeTotalSqFt() {
+        return homeTotalSqFt;
+    }
+
+    public void setHomeTotalSqFt(double v) {
+        this.homeTotalSqFt = v;
+    }
+
+    /**
+     * Returns the home office deduction % (0.0–1.0), or 0 if not configured.
+     */
+    public double homeOfficePercent() {
+        if (homeTotalSqFt <= 0) return 0;
+        return Math.min(1.0, homeOfficeSqFt / homeTotalSqFt);
+    }
 }

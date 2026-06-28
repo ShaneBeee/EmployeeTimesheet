@@ -11,6 +11,16 @@ public class ExpenseCategory {
     private String color;   // hex e.g. "#3B82F6"
     private boolean builtIn; // built-in categories can't be deleted
 
+    public enum DeductionType {
+        FULL,          // 100% deductible
+        FIXED_PERCENT, // fixed % set manually (e.g. phone at 60%)
+        KM_PERCENT,    // auto-calculated from KM log (vehicle expenses)
+        HOME_OFFICE    // office sqft / total sqft from settings
+    }
+
+    private DeductionType deductionType = DeductionType.FULL;
+    private double fixedPercent = 1.0; // used when deductionType == FIXED_PERCENT
+
     public ExpenseCategory() {}
 
     public ExpenseCategory(String label, String hint, String t2125Line, String color, boolean builtIn) {
@@ -38,7 +48,13 @@ public class ExpenseCategory {
     public void   setColor(String color)     { this.color = color; }
 
     public boolean isBuiltIn()               { return builtIn; }
-    public void    setBuiltIn(boolean b)     { this.builtIn = b; }
+    public void    setBuiltIn(boolean b)      { this.builtIn = b; }
+
+    public DeductionType getDeductionType()              { return deductionType != null ? deductionType : DeductionType.FULL; }
+    public void          setDeductionType(DeductionType t) { this.deductionType = t; }
+
+    public double getFixedPercent()           { return fixedPercent; }
+    public void   setFixedPercent(double v)   { this.fixedPercent = v; }
 
     @Override
     public String toString()                 { return label; }

@@ -35,6 +35,7 @@ public class SettingsPanel extends JPanel {
 
     // Profile tab fields
     private JTextField nameField, companyField, addressField, address2Field, phoneField, emailField;
+    private JTextField homeOfficeSqFtField, homeTotalSqFtField;
     private JLabel profileName, profileSub;
 
     // Preferences tab fields
@@ -92,6 +93,10 @@ public class SettingsPanel extends JPanel {
             storage.saveEmployeeInfo(info);
             storage.setDefaultStartTime(TimePickerPanel.unformatTime(startField.getText()));
             storage.setDefaultEndTime(TimePickerPanel.unformatTime(endField.getText()));
+            // Save home office sq ft
+            try { info.setHomeOfficeSqFt(Double.parseDouble(homeOfficeSqFtField.getText().trim())); } catch (NumberFormatException ignored) { info.setHomeOfficeSqFt(0); }
+            try { info.setHomeTotalSqFt(Double.parseDouble(homeTotalSqFtField.getText().trim()));   } catch (NumberFormatException ignored) { info.setHomeTotalSqFt(0); }
+            storage.saveEmployeeInfo(info);
             profileName.setText(nameField.getText().isBlank() ? "Your Name" : nameField.getText());
             profileSub.setText(
                 (companyField.getText().isBlank() ? "" : companyField.getText()) +
@@ -182,6 +187,51 @@ public class SettingsPanel extends JPanel {
         card.add(makeFieldRow("Phone",      phoneField));    card.add(makeDivider());
         card.add(makeFieldRow("Email",      emailField));
         tab.add(card);
+
+        tab.add(Box.createVerticalStrut(16));
+
+        // Home office card
+        homeOfficeSqFtField = new JTextField(
+            info.getHomeOfficeSqFt() > 0 ? String.format("%.0f", info.getHomeOfficeSqFt()) : "");
+        homeTotalSqFtField = new JTextField(
+            info.getHomeTotalSqFt() > 0 ? String.format("%.0f", info.getHomeTotalSqFt()) : "");
+
+        JLabel homeOfficeCalc = new JLabel(homeOfficePctText(info));
+        homeOfficeCalc.setFont(homeOfficeCalc.getFont().deriveFont(Font.ITALIC, 11f));
+        homeOfficeCalc.setForeground(new Color(100, 116, 139));
+
+        javax.swing.event.DocumentListener homeCalcListener = new javax.swing.event.DocumentListener() {
+            void update() {
+                try {
+                    double off  = Double.parseDouble(homeOfficeSqFtField.getText().trim());
+                    double home = Double.parseDouble(homeTotalSqFtField.getText().trim());
+                    double pct  = home > 0 ? Math.min(100.0, off / home * 100) : 0;
+                    homeOfficeCalc.setText(String.format("Deductible portion: %.1f%%", pct));
+                } catch (NumberFormatException e) {
+                    homeOfficeCalc.setText("");
+                }
+            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        };
+        homeOfficeSqFtField.getDocument().addDocumentListener(homeCalcListener);
+        homeTotalSqFtField.getDocument().addDocumentListener(homeCalcListener);
+
+        JPanel homeCard = makeCard();
+        homeCard.setLayout(new BoxLayout(homeCard, BoxLayout.Y_AXIS));
+        homeCard.add(makeSectionRow("Home Office"));
+        homeCard.add(makeDivider());
+        homeCard.add(makeFieldRow("Office Area (sq ft)",     homeOfficeSqFtField));
+        homeCard.add(makeDivider());
+        homeCard.add(makeFieldRow("Total Home Area (sq ft)", homeTotalSqFtField));
+        homeCard.add(makeDivider());
+        JPanel calcRow = new JPanel(new BorderLayout());
+        calcRow.setOpaque(false);
+        calcRow.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+        calcRow.add(homeOfficeCalc, BorderLayout.WEST);
+        homeCard.add(calcRow);
+        tab.add(homeCard);
 
         JScrollPane scroll = new JScrollPane(tab);
         scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -434,7 +484,13 @@ public class SettingsPanel extends JPanel {
         nameLbl.setForeground(new Color(30, 41, 59));
         JLabel hintLbl = new JLabel(
             (cat.getT2125Line() != null ? cat.getT2125Line() : "")
-            + (cat.getHint() != null && !cat.getHint().isBlank() ? "  ·  " + cat.getHint() : ""));
+            + (cat.getHint() != null && !cat.getHint().isBlank() ? "  \u00b7  " + cat.getHint() : "")
+            + switch (cat.getDeductionType()) {
+                case FIXED_PERCENT -> String.format("  \u00b7  %.0f%% business use", cat.getFixedPercent() * 100);
+                case KM_PERCENT    -> "  \u00b7  KM-based business use";
+                case HOME_OFFICE   -> "  \u00b7  Home office %";
+                default            -> "";
+            });
         hintLbl.setFont(hintLbl.getFont().deriveFont(Font.PLAIN, 10f));
         hintLbl.setForeground(new Color(148, 163, 184));
         textPanel.add(nameLbl);
@@ -484,7 +540,7 @@ public class SettingsPanel extends JPanel {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
             isNew ? "Add Category" : "Edit Category", true);
         dialog.setLayout(new BorderLayout());
-        dialog.setSize(420, 340);
+        dialog.setSize(420, 480);
         dialog.getContentPane().setBackground(new Color(248, 250, 252));
 
         JPanel hdr = new JPanel(new BorderLayout());
@@ -523,6 +579,20 @@ public class SettingsPanel extends JPanel {
         };
         colorPreview.setOpaque(false);
         colorPreview.setPreferredSize(new Dimension(28, 28));
+        colorPreview.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        colorPreview.setToolTipText("Click to pick a colour");
+        colorPreview.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                Color initial;
+                try { initial = Color.decode(colorField.getText().trim()); }
+                catch (Exception ex) { initial = new Color(148, 163, 184); }
+                Color chosen = JColorChooser.showDialog(dialog, "Choose Category Colour", initial);
+                if (chosen != null) {
+                    colorField.setText(String.format("#%02X%02X%02X",
+                        chosen.getRed(), chosen.getGreen(), chosen.getBlue()));
+                }
+            }
+        });
         colorField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e)  { colorPreview.repaint(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e)  { colorPreview.repaint(); }
@@ -547,8 +617,47 @@ public class SettingsPanel extends JPanel {
         form.add(t2125Field, gbc);
         gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
         form.add(makeDialogLabel("Colour (hex, e.g. #3B82F6)"), gbc);
-        gbc.gridy++; gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 12, 0);
         form.add(colorRow, gbc);
+
+        // ── Deduction type ────────────────────────────────────────────────────
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+        form.add(makeDialogLabel("Business Use"), gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+
+        JComboBox<String> deductionCombo = new JComboBox<>(new String[]{
+            "100% — Fully deductible",
+            "Fixed % — e.g. phone/internet",
+            "KM-based % — vehicle expenses",
+            "Home office % — rent/utilities"
+        });
+        ExpenseCategory.DeductionType currentType = cat.getDeductionType();
+        deductionCombo.setSelectedIndex(switch (currentType) {
+            case FULL          -> 0;
+            case FIXED_PERCENT -> 1;
+            case KM_PERCENT    -> 2;
+            case HOME_OFFICE   -> 3;
+        });
+        form.add(deductionCombo, gbc);
+
+        JTextField percentField = new JTextField(
+            cat.getDeductionType() == ExpenseCategory.DeductionType.FIXED_PERCENT
+                ? String.format("%.0f", cat.getFixedPercent() * 100) : "");
+        JLabel percentLabel = makeDialogLabel("Business use % (e.g. 60 for 60%)");
+        percentLabel.setVisible(currentType == ExpenseCategory.DeductionType.FIXED_PERCENT);
+        percentField.setVisible(currentType == ExpenseCategory.DeductionType.FIXED_PERCENT);
+
+        deductionCombo.addActionListener(e -> {
+            boolean showPct = deductionCombo.getSelectedIndex() == 1;
+            percentLabel.setVisible(showPct);
+            percentField.setVisible(showPct);
+            dialog.revalidate(); dialog.repaint();
+        });
+
+        gbc.gridy++; gbc.insets = new Insets(4, 0, 4, 0);
+        form.add(percentLabel, gbc);
+        gbc.gridy++; gbc.insets = new Insets(0, 0, 0, 0);
+        form.add(percentField, gbc);
         dialog.add(form, BorderLayout.CENTER);
 
         JPanel footer = new JPanel(new BorderLayout());
@@ -575,6 +684,23 @@ public class SettingsPanel extends JPanel {
             cat.setHint(hintField.getText().trim());
             cat.setT2125Line(t2125Field.getText().trim());
             cat.setColor(colorField.getText().trim());
+            ExpenseCategory.DeductionType dtype = switch (deductionCombo.getSelectedIndex()) {
+                case 1  -> ExpenseCategory.DeductionType.FIXED_PERCENT;
+                case 2  -> ExpenseCategory.DeductionType.KM_PERCENT;
+                case 3  -> ExpenseCategory.DeductionType.HOME_OFFICE;
+                default -> ExpenseCategory.DeductionType.FULL;
+            };
+            cat.setDeductionType(dtype);
+            if (dtype == ExpenseCategory.DeductionType.FIXED_PERCENT) {
+                try {
+                    double pct = Double.parseDouble(percentField.getText().trim());
+                    if (pct <= 0 || pct > 100) throw new NumberFormatException();
+                    cat.setFixedPercent(pct / 100.0);
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(dialog, "Please enter a valid percentage (1–100).", "Invalid %", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
             if (isNew) categories.add(cat);
             storage.saveExpenseCategories(String.valueOf(categoryYear), categories);
             refreshCategoryList();
@@ -655,5 +781,11 @@ public class SettingsPanel extends JPanel {
         div.setPreferredSize(new Dimension(0, 1));
         div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
         return div;
+    }
+
+    private String homeOfficePctText(com.github.shanebeee.et.model.EmployeeInfo info) {
+        if (info.getHomeTotalSqFt() <= 0) return "";
+        double pct = Math.min(100.0, info.getHomeOfficeSqFt() / info.getHomeTotalSqFt() * 100);
+        return String.format("Deductible portion: %.1f%%", pct);
     }
 }

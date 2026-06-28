@@ -4,6 +4,7 @@ import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.ExpenseTemplate;
 import com.github.shanebeee.et.storage.DataStorage;
+import com.github.shanebeee.et.util.DeductionCalculator;
 
 import javax.swing.*;
 import java.awt.BasicStroke;
@@ -66,6 +67,7 @@ public class ExpensesPanel extends JPanel {
     private YearMonth detailMonth;
 
     private List<ExpenseCategory> categories;
+    private final DeductionCalculator deductionCalc;
 
     // ── Tab state ────────────────────────────────────────────────────────────
     private static final String TAB_EXPENSES = "EXPENSES";
@@ -82,6 +84,7 @@ public class ExpensesPanel extends JPanel {
     public ExpensesPanel(DataStorage storage) {
         this.storage = storage;
         this.currentYear = LocalDate.now().getYear();
+        this.deductionCalc = new DeductionCalculator(storage);
         categories = storage.loadExpenseCategories(String.valueOf(currentYear));
         setLayout(new BorderLayout());
         initUI();
@@ -575,19 +578,30 @@ public class ExpensesPanel extends JPanel {
         for (ExpenseCategory cat : categories) {
             double total = byCategory.getOrDefault(cat.getId(), 0.0);
             if (total > 0) {
+                double claimable = deductionCalc.deductibleAmount(total, cat, currentYear);
+                boolean partial  = deductionCalc.isPartial(cat, currentYear);
                 JPanel row = new JPanel(new BorderLayout(4, 0));
                 row.setOpaque(false);
                 row.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
-                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, partial ? 34 : 22));
                 row.setAlignmentX(LEFT_ALIGNMENT);
                 JLabel lbl = new JLabel(cat.getLabel());
                 lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 11f));
                 lbl.setForeground(new Color(100, 116, 139));
-                JLabel val = new JLabel(String.format("$%.2f", total));
+                JPanel valPanel = new JPanel(new BorderLayout(0, 0));
+                valPanel.setOpaque(false);
+                JLabel val = new JLabel(String.format("$%.2f", total), JLabel.RIGHT);
                 val.setFont(val.getFont().deriveFont(Font.PLAIN, 11f));
                 val.setForeground(new Color(30, 41, 59));
-                row.add(lbl, BorderLayout.WEST);
-                row.add(val, BorderLayout.EAST);
+                valPanel.add(val, BorderLayout.NORTH);
+                if (partial) {
+                    JLabel claimLbl = new JLabel(String.format("$%.2f claimable", claimable), JLabel.RIGHT);
+                    claimLbl.setFont(claimLbl.getFont().deriveFont(Font.PLAIN, 9f));
+                    claimLbl.setForeground(new Color(99, 102, 241));
+                    valPanel.add(claimLbl, BorderLayout.SOUTH);
+                }
+                row.add(lbl,      BorderLayout.WEST);
+                row.add(valPanel, BorderLayout.EAST);
                 summaryCard.add(row);
             }
         }
@@ -677,6 +691,15 @@ public class ExpensesPanel extends JPanel {
         amtLbl.setFont(amtLbl.getFont().deriveFont(Font.BOLD, 13f));
         amtLbl.setForeground(new Color(30, 41, 59));
         amtPanel.add(amtLbl, BorderLayout.NORTH);
+        // Claimable amount — show if category has partial deduction
+        if (cat != null && deductionCalc.isPartial(cat, currentYear)) {
+            double claimable = deductionCalc.deductibleAmount(exp.getTotal(), cat, currentYear);
+            String pctLabel  = deductionCalc.percentLabel(cat, currentYear);
+            JLabel claimLbl  = new JLabel(String.format("$%.2f (%s)", claimable, pctLabel), JLabel.RIGHT);
+            claimLbl.setFont(claimLbl.getFont().deriveFont(Font.PLAIN, 10f));
+            claimLbl.setForeground(new Color(99, 102, 241));
+            amtPanel.add(claimLbl, BorderLayout.CENTER);
+        }
         if (exp.getGst() > 0) {
             JLabel gstLbl = new JLabel(String.format("GST $%.2f", exp.getGst()), JLabel.RIGHT);
             gstLbl.setFont(gstLbl.getFont().deriveFont(Font.PLAIN, 10f));
@@ -700,6 +723,8 @@ public class ExpensesPanel extends JPanel {
     }
 
     private void showExpenseDialog(Expenditure existing, YearMonth contextMonth) {
+        // Always reload categories fresh so newly-added ones are available
+        categories = storage.loadExpenseCategories(String.valueOf(currentYear));
         boolean isNew = existing == null;
         Expenditure exp = isNew ? new Expenditure() : existing;
         if (isNew && contextMonth != null && (exp.getDate() == null)) {

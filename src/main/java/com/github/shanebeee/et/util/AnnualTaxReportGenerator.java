@@ -8,6 +8,7 @@ import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.KmTrip;
 import com.github.shanebeee.et.model.LogEntry;
 import com.github.shanebeee.et.storage.DataStorage;
+import com.github.shanebeee.et.util.DeductionCalculator;
 import com.github.shanebeee.et.view.TimePickerPanel;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
@@ -164,7 +165,15 @@ public class AnnualTaxReportGenerator {
                 grossIncome += m.hoursIncome() + m.kmIncome() + m.extras();
         }
         double totalCcaDeduction = ccaAssets.stream().mapToDouble(a -> a.deductionForYear(year)).sum();
-        double netIncome     = grossIncome - totalExpenses - totalCcaDeduction;
+        // Total claimable expenses (after partial-use rules)
+        DeductionCalculator deductCalc = new DeductionCalculator(storage);
+        double totalClaimableExpenses = 0;
+        for (ExpenseCategory cat : cats) {
+            double catTotal = catTotals.getOrDefault(cat.getId(), 0.0);
+            totalClaimableExpenses += deductCalc.deductibleAmount(catTotal, cat, year);
+        }
+        totalClaimableExpenses += catTotals.getOrDefault("__uncategorized__", 0.0);
+        double netIncome = grossIncome - totalClaimableExpenses - totalCcaDeduction;
         // GST ITCs include both regular expense GST and GST paid on capital assets purchased this year
         double totalCcaGstITC = ccaAssets.stream()
             .filter(a -> a.getPurchaseYear() == year)
@@ -245,25 +254,31 @@ public class AnnualTaxReportGenerator {
         // ═════════════════════════════════════════════════════════════════════
         addSectionHeader(doc, "Expense Summary", "CRA T2125 categorized business expenses", AMBER, year);
 
-        Table expTable = makeTable(new float[]{1, 3, 1, 1});
-        addHeaderRow(expTable, new String[]{"T2125 Line", "Category", "Total", "GST (ITC)"});
+        Table expTable = makeTable(new float[]{1, 3, 1, 1, 1});
+        addHeaderRow(expTable, new String[]{"T2125 Line", "Category", "Total Paid", "Claimable", "GST (ITC)"});
 
-        // Per category totals
-        double runningExpTotal = 0, runningITC = 0;
+        DeductionCalculator calc = new DeductionCalculator(storage);
+        double runningExpTotal = 0, runningClaimable = 0, runningITC = 0;
         int rowIdx = 0;
         for (ExpenseCategory cat : cats) {
             double catTotal = catTotals.getOrDefault(cat.getId(), 0.0);
             if (catTotal == 0) continue;
+            double catClaimable = calc.deductibleAmount(catTotal, cat, year);
             double catITC = expenses.stream()
                 .filter(e -> cat.getId().equals(e.getCategoryId()))
                 .mapToDouble(Expenditure::getGst).sum();
             boolean alt = (rowIdx++ % 2 == 0);
+            String claimLabel = calc.isPartial(cat, year)
+                ? fmtDollar(catClaimable) + " (" + calc.percentLabel(cat, year) + ")"
+                : fmtDollar(catClaimable);
             addDataRow(expTable, alt, TextAlignment.LEFT,  safe(cat.getT2125Line()));
             addDataRow(expTable, alt, TextAlignment.LEFT,  cat.getLabel());
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(catTotal));
+            addDataRow(expTable, alt, TextAlignment.RIGHT, claimLabel);
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(catITC));
-            runningExpTotal += catTotal;
-            runningITC      += catITC;
+            runningExpTotal  += catTotal;
+            runningClaimable += catClaimable;
+            runningITC       += catITC;
         }
 
         // Uncategorized
@@ -276,10 +291,14 @@ public class AnnualTaxReportGenerator {
             addDataRow(expTable, alt, TextAlignment.LEFT,  "—");
             addDataRow(expTable, alt, TextAlignment.LEFT,  "Uncategorized");
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(uncatTotal));
+            addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(uncatTotal));
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(uncatITC));
+            runningExpTotal  += uncatTotal;
+            runningClaimable += uncatTotal;
+            runningITC       += uncatITC;
         }
 
-        addTotalRow(expTable, new String[]{"", "Total Expenses", fmtDollar(totalExpenses), fmtDollar(totalGstITC)});
+        addTotalRow(expTable, new String[]{"Total Expenses", "", fmtDollar(runningExpTotal), fmtDollar(runningClaimable), fmtDollar(runningITC)});
         doc.add(expTable);
 
         // GST reconciliation block
@@ -451,8 +470,9 @@ public class AnnualTaxReportGenerator {
         doc.add(new Paragraph("\n"));
         Table summary = makeTable(new float[]{4, 1});
 
-        addSubtotalRow(summary, "Gross Income (self-employed)",           fmtDollar(grossIncome),          GREEN,  GREEN_LIGHT);
-        addSubtotalRow(summary, "Total Business Expenses",                fmtDollar(totalExpenses),         AMBER,  AMBER_LIGHT);
+        addSubtotalRow(summary, "Gross Income (self-employed)",              fmtDollar(grossIncome),           GREEN,  GREEN_LIGHT);
+        addSubtotalRow(summary, "Total Expenses (paid)",                      fmtDollar(totalExpenses),          AMBER,  AMBER_LIGHT);
+        addSubtotalRow(summary, "Total Expenses (claimable after partial use)", fmtDollar(totalClaimableExpenses), AMBER,  AMBER_LIGHT);
         if (totalCcaDeduction > 0) {
             addSubtotalRow(summary, "CCA Deduction (Capital Cost Allowance)", fmtDollar(totalCcaDeduction), new DeviceRgb(139, 92, 246), new DeviceRgb(237, 233, 254));
         }

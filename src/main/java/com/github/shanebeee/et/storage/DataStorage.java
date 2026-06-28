@@ -118,9 +118,18 @@ public class DataStorage {
         List<ExpenseCategory> cats = loadList(file,
             new TypeToken<List<ExpenseCategory>>() {}.getType());
         if (cats.isEmpty()) {
-            // Seed from previous year if it exists, otherwise use defaults
             cats = seedCategoriesForYear(year);
             saveExpenseCategories(year, cats);
+        } else {
+            // Heal any categories with null IDs (caused by old UUID-regeneration bug)
+            boolean healed = false;
+            for (ExpenseCategory c : cats) {
+                if (c.getId() == null || c.getId().isBlank()) {
+                    c.setId(java.util.UUID.randomUUID().toString());
+                    healed = true;
+                }
+            }
+            if (healed) saveExpenseCategories(year, cats);
         }
         return cats;
     }
@@ -155,8 +164,6 @@ public class DataStorage {
                 List<ExpenseCategory> prevCats = loadList(f.getAbsolutePath(),
                     new TypeToken<List<ExpenseCategory>>() {}.getType());
                 if (!prevCats.isEmpty()) {
-                    // Give each category a fresh UUID so they're independent per year
-                    prevCats.forEach(c -> c.setId(java.util.UUID.randomUUID().toString()));
                     return prevCats;
                 }
             }
@@ -173,13 +180,13 @@ public class DataStorage {
     public ExpenseCategory resolveCategory(Expenditure exp, List<ExpenseCategory> allCats) {
         if (exp.getCategoryId() != null) {
             return allCats.stream()
-                .filter(c -> c.getId().equals(exp.getCategoryId()))
+                .filter(c -> c.getId() != null && c.getId().equals(exp.getCategoryId()))
                 .findFirst().orElse(null);
         }
         if (exp.getCategory() != null) {
             String label = exp.getCategory().getLabel();
             return allCats.stream()
-                .filter(c -> c.getLabel().equalsIgnoreCase(label))
+                .filter(c -> c.getLabel() != null && c.getLabel().equalsIgnoreCase(label))
                 .findFirst().orElse(null);
         }
         return null;

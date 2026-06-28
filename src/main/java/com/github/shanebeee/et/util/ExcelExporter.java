@@ -2,6 +2,7 @@ package com.github.shanebeee.et.util;
 
 import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.Expenditure;
+import com.github.shanebeee.et.util.DeductionCalculator;
 import com.github.shanebeee.et.model.KmOdometer;
 import com.github.shanebeee.et.model.KmTrip;
 import com.github.shanebeee.et.storage.DataStorage;
@@ -109,7 +110,7 @@ public class ExcelExporter {
         }
 
         int headerRow = infoRow + 1;
-        py.append(String.format("for ci,h in enumerate(['Date','Description','Subtotal ($)','GST ($)','Total ($)'],1):\n"));
+        py.append(String.format("for ci,h in enumerate(['Date','Description','Category','Subtotal ($)','GST ($)','Total ($)','Claimable ($)'],1):\n"));
         py.append(String.format("  c=ws.cell(row=%d,column=ci,value=h)\n", headerRow));
         py.append("  c.font=hdr_font;c.fill=hdr_fill;c.alignment=hdr_align;c.border=border\n\n");
         int row = headerRow + 1;
@@ -127,47 +128,55 @@ public class ExcelExporter {
             List<Expenditure> catExps = byCat.getOrDefault(cat.getId(), List.of());
             if (catExps.isEmpty()) continue;
             String hex = cat.getColor() != null ? cat.getColor().replace("#", "") : "94A3B8";
+            String pctStr  = new DeductionCalculator(storage).percentLabel(cat, year);
             String catLabel = cat.getLabel().toUpperCase()
                 + (cat.getT2125Line() != null && !cat.getT2125Line().isBlank()
-                   ? " \u2014 Line " + cat.getT2125Line() : "");
+                   ? " \u2014 Line " + cat.getT2125Line() : "")
+                + " (" + pctStr + " claimable)";
             py.append(String.format("cf=PatternFill('solid',start_color='%s')\n", hex));
             py.append(String.format("c=ws.cell(row=%d,column=1,value=%s)\n", row, pyStr(catLabel)));
-            py.append(String.format("ws.merge_cells(start_row=%d,start_column=1,end_row=%d,end_column=5)\n", row, row));
+            py.append(String.format("ws.merge_cells(start_row=%d,start_column=1,end_row=%d,end_column=7)\n", row, row));
             py.append(String.format("c.font=Font(name='Arial',bold=True,size=10,color='FFFFFF');c.fill=cf;c.border=border\n"));
-            py.append(String.format("for ci in range(2,6):\n  ws.cell(row=%d,column=ci).fill=cf\n  ws.cell(row=%d,column=ci).border=border\n", row, row));
+            py.append(String.format("for ci in range(2,8):\n  ws.cell(row=%d,column=ci).fill=cf\n  ws.cell(row=%d,column=ci).border=border\n", row, row));
             row++;
             int dataStart = row; int ri = 0;
             for (Expenditure e : catExps) {
                 boolean alt = (ri % 2 == 1);
+                double claimable = e.getTotal() * new DeductionCalculator(storage).percentFor(cat, year);
                 py.append(String.format("ws.cell(row=%d,column=1,value='%s')\n", row, e.getDate()));
                 py.append(String.format("ws.cell(row=%d,column=2,value=%s)\n",   row, pyStr(escape(e.getDescription()))));
-                py.append(String.format("ws.cell(row=%d,column=3,value=%.2f).number_format='$#,##0.00'\n", row, e.getSubtotal()));
-                py.append(String.format("ws.cell(row=%d,column=4,value=%.2f).number_format='$#,##0.00'\n", row, e.getGst()));
-                py.append(String.format("ws.cell(row=%d,column=5,value=%.2f).number_format='$#,##0.00'\n", row, e.getTotal()));
-                py.append(String.format("for ci in range(1,6):\n  c=ws.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
+                py.append(String.format("ws.cell(row=%d,column=3,value=%s)\n",   row, pyStr(cat.getLabel())));
+                py.append(String.format("ws.cell(row=%d,column=4,value=%.2f).number_format='$#,##0.00'\n", row, e.getSubtotal()));
+                py.append(String.format("ws.cell(row=%d,column=5,value=%.2f).number_format='$#,##0.00'\n", row, e.getGst()));
+                py.append(String.format("ws.cell(row=%d,column=6,value=%.2f).number_format='$#,##0.00'\n", row, e.getTotal()));
+                py.append(String.format("ws.cell(row=%d,column=7,value=%.2f).number_format='$#,##0.00'\n", row, claimable));
+                py.append(String.format("for ci in range(1,8):\n  c=ws.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
                     row, alt ? ";c.fill=alt_fill" : ""));
                 row++; ri++;
             }
             int dataEnd = row - 1;
             py.append(String.format("ws.cell(row=%d,column=1,value='Subtotal \u2014 %s')\n", row, cat.getLabel()));
-            py.append(String.format("ws.cell(row=%d,column=3,value='=SUM(C%d:C%d)').number_format='$#,##0.00'\n", row, dataStart, dataEnd));
             py.append(String.format("ws.cell(row=%d,column=4,value='=SUM(D%d:D%d)').number_format='$#,##0.00'\n", row, dataStart, dataEnd));
             py.append(String.format("ws.cell(row=%d,column=5,value='=SUM(E%d:E%d)').number_format='$#,##0.00'\n", row, dataStart, dataEnd));
-            py.append(String.format("for ci in range(1,6):\n  c=ws.cell(row=%d,column=ci);c.font=sub_font;c.fill=sub_fill;c.border=border\n", row));
+            py.append(String.format("ws.cell(row=%d,column=6,value='=SUM(F%d:F%d)').number_format='$#,##0.00'\n", row, dataStart, dataEnd));
+            py.append(String.format("ws.cell(row=%d,column=7,value='=SUM(G%d:G%d)').number_format='$#,##0.00'\n", row, dataStart, dataEnd));
+            py.append(String.format("for ci in range(1,8):\n  c=ws.cell(row=%d,column=ci);c.font=sub_font;c.fill=sub_fill;c.border=border\n", row));
             subtotalRows.add(row);
             row += 2;
         }
         if (!subtotalRows.isEmpty()) {
-            String cRef = subtotalRows.stream().map(r -> "C" + r).collect(Collectors.joining("+"));
             String dRef = subtotalRows.stream().map(r -> "D" + r).collect(Collectors.joining("+"));
             String eRef = subtotalRows.stream().map(r -> "E" + r).collect(Collectors.joining("+"));
+            String fRef = subtotalRows.stream().map(r -> "F" + r).collect(Collectors.joining("+"));
+            String gRef = subtotalRows.stream().map(r -> "G" + r).collect(Collectors.joining("+"));
             py.append(String.format("ws.cell(row=%d,column=1,value='GRAND TOTAL')\n", row));
-            py.append(String.format("ws.cell(row=%d,column=3,value='=%s').number_format='$#,##0.00'\n", row, cRef));
             py.append(String.format("ws.cell(row=%d,column=4,value='=%s').number_format='$#,##0.00'\n", row, dRef));
             py.append(String.format("ws.cell(row=%d,column=5,value='=%s').number_format='$#,##0.00'\n", row, eRef));
-            py.append(String.format("for ci in range(1,6):\n  c=ws.cell(row=%d,column=ci);c.font=tot_font;c.fill=tot_fill;c.border=border\n", row));
+            py.append(String.format("ws.cell(row=%d,column=6,value='=%s').number_format='$#,##0.00'\n", row, fRef));
+            py.append(String.format("ws.cell(row=%d,column=7,value='=%s').number_format='$#,##0.00'\n", row, gRef));
+            py.append(String.format("for ci in range(1,8):\n  c=ws.cell(row=%d,column=ci);c.font=tot_font;c.fill=tot_fill;c.border=border\n", row));
         }
-        py.append("for col,w in zip('ABCDE',[14,44,14,12,14]):\n  ws.column_dimensions[col].width=w\n");
+        py.append("for col,w in zip('ABCDEFG',[14,44,20,14,14,12,14]):\n  ws.column_dimensions[col].width=w\n");
         py.append(String.format("ws.row_dimensions[%d].height=20\n", headerRow));
         py.append(String.format("ws.freeze_panes='A%d'\n\n", row));
 
