@@ -1,6 +1,7 @@
 package com.github.shanebeee.et.util;
 
 import com.github.shanebeee.et.model.Boss;
+import com.github.shanebeee.et.model.CcaAsset;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.model.ExpenseCategory;
@@ -61,6 +62,7 @@ public class AnnualTaxReportGenerator {
         List<Expenditure>     expenses = storage.loadExpenditures(String.valueOf(year));
         List<ExpenseCategory> cats     = storage.loadExpenseCategories(String.valueOf(year));
         List<KmTrip>          kmTrips  = storage.loadKmTrips(String.valueOf(year));
+        List<CcaAsset>        ccaAssets = storage.loadCcaAssets();
 
         // Load all logs for the year
         List<LogEntry> allLogs = new ArrayList<>();
@@ -161,8 +163,14 @@ public class AnnualTaxReportGenerator {
             for (BossMonthData m : months)
                 grossIncome += m.hoursIncome() + m.kmIncome() + m.extras();
         }
-        double netIncome     = grossIncome - totalExpenses;
-        double netGstOwing   = totalGstCollected - totalGstITC;
+        double totalCcaDeduction = ccaAssets.stream().mapToDouble(a -> a.deductionForYear(year)).sum();
+        double netIncome     = grossIncome - totalExpenses - totalCcaDeduction;
+        // GST ITCs include both regular expense GST and GST paid on capital assets purchased this year
+        double totalCcaGstITC = ccaAssets.stream()
+            .filter(a -> a.getPurchaseYear() == year)
+            .mapToDouble(a -> a.getCost() * 0.05)
+            .sum();
+        double netGstOwing   = totalGstCollected - totalGstITC - totalCcaGstITC;
 
         // ── Build PDF ─────────────────────────────────────────────────────────
         PdfWriter   writer = new PdfWriter(outputPath);
@@ -280,12 +288,115 @@ public class AnnualTaxReportGenerator {
         Table gstRecon = makeTable(new float[]{4, 1});
         addSubtotalRow(gstRecon, "GST Collected (from clients)",      fmtDollar(totalGstCollected), BLUE,  BLUE_LIGHT);
         addSubtotalRow(gstRecon, "GST Paid on Expenses (ITCs)",       fmtDollar(totalGstITC),       AMBER, AMBER_LIGHT);
+        if (totalCcaGstITC > 0) {
+            addSubtotalRow(gstRecon, "GST Paid on Capital Assets (ITCs)", fmtDollar(totalCcaGstITC), AMBER, AMBER_LIGHT);
+        }
         DeviceRgb netGstColor = netGstOwing >= 0 ? RED : GREEN;
         DeviceRgb netGstBg    = netGstOwing >= 0 ? new DeviceRgb(254,226,226) : GREEN_LIGHT;
         addSubtotalRow(gstRecon,
             netGstOwing >= 0 ? "Net GST Owing to CRA" : "Net GST Refund from CRA",
             fmtDollar(Math.abs(netGstOwing)), netGstColor, netGstBg);
         doc.add(gstRecon);
+        doc.add(new com.itextpdf.layout.element.AreaBreak());
+
+        // ═════════════════════════════════════════════════════════════════════
+        // PAGE 3 — CCA SCHEDULE
+        // ═════════════════════════════════════════════════════════════════════
+        addSectionHeader(doc, "CCA Schedule", "Capital Cost Allowance — depreciable assets", new DeviceRgb(139, 92, 246), year);
+
+        if (ccaAssets.isEmpty()) {
+            doc.add(new Paragraph("No CCA assets have been added.")
+                .setFontColor(SLATE).setFontSize(10).setItalic().setMarginTop(8));
+        } else {
+            // Group assets by class
+            Map<String, List<CcaAsset>> byClass = new java.util.LinkedHashMap<>();
+            for (CcaAsset a : ccaAssets) {
+                String cls = a.getAssetClass() != null ? a.getAssetClass() : "Unclassified";
+                byClass.computeIfAbsent(cls, k -> new java.util.ArrayList<>()).add(a);
+            }
+
+            DeviceRgb PURPLE       = new DeviceRgb(139, 92,  246);
+            DeviceRgb PURPLE_LIGHT = new DeviceRgb(237, 233, 254);
+
+            double totalOpeningUcc  = 0;
+            double totalDeduction   = 0;
+            double totalClosingUcc  = 0;
+
+            Table ccaTable = makeTable(new float[]{3, 1, 1, 1, 1, 1});
+            addHeaderRow(ccaTable, new String[]{"Asset (Purchase Date)", "Class / Rate", "Cost", "Opening UCC", "Deduction", "Closing UCC"});
+
+            int ccaRow = 0;
+            for (Map.Entry<String, List<CcaAsset>> entry : byClass.entrySet()) {
+                // Class sub-header spanning all columns
+                ccaTable.addCell(new Cell(1, 6)
+                    .add(new Paragraph(entry.getKey()).setFontSize(9).setBold().setFontColor(PURPLE))
+                    .setBackgroundColor(PURPLE_LIGHT).setPadding(5).setBorder(Border.NO_BORDER));
+
+                double classOpenUcc = 0, classDeduct = 0, classCloseUcc = 0;
+                for (CcaAsset a : entry.getValue()) {
+                    double deduction   = a.deductionForYear(year);
+                    double openingUcc  = a.openingUccForYear(year);
+                    double closingUcc  = a.closingUccForYear(year);
+                    boolean alt = (ccaRow++ % 2 == 0);
+
+                    String assetLabel = (a.getDescription() != null ? a.getDescription() : "—")
+                        + (a.getPurchaseDate() != null ? "\n" + a.getPurchaseDate() : "");
+                    addDataRow(ccaTable, alt, TextAlignment.LEFT,  assetLabel);
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,
+                        a.getAssetClass() + " / " + String.format("%.0f%%", a.getClassRate() * 100));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(a.getCost()));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(openingUcc));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(deduction));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(closingUcc));
+
+                    classOpenUcc  += openingUcc;
+                    classDeduct   += deduction;
+                    classCloseUcc += closingUcc;
+                }
+
+                // Class subtotal
+                addTotalRow(ccaTable, new String[]{
+                    entry.getKey() + " Subtotal", "",
+                    "", fmtDollar(classOpenUcc), fmtDollar(classDeduct), fmtDollar(classCloseUcc)
+                });
+
+                totalOpeningUcc  += classOpenUcc;
+                totalDeduction   += classDeduct;
+                totalClosingUcc  += classCloseUcc;
+            }
+            doc.add(ccaTable);
+
+            // Grand total block
+            doc.add(new Paragraph("\n"));
+            Table ccaSummary = makeTable(new float[]{4, 1});
+            addSubtotalRow(ccaSummary, "Total Opening UCC",               fmtDollar(totalOpeningUcc),  PURPLE, PURPLE_LIGHT);
+            addSubtotalRow(ccaSummary, "Total CCA Deduction for " + year,  fmtDollar(totalDeduction),   PURPLE, PURPLE_LIGHT);
+            addSubtotalRow(ccaSummary, "Total Closing UCC",                fmtDollar(totalClosingUcc),  PURPLE, PURPLE_LIGHT);
+            doc.add(ccaSummary);
+
+            // GST / ITC block — assets purchased in this tax year only
+            double ccaGstThisYear = ccaAssets.stream()
+                .filter(a -> a.getPurchaseYear() == year)
+                .mapToDouble(a -> a.getCost() * 0.05)
+                .sum();
+            if (ccaGstThisYear > 0) {
+                doc.add(new Paragraph("\nGST / HST on Capital Acquisitions")
+                    .setFontSize(12).setBold().setFontColor(NAVY).setMarginTop(16));
+                Table gstItcTable = makeTable(new float[]{4, 1});
+                addSubtotalRow(gstItcTable,
+                    "GST paid on assets purchased in " + year + " (claim as ITCs on GST return)",
+                    fmtDollar(ccaGstThisYear), BLUE, BLUE_LIGHT);
+                doc.add(gstItcTable);
+                doc.add(new Paragraph(
+                    "* Claim the above GST amount as an Input Tax Credit (ITC) on your "
+                    + year + " GST/HST return. Do not include in T2125 business expenses.")
+                    .setFontSize(9).setFontColor(SLATE).setItalic().setMarginTop(6));
+            }
+
+            doc.add(new Paragraph(
+                "* Deductions shown are computed amounts for " + year + ".")
+                .setFontSize(9).setFontColor(SLATE).setItalic().setMarginTop(10));
+        }
         doc.add(new com.itextpdf.layout.element.AreaBreak());
 
         // ═════════════════════════════════════════════════════════════════════
@@ -342,6 +453,9 @@ public class AnnualTaxReportGenerator {
 
         addSubtotalRow(summary, "Gross Income (self-employed)",           fmtDollar(grossIncome),          GREEN,  GREEN_LIGHT);
         addSubtotalRow(summary, "Total Business Expenses",                fmtDollar(totalExpenses),         AMBER,  AMBER_LIGHT);
+        if (totalCcaDeduction > 0) {
+            addSubtotalRow(summary, "CCA Deduction (Capital Cost Allowance)", fmtDollar(totalCcaDeduction), new DeviceRgb(139, 92, 246), new DeviceRgb(237, 233, 254));
+        }
         DeviceRgb netColor = netIncome >= 0 ? GREEN : RED;
         DeviceRgb netBg    = netIncome >= 0 ? GREEN_LIGHT : new DeviceRgb(254, 226, 226);
         addSubtotalRow(summary, "Estimated Net Income",                   fmtDollar(netIncome),             netColor, netBg);
@@ -353,7 +467,10 @@ public class AnnualTaxReportGenerator {
             .setFontSize(12).setBold().setFontColor(NAVY).setMarginTop(20));
         Table summaryGst = makeTable(new float[]{4, 1});
         addSubtotalRow(summaryGst, "GST Collected",         fmtDollar(totalGstCollected), BLUE,     BLUE_LIGHT);
-        addSubtotalRow(summaryGst, "GST Paid (ITCs)",       fmtDollar(totalGstITC),       AMBER,    AMBER_LIGHT);
+        addSubtotalRow(summaryGst, "GST Paid on Expenses (ITCs)", fmtDollar(totalGstITC), AMBER,    AMBER_LIGHT);
+        if (totalCcaGstITC > 0) {
+            addSubtotalRow(summaryGst, "GST Paid on Capital Assets (ITCs)", fmtDollar(totalCcaGstITC), AMBER, AMBER_LIGHT);
+        }
         addSubtotalRow(summaryGst,
             netGstOwing >= 0 ? "Net GST Owing to CRA" : "Net GST Refund",
             fmtDollar(Math.abs(netGstOwing)), netGstColor, netGstBg);
@@ -367,7 +484,7 @@ public class AnnualTaxReportGenerator {
         doc.add(summaryKm);
 
         // Disclaimer
-        doc.add(new Paragraph("\n* Estimated net income is before vehicle and home-office deductions. "
+        doc.add(new Paragraph("\n* Estimated net income is before vehicle and home-office deductions, but includes CCA. "
             + "Consult a qualified tax professional for your final return.")
             .setFontSize(9).setFontColor(SLATE).setItalic().setMarginTop(24));
 
@@ -425,7 +542,7 @@ public class AnnualTaxReportGenerator {
             .setFontSize(12).setBold().setFontColor(NAVY)
             .setTextAlignment(TextAlignment.CENTER)
             .setMarginTop(40));
-        String[] sections = {"1. Income Summary", "2. Expense Summary", "3. Kilometre Summary", "4. Annual Net Summary"};
+        String[] sections = {"1. Income Summary", "2. Expense Summary", "3. CCA Schedule", "4. Kilometre Summary", "5. Annual Net Summary"};
         for (String s : sections) {
             doc.add(new Paragraph(s)
                 .setFontSize(11).setFontColor(SLATE)

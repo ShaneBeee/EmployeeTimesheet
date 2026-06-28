@@ -1,6 +1,7 @@
 package com.github.shanebeee.et.storage;
 
 import com.github.shanebeee.et.model.Boss;
+import com.github.shanebeee.et.model.CcaAsset;
 import com.github.shanebeee.et.model.Invoice;
 import com.github.shanebeee.et.model.EmployeeInfo;
 import com.github.shanebeee.et.model.ExpenseCategory;
@@ -214,6 +215,16 @@ public class DataStorage {
         cats.add(new ExpenseCategory("Home Office",              "Business-use-of-home expenses (% of home)",      "9945", "#8B5CF6", true));
         cats.add(new ExpenseCategory("Other",                    "Miscellaneous business expenses (line 9270)",    "9270", "#94A3B8", true));
         return cats;
+    }
+
+    // CCA Assets (not year-scoped — assets span multiple tax years)
+    public List<CcaAsset> loadCcaAssets() {
+        return loadList(SETTINGS_DIR + "cca_assets.json",
+            new TypeToken<List<CcaAsset>>() {}.getType());
+    }
+
+    public void saveCcaAssets(List<CcaAsset> assets) {
+        saveToFile(SETTINGS_DIR + "cca_assets.json", assets);
     }
 
     // Expense Templates
