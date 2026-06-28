@@ -7,6 +7,7 @@ import com.github.shanebeee.et.model.ExpenseCategory;
 import com.github.shanebeee.et.model.KmOdometer;
 import com.github.shanebeee.et.model.KmTrip;
 import com.github.shanebeee.et.storage.DataStorage;
+import com.github.shanebeee.et.util.DeductionCalculator;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -75,19 +76,22 @@ public class CsvExporter {
         w.println();
 
         // Column headers
-        w.println(csv("Date", "Category", "T2125 Line", "Description", "Subtotal", "GST", "Total"));
+        w.println(csv("Date", "Category", "T2125 Line", "Description", "Subtotal", "GST", "Total", "Claimable", "Business Use"));
 
+        DeductionCalculator calc = new DeductionCalculator(storage);
         // Group by category
-        double grandTotal = 0;
+        double grandTotal = 0, grandClaimable = 0;
         for (ExpenseCategory cat : categories) {
             List<Expenditure> catExpenses = expenses.stream()
-                .filter(e -> cat.getId().equals(e.getCategoryId()))
+                .filter(e -> cat.getId() != null && cat.getId().equals(e.getCategoryId()))
                 .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
                 .toList();
             if (catExpenses.isEmpty()) continue;
 
-            double catTotal = 0;
+            double catTotal = 0, catClaimable = 0;
+            String pctLabel = calc.percentLabel(cat, year);
             for (Expenditure exp : catExpenses) {
+                double claimable = calc.deductibleAmount(exp.getTotal(), cat, year);
                 w.println(csv(
                     exp.getDate(),
                     cat.getLabel(),
@@ -95,15 +99,21 @@ public class CsvExporter {
                     safe(exp.getDescription()),
                     String.format("%.2f", exp.getSubtotal()),
                     String.format("%.2f", exp.getGst()),
-                    String.format("%.2f", exp.getTotal())
+                    String.format("%.2f", exp.getTotal()),
+                    String.format("%.2f", claimable),
+                    pctLabel
                 ));
-                catTotal += exp.getTotal();
+                catTotal     += exp.getTotal();
+                catClaimable += claimable;
             }
             // Category subtotal
             w.println(csv("", cat.getLabel() + " Subtotal", "", "", "", "",
-                String.format("%.2f", catTotal)));
+                String.format("%.2f", catTotal),
+                String.format("%.2f", catClaimable),
+                pctLabel));
             w.println();
-            grandTotal += catTotal;
+            grandTotal     += catTotal;
+            grandClaimable += catClaimable;
         }
 
         // Uncategorized
@@ -121,18 +131,25 @@ public class CsvExporter {
                     safe(exp.getDescription()),
                     String.format("%.2f", exp.getSubtotal()),
                     String.format("%.2f", exp.getGst()),
-                    String.format("%.2f", exp.getTotal())
+                    String.format("%.2f", exp.getTotal()),
+                    String.format("%.2f", exp.getTotal()),
+                    "100%"
                 ));
                 ucTotal += exp.getTotal();
             }
             w.println(csv("", "Uncategorized Subtotal", "", "", "", "",
-                String.format("%.2f", ucTotal)));
+                String.format("%.2f", ucTotal),
+                String.format("%.2f", ucTotal),
+                "100%"));
             w.println();
-            grandTotal += ucTotal;
+            grandTotal     += ucTotal;
+            grandClaimable += ucTotal;
         }
 
         // Grand total
-        w.println(csv("GRAND TOTAL", "", "", "", "", "", String.format("%.2f", grandTotal)));
+        w.println(csv("GRAND TOTAL", "", "", "", "", "",
+            String.format("%.2f", grandTotal),
+            String.format("%.2f", grandClaimable), ""));
     }
 
     // ── KM Log CSV ────────────────────────────────────────────────────────────
