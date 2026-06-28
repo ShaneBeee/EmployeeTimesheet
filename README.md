@@ -1,6 +1,6 @@
 # Employee Timesheet
 
-A personal desktop application for self-employed professionals to track work hours, log kilometrage, manage expenses, and generate invoices — all in one place.
+A personal desktop application for self-employed professionals to track work hours, log kilometrage, manage expenses, generate invoices, and prepare CRA-ready tax documentation — all in one place.
 
 Built specifically for use at Century 21 Amos Realty in the South Okanagan, BC.
 
@@ -51,6 +51,8 @@ Two-tab panel for generating and tracking invoices.
 - Table of all generated invoices showing #, boss, period, generated date, status badge, and amount
 - Status badges: **Draft** (grey), **Sent** (blue), **Paid** (green)
 - **Mark as Sent** and **Mark as Paid** buttons with date picker
+- **✉ Email Invoice** — opens Mail.app with the invoice PDF attached, To/Subject/Body pre-filled; requires the boss to have an email address set in Boss Management
+- **Delete** — removes the invoice record from the log (PDF stays on disk); requires confirmation
 - Double-click any row to open the PDF
 - History refreshes automatically every time the panel is opened
 
@@ -60,7 +62,7 @@ Two-tab panel for generating and tracking invoices.
 - Outstanding (Sent) invoices surface on the Dashboard
 
 **Tax set-aside dialog**
-Shown automatically when marking an invoice as Paid (from either the History tab or the Dashboard). Breaks down the received amount into:
+Shown automatically when marking an invoice as Paid. Breaks down the received amount into:
 - GST to remit to CRA (5%)
 - Federal income tax to set aside (15%)
 - BC provincial tax to set aside (5.06%)
@@ -69,17 +71,47 @@ Shown automatically when marking an invoice as Paid (from either the History tab
 - Yours to keep (pre-GST amount minus income tax and CPP)
 
 ### 💸 Expenses
-Track business expenses for CRA T2125 reporting.
+Two-tab panel for tracking business expenses and capital assets.
 
+#### Expenses Tab
 - **Month grid view** — all 12 months at a glance with per-category colour bars and totals; single-click any month to slide into the detail view with a 200ms ease-out animation
-- **Amount fields** — subtotal, GST (5%, auto-calculated with override), and total after tax; PST rolls into total
+- **Amount fields** — subtotal, GST (5%, auto-calculated with override), and total after tax
+- **Claimable amount** — each expense card shows the claimable portion in purple below the total for partial-use categories (e.g. "60%" for phone, "KM-based" for vehicle)
 - **Receipt attachments** — attach JPG, PNG, PDF, or HEIC files per expense via drag & drop or native macOS file picker; files organized on disk by `receipts/{year}/{month}/`
 - **Expense templates** — save frequently used expenses as templates for one-click re-entry
-- **Year summary sidebar** — total spent and per-category breakdown
-- **Per-year categories** — expense categories are stored independently per tax year, so CRA line number changes in future years never affect past data
+- **Year summary sidebar** — total spent and per-category breakdown with claimable sub-amounts for partial-use categories
+- **Per-year categories** — expense categories are stored independently per tax year
+
+**Partial-use deduction types** (set per category in Settings):
+- `FULL` — 100% deductible (default)
+- `FIXED_PERCENT` — fixed business-use % you set (e.g. 60% for cell phone)
+- `KM_PERCENT` — auto-calculated from KM log (business KM ÷ total KM); used for vehicle expenses
+- `HOME_OFFICE` — calculated from office sq ft ÷ total home sq ft set in Settings → Profile
 
 **Default categories sourced from CRA T2125 E (25) Part 4:**
 Advertising (8521), Meals & Entertainment (8523), Insurance (8690), Interest & Bank Charges (8710), Licences & Memberships (8760), Office Expenses (8810), Office Supplies (8811), Professional Fees (8860), Management & Admin Fees (8871), Rent (8910), Repairs & Maintenance (8960), Travel (9200), Utilities (9220), Fuel non-vehicle (9224), Delivery & Freight (9275), Motor Vehicle (9281), Home Office (9945), Other (9270)
+
+#### CCA Assets Tab
+Track depreciable capital assets (laptops, vehicles, equipment) for CRA Capital Cost Allowance deductions.
+
+- **Pure computed model** — Opening UCC, Deduction, and Closing UCC are calculated mathematically from the original cost and purchase date using the CRA half-year rule; no mutable state
+- **Asset list** — shows Description, Class, Cost, Opening UCC, Deduction, and Closing UCC for any preview year (adjustable via year spinner)
+- **Add/Edit dialog** — description, purchase date, CCA class (preset dropdown with Class 50/10/8/12/10.1/14.1 or Custom), pre-tax capital cost, and invoice/receipt attachment
+- **Preset classes** — dropdown shows class name and description (e.g. "Class 50 — Computers, laptops, tablets (55%)")
+- **Receipt attachment** — drag & drop or file picker, same as expense receipts
+- **Summary** — total deduction for the preview year shown in the top bar
+
+**CRA half-year rule:** Year of purchase deduction = `cost × rate × 50%`. Subsequent years = `openingUCC × rate`.
+
+**Common CCA classes pre-loaded:**
+| Class | Rate | Description |
+|---|---|---|
+| Class 50 | 55% | Computers, laptops, tablets |
+| Class 10 | 30% | Vehicles |
+| Class 8 | 20% | Equipment, furniture, tools |
+| Class 12 | 100% | Small tools under $500 |
+| Class 10.1 | 30% | Passenger vehicles over cost limit |
+| Class 14.1 | 5% | Intangibles, goodwill |
 
 ### 🚗 Kilometre Log
 Track business KMs for vehicle expense deduction at tax time.
@@ -87,28 +119,38 @@ Track business KMs for vehicle expense deduction at tax time.
 - **Chronological trip list** with month section headers and monthly KM totals
 - **Log a trip** — date, distance (km), and a note/purpose
 - **Odometer readings** — set year start and year end to calculate total KMs driven
-- **Business use %** — auto-calculated from business KMs ÷ total KMs; the number your accountant needs
+- **Business use %** — auto-calculated from business KMs ÷ total KMs; feeds directly into vehicle expense deductions
 - **Auto-logging** — KM entries in Work Logs automatically create linked trips here (synced on edit/delete); shows "auto-logged" badge on card
 - **Backfill import** — "Import from Work Logs" button scans January → today and imports any previously logged KM entries (safe to run multiple times, skips duplicates)
 
 ### 📊 Accounting
 Year-based export and archival tools for handing off to an accountant or storing for CRA's 7-year retention requirement.
 
-- **Export Accounting Data** — click Export to choose the format:
-  - *Excel (.xlsx)* — formatted workbook with two sheets (Expenses by T2125 category, Kilometre Log with odometer summary)
-  - *CSV (.csv)* — plain text zip containing two files (`Expenses_{year}.csv` and `KilometreLog_{year}.csv`); useful for accountants who prefer raw data
-- **Export Receipt Archive** — zip of all receipt files for the selected year, organized by month; one-click audit-ready package
-- **Annual Tax Report** — full multi-page PDF for handing to an accountant:
+**Export formats:**
+
+- **Excel (.xlsx)** — formatted 4-sheet workbook:
+  - *Expenses* — Date, Description, Category, Subtotal, GST, Total, Claimable, Business Use % per row; grouped by category with subtotals; category headers show business-use % (e.g. "MOTOR VEHICLE — Line 9281 (KM-based 29.3% claimable)"); grand total row
+  - *Kilometre Log* — full trip list with odometer summary and business-use % calculation
+  - *Income Summary* — per-boss breakdown with hours, KMs, extras, gross income, and GST collected; GST reconciliation block (collected, expense ITCs, net owing/refund)
+  - *CCA Schedule* — all assets with Purchased date, Class, Rate, Cost, Opening UCC, Deduction, and Closing UCC; total deduction row; GST/ITC block for assets purchased in the export year
+  - All sheets include full employee info header (name, company, address, phone/email)
+
+- **CSV (.csv)** — plain text zip containing two files:
+  - `Expenses_{year}.csv` — Date, Category, T2125 Line, Description, Subtotal, GST, Total, Claimable, Business Use %
+  - `KilometreLog_{year}.csv` — odometer summary then full trip list
+
+- **Annual Tax Report (PDF)** — multi-page report for your accountant:
   - *Cover page* — name, company, year, generated date, and table of contents
   - *Income Summary* — monthly breakdown per boss with hours, labour income, KMs, KM income, and extras; GST collected total
-  - *Expense Summary* — all expenses grouped by T2125 category with line numbers; GST reconciliation block (collected, ITCs, net owing/refund)
+  - *Expense Summary* — all expenses grouped by T2125 category with line numbers; **Total Paid** and **Claimable** columns showing partial-use deductions; GST reconciliation block (collected, expense ITCs, capital asset ITCs, net owing/refund)
+  - *CCA Schedule* — all assets grouped by class with per-class subtotals; Opening UCC, Deduction, Closing UCC; GST/ITC block for assets purchased in the report year
   - *Kilometre Summary* — full trip log plus per-boss billed KM breakdown
-  - *Net Summary* — at-a-glance page with gross income, total expenses, estimated net income, GST reconciliation, and KM totals
-- **Export Year Archive** — full backup zip of all data for the selected year (logs, expenses + receipts, KM data, invoices, and that year's category definitions); includes a `manifest.json` with year, export date, and app version
-- **Import Year Archive** — restore a previously exported year archive back into the app; refuses to import if data already exists for that year (conflict protection)
-- **Clear local data** — after exporting a year archive, optionally remove that year's data from local storage to keep the app folder lean; requires typing the year to confirm; never offered for the current year
-- **Year picker** — all exports scoped to the selected year (2020 → current)
-- Excel export uses a local Python venv auto-created on first run; no manual Python setup required
+  - *Annual Net Summary* — gross income, total expenses paid, total claimable expenses (after partial-use rules), CCA deduction, estimated net income; full GST reconciliation including capital asset ITCs
+
+- **Receipt Archive** — zip of all receipt files for the selected year, organized by month
+- **Year Archive** — full backup zip of all data for the selected year; includes a `manifest.json`
+- **Import Year Archive** — restore a previously exported archive; refuses to import if data already exists (conflict protection)
+- **Clear local data** — remove a year's data after archiving; requires typing the year to confirm; never offered for the current year
 
 ### 👥 Boss Management
 Add and manage clients/bosses used across Work Logs and Invoices.
@@ -118,46 +160,50 @@ Add and manage clients/bosses used across Work Logs and Invoices.
 ### 🔍 Search
 Sidebar search bar with live dropdown results across work logs, expenses, and KM trips. Click any result to navigate directly to the relevant panel.
 
+### ↩ Undo
+Deleting a work log entry, expense, or KM trip shows a snackbar with an **Undo** button. Clicking Undo within 8 seconds restores the item; otherwise the delete is committed to disk.
+
 ### ⚙️ Settings
 Three tabs:
 
-- **Profile** — employee info (name, company, address, phone, email) used on invoices and exports
-- **Preferences** — default start/end times for new log entries; Data Location showing current save path with a **Change...** button to migrate data to a new folder (copies all existing data, then prompts restart)
-- **Expense Categories** — per-year category management with `< year >` navigation; add, edit, or delete categories; built-in categories can be edited but not deleted; "Reset to Defaults" restores the full T2125-aligned list for the selected year; new years auto-seed from the previous year's categories
+- **Profile** — employee info (name, company, address, phone, email) used on invoices and exports; **Home Office** section with office sq ft and total home sq ft fields and a live "Deductible portion: X%" calculation
+- **Preferences** — default start/end times for new log entries; Data Location with a **Change...** button to migrate data to a new folder
+- **Expense Categories** — per-year category management; add, edit, or delete categories; each category has a **Business Use** type (100% / Fixed % / KM-based / Home office) with optional fixed-% field; colour picker for category swatch; "Reset to Defaults" restores the full T2125-aligned list
 
 ---
 
 ## First-Run Onboarding
 
-On first launch the app shows a 5-step setup wizard:
+On first launch the app shows a 7-step setup wizard:
 
 1. **Welcome** — introduction screen
-2. **Data Location** — choose iCloud Drive (recommended, auto-detected) or Local Only; custom folder also supported; path shown live
+2. **Data Location** — choose iCloud Drive (recommended, auto-detected) or Local Only; custom folder also supported
 3. **Profile** — enter your name, company, address, phone, and email
-4. **First Boss** — add your first client with hourly rate, KM rate, tax rate, and income type
-5. **Done** — confirmation with a summary of the chosen save location
+4. **Home Office** — optional; enter office sq ft and total home sq ft to configure the home-office deduction percentage; shows live calculation
+5. **CCA Assets** — optional; add any capital assets purchased to date (laptop, vehicle, etc.) with class and cost; can be skipped and added later
+6. **First Boss** — add your first client with hourly rate, KM rate, tax rate, and income type
+7. **Done** — confirmation with a summary of the chosen save location
 
-The wizard only appears once. Existing users who already have a data directory preference saved skip it entirely.
+The wizard only appears once. Existing users who already have a data directory preference skip it entirely.
 
 ---
 
 ## Data Storage
 
-Data directory is chosen during onboarding and saved to macOS `Preferences` (`~/Library/Preferences/com.github.shanebeee.et.plist`) so the app always knows where to look on startup, independent of the data folder itself.
+Data directory is chosen during onboarding and saved to macOS `Preferences` (`~/Library/Preferences/com.github.shanebeee.et.plist`).
 
 **Default paths:**
 - iCloud Drive: `~/Library/Mobile Documents/com~apple~CloudDocs/EmployeeTimesheet/`
 - Local: `~/EmployeeTimesheet/`
 
-The data directory can be changed at any time in **Settings → Preferences → Data Location**. Changing it copies all existing data to the new location and saves the new path to Preferences; the app prompts for a restart.
-
 ```
 {data_directory}/
 ├── settings/
-│   ├── employee.json                    # Employee info
+│   ├── employee.json                    # Employee info (incl. home office sq ft)
 │   ├── bosses.json                      # Boss list
 │   ├── settings.json                    # App settings (invoice counter, default times)
-│   └── expense_categories_{year}.json   # Per-year expense categories
+│   ├── expense_categories_{year}.json   # Per-year expense categories with deduction types
+│   └── cca_assets.json                  # CCA assets (not year-scoped; span multiple years)
 ├── logs/
 │   └── yyyy-MM.json                     # Work log entries per month
 ├── invoices/
@@ -175,21 +221,6 @@ The data directory can be changed at any time in **Settings → Preferences → 
 ```
 
 No database, no accounts — everything is plain JSON on disk, synced automatically if stored in iCloud Drive.
-
-### Year Archives
-Full-year backups are self-contained zip files with the structure:
-
-```
-EmployeeTimesheet_Archive_{year}.zip
-├── manifest.json                            # Year, export date, app version
-├── logs/yyyy-MM.json                        # Work logs for the year
-├── receipts/{year}/expenses.json            # Expense records
-├── receipts/{year}/{month}/...              # Receipt files
-├── km/{year}/trips.json                     # KM trips
-├── km/{year}/odometer.json                  # Odometer readings
-├── settings/expense_categories_{year}.json  # Category snapshot for the year
-└── invoices/...                             # Invoice PDFs for the year
-```
 
 ---
 
