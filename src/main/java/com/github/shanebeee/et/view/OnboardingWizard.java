@@ -39,12 +39,17 @@ public class OnboardingWizard extends JDialog {
     private final JPanel     deck  = new JPanel(cards);
 
     // Step indices
-    private static final String STEP_WELCOME  = "WELCOME";
-    private static final String STEP_STORAGE  = "STORAGE";
-    private static final String STEP_PROFILE  = "PROFILE";
-    private static final String STEP_BOSS     = "BOSS";
-    private static final String STEP_DONE     = "DONE";
-    private static final String[] STEPS = {STEP_WELCOME, STEP_STORAGE, STEP_PROFILE, STEP_BOSS, STEP_DONE};
+    private static final String STEP_WELCOME     = "WELCOME";
+    private static final String STEP_STORAGE     = "STORAGE";
+    private static final String STEP_PROFILE     = "PROFILE";
+    private static final String STEP_HOME_OFFICE = "HOME_OFFICE";
+    private static final String STEP_CCA         = "CCA";
+    private static final String STEP_BOSS        = "BOSS";
+    private static final String STEP_DONE        = "DONE";
+    private static final String[] STEPS = {
+        STEP_WELCOME, STEP_STORAGE, STEP_PROFILE,
+        STEP_HOME_OFFICE, STEP_CCA, STEP_BOSS, STEP_DONE
+    };
     private int currentStep = 0;
 
     // Storage step state
@@ -52,6 +57,14 @@ public class OnboardingWizard extends JDialog {
 
     // Profile step fields
     private JTextField nameField, companyField, addressField, phoneField, emailField;
+
+    // Home office step fields
+    private JTextField homeOfficeSqFtField, homeTotalSqFtField;
+    private JLabel     homeOfficeCalcLabel;
+
+    // CCA step fields — list of assets added during onboarding
+    private final java.util.List<com.github.shanebeee.et.model.CcaAsset> onboardingCcaAssets = new java.util.ArrayList<>();
+    private JPanel ccaListPanel;
 
     // Boss step fields
     private JTextField bossNameField, hourlyField, kmField, taxField;
@@ -79,11 +92,13 @@ public class OnboardingWizard extends JDialog {
 
         // ── Deck ─────────────────────────────────────────────────────────────
         deck.setOpaque(false);
-        deck.add(buildWelcomeStep(),  STEP_WELCOME);
-        deck.add(buildStorageStep(),  STEP_STORAGE);
-        deck.add(buildProfileStep(),  STEP_PROFILE);
-        deck.add(buildBossStep(),     STEP_BOSS);
-        deck.add(buildDoneStep(),     STEP_DONE);
+        deck.add(buildWelcomeStep(),    STEP_WELCOME);
+        deck.add(buildStorageStep(),    STEP_STORAGE);
+        deck.add(buildProfileStep(),    STEP_PROFILE);
+        deck.add(buildHomeOfficeStep(), STEP_HOME_OFFICE);
+        deck.add(buildCcaStep(),        STEP_CCA);
+        deck.add(buildBossStep(),       STEP_BOSS);
+        deck.add(buildDoneStep(),       STEP_DONE);
         add(deck, BorderLayout.CENTER);
 
         // ── Footer ───────────────────────────────────────────────────────────
@@ -142,7 +157,7 @@ public class OnboardingWizard extends JDialog {
         } else {
             // Step label skips the welcome screen in the count
             int displayStep = currentStep; // welcome is step 0 but we show "Step 1 of 4" for storage
-            stepLabel.setText(currentStep == 0 ? "" : "Step " + currentStep + " of 4");
+            stepLabel.setText(currentStep == 0 ? "" : "Step " + currentStep + " of 6");
         }
     }
 
@@ -184,7 +199,15 @@ public class OnboardingWizard extends JDialog {
         info.setAddress(addressField.getText().trim());
         info.setPhoneNumber(phoneField.getText().trim());
         info.setEmail(emailField.getText().trim());
+        // Home office
+        try { info.setHomeOfficeSqFt(Double.parseDouble(homeOfficeSqFtField.getText().trim())); } catch (NumberFormatException ignored) {}
+        try { info.setHomeTotalSqFt(Double.parseDouble(homeTotalSqFtField.getText().trim()));   } catch (NumberFormatException ignored) {}
         storage.saveEmployeeInfo(info);
+
+        // 4. Save CCA assets if any were added
+        if (!onboardingCcaAssets.isEmpty()) {
+            storage.saveCcaAssets(onboardingCcaAssets);
+        }
 
         // 4. Save boss if name provided
         String bossName = bossNameField.getText().trim();
@@ -408,6 +431,182 @@ public class OnboardingWizard extends JDialog {
 
         p.add(form);
         return p;
+    }
+
+    private JPanel buildHomeOfficeStep() {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setOpaque(false);
+        p.setBorder(BorderFactory.createEmptyBorder(30, 40, 20, 40));
+
+        JLabel title = new JLabel("Home Office Deduction");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        title.setForeground(NAVY); title.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(title);
+        p.add(Box.createVerticalStrut(6));
+
+        JLabel sub = new JLabel("<html>If you work from home, you can deduct a portion of your rent,<br>utilities, and other home expenses as a business expense.<br><br>Enter your home's total area and your dedicated office space.</html>");
+        sub.setFont(sub.getFont().deriveFont(Font.PLAIN, 12f));
+        sub.setForeground(SLATE); sub.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(sub);
+        p.add(Box.createVerticalStrut(8));
+
+        JLabel skipNote = new JLabel("You can skip this step and set it later in Settings.");
+        skipNote.setFont(skipNote.getFont().deriveFont(Font.ITALIC, 11f));
+        skipNote.setForeground(SLATE); skipNote.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(skipNote);
+        p.add(Box.createVerticalStrut(20));
+
+        homeOfficeSqFtField  = new JTextField();
+        homeTotalSqFtField   = new JTextField();
+        homeOfficeCalcLabel  = new JLabel(" ");
+        homeOfficeCalcLabel.setFont(homeOfficeCalcLabel.getFont().deriveFont(Font.ITALIC, 11f));
+        homeOfficeCalcLabel.setForeground(new Color(99, 102, 241));
+        homeOfficeCalcLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        javax.swing.event.DocumentListener dl = new javax.swing.event.DocumentListener() {
+            void update() {
+                try {
+                    double off  = Double.parseDouble(homeOfficeSqFtField.getText().trim());
+                    double home = Double.parseDouble(homeTotalSqFtField.getText().trim());
+                    double pct  = home > 0 ? Math.min(100.0, off / home * 100) : 0;
+                    homeOfficeCalcLabel.setText(String.format("Deductible portion: %.1f%% of home expenses", pct));
+                } catch (NumberFormatException e) { homeOfficeCalcLabel.setText(" "); }
+            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        };
+        homeOfficeSqFtField.getDocument().addDocumentListener(dl);
+        homeTotalSqFtField.getDocument().addDocumentListener(dl);
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false); form.setAlignmentX(LEFT_ALIGNMENT);
+        form.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
+        gc.gridx = 0; gc.gridy = 0; gc.insets = new Insets(0, 0, 4, 0);
+        addFormRow(form, gc, "Office Area (sq ft)",     homeOfficeSqFtField); gc.gridy++;
+        addFormRow(form, gc, "Total Home Area (sq ft)", homeTotalSqFtField);
+        p.add(form);
+        p.add(Box.createVerticalStrut(8));
+        p.add(homeOfficeCalcLabel);
+        return p;
+    }
+
+    private JPanel buildCcaStep() {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setOpaque(false);
+        p.setBorder(BorderFactory.createEmptyBorder(24, 40, 20, 40));
+
+        JLabel title = new JLabel("Capital Cost Allowance (CCA)");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        title.setForeground(NAVY); title.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(title);
+        p.add(Box.createVerticalStrut(6));
+
+        JLabel sub = new JLabel("<html>Did you purchase any major business assets (laptop, vehicle, equipment)?<br>These are depreciated over time using CCA rather than expensed directly.<br><br>You can skip this and add assets later in Expenses → CCA Assets.</html>");
+        sub.setFont(sub.getFont().deriveFont(Font.PLAIN, 12f));
+        sub.setForeground(SLATE); sub.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(sub);
+        p.add(Box.createVerticalStrut(16));
+
+        ccaListPanel = new JPanel();
+        ccaListPanel.setLayout(new BoxLayout(ccaListPanel, BoxLayout.Y_AXIS));
+        ccaListPanel.setOpaque(false);
+        ccaListPanel.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(ccaListPanel);
+        p.add(Box.createVerticalStrut(10));
+
+        JButton btnAddAsset = new JButton("+ Add CCA Asset");
+        btnAddAsset.putClientProperty("JButton.buttonType", "roundRect");
+        btnAddAsset.setBackground(new Color(99, 102, 241));
+        btnAddAsset.setForeground(Color.WHITE);
+        btnAddAsset.setAlignmentX(LEFT_ALIGNMENT);
+        btnAddAsset.addActionListener(e -> showQuickCcaDialog());
+        p.add(btnAddAsset);
+        return p;
+    }
+
+    private void showQuickCcaDialog() {
+        // Simple inline add dialog reusing the same preset classes as CcaPanel
+        String[][] presets = {
+            {"Class 50",  "0.55", "Computers, laptops, tablets (55%)"},
+            {"Class 10",  "0.30", "Vehicles (30%)"},
+            {"Class 8",   "0.20", "Equipment, furniture, tools (20%)"},
+            {"Class 12",  "1.00", "Small tools under $500 (100%)"},
+        };
+        JTextField desc   = new JTextField();
+        JTextField date   = new JTextField(java.time.LocalDate.now().toString());
+        JTextField cost   = new JTextField();
+        String[] classNames = new String[presets.length + 1];
+        classNames[0] = "Custom";
+        for (int i = 0; i < presets.length; i++) classNames[i+1] = presets[i][0];
+        JComboBox<String> classCombo = new JComboBox<>(classNames);
+        JTextField rateField  = new JTextField();
+        JTextField classField = new JTextField();
+
+        classCombo.addActionListener(e -> {
+            int sel = classCombo.getSelectedIndex();
+            if (sel > 0) { classField.setText(presets[sel-1][0]); rateField.setText(presets[sel-1][1]); }
+            else { classField.setText(""); rateField.setText(""); }
+        });
+        // Default to Class 50
+        classCombo.setSelectedIndex(1);
+
+        JPanel form = new JPanel(new GridBagLayout());
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
+        gc.gridx = 0; gc.gridy = 0; gc.insets = new Insets(0, 0, 4, 0);
+        addFormRow(form, gc, "Description",       desc);       gc.gridy++;
+        addFormRow(form, gc, "Purchase Date",     date);       gc.gridy++;
+        addFormRow(form, gc, "CCA Class",         classCombo); gc.gridy++;
+        addFormRow(form, gc, "Capital Cost ($)",  cost);
+
+        int result = JOptionPane.showConfirmDialog(this, form, "Add CCA Asset",
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result != JOptionPane.OK_OPTION) return;
+
+        String descStr = desc.getText().trim();
+        if (descStr.isBlank()) return;
+        double costVal;
+        try { costVal = Double.parseDouble(cost.getText().trim()); if (costVal <= 0) return; }
+        catch (NumberFormatException ex) { return; }
+
+        com.github.shanebeee.et.model.CcaAsset asset = new com.github.shanebeee.et.model.CcaAsset();
+        asset.setDescription(descStr);
+        asset.setPurchaseDate(date.getText().trim());
+        asset.setAssetClass(classField.getText().isBlank() ? classCombo.getSelectedItem().toString() : classField.getText().trim());
+        try { asset.setClassRate(Double.parseDouble(rateField.getText().trim())); } catch (NumberFormatException ignored) {}
+        asset.setCost(costVal);
+        onboardingCcaAssets.add(asset);
+        refreshCcaList();
+    }
+
+    private void refreshCcaList() {
+        ccaListPanel.removeAll();
+        for (com.github.shanebeee.et.model.CcaAsset a : onboardingCcaAssets) {
+            JPanel row = new JPanel(new BorderLayout(8, 0));
+            row.setOpaque(false);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+            row.setAlignmentX(LEFT_ALIGNMENT);
+            JLabel lbl = new JLabel(String.format("%s  —  %s  —  $%.2f",
+                a.getDescription(), a.getAssetClass(), a.getCost()));
+            lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 12f));
+            lbl.setForeground(NAVY);
+            JButton del = new JButton("✕");
+            del.putClientProperty("JButton.buttonType", "roundRect");
+            del.setFont(del.getFont().deriveFont(Font.PLAIN, 10f));
+            del.setPreferredSize(new Dimension(28, 24));
+            del.addActionListener(e -> { onboardingCcaAssets.remove(a); refreshCcaList(); });
+            row.add(lbl, BorderLayout.CENTER);
+            row.add(del, BorderLayout.EAST);
+            ccaListPanel.add(row);
+            ccaListPanel.add(Box.createVerticalStrut(4));
+        }
+        ccaListPanel.revalidate();
+        ccaListPanel.repaint();
     }
 
     private JPanel buildBossStep() {
