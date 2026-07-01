@@ -322,6 +322,12 @@ public class InvoicePanel extends JPanel {
             EmployeeInfo employee = storage.loadEmployeeInfo();
             try {
                 InvoiceMailer.composeEmail(inv, boss, employee);
+                if (inv.getStatus() == Invoice.Status.DRAFT) {
+                    inv.setStatus(Invoice.Status.SENT);
+                    inv.setSentDate(LocalDate.now().toString());
+                    storage.updateInvoice(inv);
+                    refreshHistory();
+                }
             } catch (IllegalStateException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Cannot Email Invoice", JOptionPane.WARNING_MESSAGE);
             } catch (IOException ex) {
