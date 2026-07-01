@@ -2,8 +2,6 @@
 
 A personal desktop application for self-employed professionals to track work hours, log kilometrage, manage expenses, generate invoices, and prepare CRA-ready tax documentation — all in one place.
 
-Built specifically for use at Century 21 Amos Realty in the South Okanagan, BC.
-
 ---
 
 ## Tech Stack
