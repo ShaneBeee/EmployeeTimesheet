@@ -387,21 +387,51 @@ public class InvoicePanel extends JPanel {
     }
 
     void showTaxSetAsideDialog(Invoice inv) {
-        double total    = inv.getTotalAmount();
-        double gstRate  = 0.05;
-        double preGst   = total / (1 + gstRate);
-        double gst      = total - preGst;
+        int year = LocalDate.now().getYear();
+        com.github.shanebeee.et.model.TaxBrackets brackets = storage.loadTaxBrackets(year);
 
-        double fedTax   = preGst * 0.15;
-        double bcTax    = preGst * 0.0506;
-        double cpp      = preGst * 0.119;
+        // ── YTD income from paid invoices ─────────────────────────────────────────────
+        List<Invoice> allInvoices = storage.loadInvoices();
+        double ytdGross = allInvoices.stream()
+            .filter(i -> Invoice.Status.PAID.equals(i.getStatus())
+                && i.getPaidDate() != null
+                && i.getPaidDate().startsWith(String.valueOf(year)))
+            .mapToDouble(i -> i.getTotalAmount() / 1.05) // pre-GST
+            .sum();
+
+        // Months elapsed so far this year (at least 1)
+        int monthsElapsed = Math.max(1, LocalDate.now().getMonthValue());
+        double annualizedIncome = (ytdGross / monthsElapsed) * 12;
+
+        // ── This payment ───────────────────────────────────────────────────────────
+        double total  = inv.getTotalAmount();
+        double preGst = total / 1.05;
+        double gst    = total - preGst;
+
+        // ── Tax rates from brackets (based on annualized income) ───────────────
+        double fedRate = brackets.federalRateFor(annualizedIncome);
+        double bcRate  = brackets.bcRateFor(annualizedIncome);
+
+        // CPP — check YTD already paid, cap at annual max
+        double ytdCppPaid = allInvoices.stream()
+            .filter(i -> Invoice.Status.PAID.equals(i.getStatus())
+                && i.getPaidDate() != null
+                && i.getPaidDate().startsWith(String.valueOf(year))
+                && !i.getId().equals(inv.getId()))
+            .mapToDouble(i -> (i.getTotalAmount() / 1.05) * brackets.getCppRate())
+            .sum();
+        double ytdCppCapped = Math.min(ytdCppPaid, brackets.getCppMaxContribution());
+        double cpp = brackets.cppFor(preGst, ytdCppCapped);
+
+        double fedTax        = preGst * fedRate;
+        double bcTax         = preGst * bcRate;
         double totalSetAside = gst + fedTax + bcTax + cpp;
         double keepAmount    = preGst - (fedTax + bcTax + cpp);
 
         JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
             "Invoice #" + inv.getInvoiceNumber() + " — Paid!", true);
         dialog.setLayout(new BorderLayout());
-        dialog.setSize(420, 500);
+        dialog.setSize(460, 580);
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(Color.WHITE);
@@ -416,7 +446,17 @@ public class InvoicePanel extends JPanel {
         titleLbl.setForeground(new Color(30, 41, 59));
         titleLbl.setAlignmentX(LEFT_ALIGNMENT);
         body.add(titleLbl);
-        body.add(Box.createVerticalStrut(6));
+        body.add(Box.createVerticalStrut(4));
+
+        // Annualized income context
+        JLabel annualizedLbl = new JLabel(String.format(
+            "Based on YTD income ÷ %d months × 12 = ~$%.0f/yr estimated annual income",
+            monthsElapsed, annualizedIncome));
+        annualizedLbl.setFont(annualizedLbl.getFont().deriveFont(Font.ITALIC, 10f));
+        annualizedLbl.setForeground(new Color(148, 163, 184));
+        annualizedLbl.setAlignmentX(LEFT_ALIGNMENT);
+        body.add(annualizedLbl);
+        body.add(Box.createVerticalStrut(4));
 
         JLabel subLbl = new JLabel("Here's how to split it up:");
         subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 12f));
@@ -425,42 +465,50 @@ public class InvoicePanel extends JPanel {
         body.add(subLbl);
         body.add(Box.createVerticalStrut(16));
 
-        // GST row
         body.add(makeTaxRow("☁️  Remit to CRA (GST)",
             String.format("$%.2f", gst),
-            "5% GST you collected",
+            "5% GST collected",
             new Color(59, 130, 246), new Color(219, 234, 254)));
         body.add(Box.createVerticalStrut(6));
 
-        // Individual tax rows
         body.add(makeTaxRow("🏦  Federal Income Tax",
             String.format("$%.2f", fedTax),
-            "15% federal rate",
+            String.format("%.1f%% federal rate (bracket for ~$%.0f/yr)", fedRate * 100, annualizedIncome),
             new Color(245, 158, 11), new Color(254, 243, 199)));
         body.add(Box.createVerticalStrut(4));
         body.add(makeTaxRow("🏦  BC Provincial Tax",
             String.format("$%.2f", bcTax),
-            "5.06% BC rate",
+            String.format("%.2f%% BC rate (bracket for ~$%.0f/yr)", bcRate * 100, annualizedIncome),
             new Color(245, 158, 11), new Color(254, 243, 199)));
         body.add(Box.createVerticalStrut(4));
+
+        String cppNote = cpp < preGst * brackets.getCppRate()
+            ? String.format("%.1f%% CPP (capped — $%.2f remaining to annual max)",
+                brackets.getCppRate() * 100, brackets.getCppMaxContribution() - ytdCppCapped)
+            : String.format("%.1f%% CPP (employee + employer)", brackets.getCppRate() * 100);
         body.add(makeTaxRow("💼  CPP Contributions",
             String.format("$%.2f", cpp),
-            "11.9% (employee + employer)",
+            cppNote,
             new Color(245, 158, 11), new Color(254, 243, 199)));
         body.add(Box.createVerticalStrut(6));
 
-        // Total set aside
         body.add(makeTaxRow("🎯  Total to Set Aside",
             String.format("$%.2f", totalSetAside),
             "GST + Fed + BC + CPP combined",
             new Color(220, 38, 38), new Color(254, 226, 226)));
         body.add(Box.createVerticalStrut(6));
 
-        // Yours to keep
         body.add(makeTaxRow("✅  Yours to Keep",
             String.format("$%.2f", keepAmount),
             "After income tax and CPP",
             new Color(16, 185, 129), new Color(209, 250, 229)));
+
+        body.add(Box.createVerticalStrut(12));
+        JLabel disclaimer = new JLabel("* Estimate only. Rates based on your YTD income pattern. Consult a tax professional.");
+        disclaimer.setFont(disclaimer.getFont().deriveFont(Font.ITALIC, 9f));
+        disclaimer.setForeground(new Color(148, 163, 184));
+        disclaimer.setAlignmentX(LEFT_ALIGNMENT);
+        body.add(disclaimer);
 
         dialog.add(body, BorderLayout.CENTER);
 

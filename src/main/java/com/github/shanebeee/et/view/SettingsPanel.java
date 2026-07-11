@@ -68,6 +68,7 @@ public class SettingsPanel extends JPanel {
         tabs.addTab("Profile",            buildProfileTab(info));
         tabs.addTab("Preferences",        buildPreferencesTab());
         tabs.addTab("Expense Categories", buildCategoriesTab());
+        tabs.addTab("Tax Brackets",       buildTaxBracketsTab());
         add(tabs, BorderLayout.CENTER);
 
         // ── Save button (hidden on categories tab) ───────────────────────────
@@ -81,7 +82,7 @@ public class SettingsPanel extends JPanel {
         bottomPanel.add(saveBtn);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        tabs.addChangeListener(e -> bottomPanel.setVisible(tabs.getSelectedIndex() != 2));
+        tabs.addChangeListener(e -> bottomPanel.setVisible(tabs.getSelectedIndex() != 2 && tabs.getSelectedIndex() != 3));
 
         saveBtn.addActionListener(e -> {
             info.setFullName(nameField.getText());
@@ -716,7 +717,244 @@ public class SettingsPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Tab: Tax Brackets ──────────────────────────────────────────────────
+
+    private JPanel buildTaxBracketsTab() {
+        JPanel tab = new JPanel();
+        tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
+        tab.setOpaque(false);
+        tab.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
+        int year = LocalDate.now().getYear();
+        com.github.shanebeee.et.model.TaxBrackets[] bracketsHolder =
+            { storage.loadTaxBrackets(year) };
+
+        // Year picker
+        JPanel yearRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        yearRow.setOpaque(false);
+        yearRow.setAlignmentX(LEFT_ALIGNMENT);
+        yearRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        JLabel yearLbl = new JLabel("Tax Year:");
+        yearLbl.setFont(yearLbl.getFont().deriveFont(Font.PLAIN, 12f));
+        yearLbl.setForeground(new Color(71, 85, 105));
+        SpinnerNumberModel yearModel = new SpinnerNumberModel(year, 2020, year + 2, 1);
+        JSpinner yearSpinner = new JSpinner(yearModel);
+        yearSpinner.setPreferredSize(new Dimension(80, 28));
+        JSpinner.NumberEditor yearEditor = new JSpinner.NumberEditor(yearSpinner, "#");
+        yearEditor.getTextField().setHorizontalAlignment(JTextField.CENTER);
+        yearSpinner.setEditor(yearEditor);
+        yearRow.add(yearLbl);
+        yearRow.add(yearSpinner);
+        tab.add(yearRow);
+        tab.add(Box.createVerticalStrut(12));
+
+        // We'll rebuild the bracket panels when year changes
+        JPanel[] bracketsContainer = { new JPanel() };
+        bracketsContainer[0].setLayout(new BoxLayout(bracketsContainer[0], BoxLayout.Y_AXIS));
+        bracketsContainer[0].setOpaque(false);
+        bracketsContainer[0].setAlignmentX(LEFT_ALIGNMENT);
+
+        Runnable[] refreshHolder = { null };
+
+        Runnable buildBracketPanels = () -> {
+            JPanel container = bracketsContainer[0];
+            container.removeAll();
+            com.github.shanebeee.et.model.TaxBrackets brackets = bracketsHolder[0];
+
+            // ── CPP card ─────────────────────────────────────────────────────
+            JPanel cppCard = makeCard();
+            cppCard.setLayout(new BoxLayout(cppCard, BoxLayout.Y_AXIS));
+            cppCard.add(makeSectionRow("CPP (Canada Pension Plan)"));
+            cppCard.add(makeDivider());
+
+            JTextField cppRateField = new JTextField(String.format("%.1f", brackets.getCppRate() * 100));
+            JTextField cppMaxField  = new JTextField(String.format("%.2f", brackets.getCppMaxContribution()));
+            JLabel cppHint = new JLabel("Self-employed pay both employee + employer sides (combined rate)");
+            cppHint.setFont(cppHint.getFont().deriveFont(Font.ITALIC, 10f));
+            cppHint.setForeground(new Color(148, 163, 184));
+
+            cppCard.add(makeFieldRow("Combined Rate (%)",    cppRateField));
+            cppCard.add(makeDivider());
+            cppCard.add(makeFieldRow("Annual Maximum ($)",   cppMaxField));
+            cppCard.add(makeDivider());
+            JPanel hintRow = new JPanel(new BorderLayout());
+            hintRow.setOpaque(false);
+            hintRow.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+            hintRow.add(cppHint, BorderLayout.WEST);
+            cppCard.add(hintRow);
+
+            JButton saveCpp = new JButton("Save CPP");
+            saveCpp.putClientProperty("JButton.buttonType", "roundRect");
+            saveCpp.setBackground(new Color(16, 185, 129));
+            saveCpp.setForeground(Color.WHITE);
+            saveCpp.setAlignmentX(LEFT_ALIGNMENT);
+            saveCpp.addActionListener(e -> {
+                try {
+                    brackets.setCppRate(Double.parseDouble(cppRateField.getText().trim()) / 100.0);
+                    brackets.setCppMaxContribution(Double.parseDouble(cppMaxField.getText().trim()));
+                    storage.saveTaxBrackets(brackets);
+                    JOptionPane.showMessageDialog(this, "CPP settings saved.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Please enter valid numbers.", "Error", JOptionPane.WARNING_MESSAGE);
+                }
+            });
+            JPanel cppBtnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 6));
+            cppBtnRow.setOpaque(false);
+            cppBtnRow.add(saveCpp);
+            cppCard.add(cppBtnRow);
+            container.add(cppCard);
+            container.add(Box.createVerticalStrut(12));
+
+            // ── Federal brackets card ─────────────────────────────────────────
+            container.add(makeBracketCard("Federal Income Tax Brackets",
+                brackets.getFederal(), brackets, true));
+            container.add(Box.createVerticalStrut(12));
+
+            // ── BC brackets card ──────────────────────────────────────────────
+            container.add(makeBracketCard("BC Provincial Tax Brackets",
+                brackets.getBc(), brackets, false));
+
+            container.revalidate();
+            container.repaint();
+        };
+        refreshHolder[0] = buildBracketPanels;
+        buildBracketPanels.run();
+
+        yearSpinner.addChangeListener(e -> {
+            int y = (int) yearSpinner.getValue();
+            bracketsHolder[0] = storage.loadTaxBrackets(y);
+            buildBracketPanels.run();
+        });
+
+        tab.add(bracketsContainer[0]);
+
+        JScrollPane scroll = new JScrollPane(tab);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
+        scroll.getVerticalScrollBar().setUnitIncrement(12);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(scroll);
+        return wrapper;
+    }
+
+    private JPanel makeBracketCard(String title,
+            java.util.List<com.github.shanebeee.et.model.TaxBrackets.Bracket> brackets,
+            com.github.shanebeee.et.model.TaxBrackets taxBrackets, boolean isFederal) {
+
+        JPanel card = makeCard();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.add(makeSectionRow(title));
+        card.add(makeDivider());
+
+        // Column headers
+        JPanel colHdr = new JPanel(new java.awt.GridLayout(1, 3, 8, 0));
+        colHdr.setOpaque(false);
+        colHdr.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+        colHdr.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        for (String h : new String[]{"Up To ($)", "Rate (%)", ""}) {
+            JLabel l = new JLabel(h);
+            l.setFont(l.getFont().deriveFont(Font.BOLD, 9f));
+            l.setForeground(new Color(148, 163, 184));
+            colHdr.add(l);
+        }
+        card.add(colHdr);
+        card.add(makeDivider());
+
+        // Bracket rows — each row has upTo field, rate field, delete button
+        JPanel rowsPanel = new JPanel();
+        rowsPanel.setLayout(new BoxLayout(rowsPanel, BoxLayout.Y_AXIS));
+        rowsPanel.setOpaque(false);
+
+        Runnable refreshRows = () -> {
+            rowsPanel.removeAll();
+            for (int i = 0; i < brackets.size(); i++) {
+                final int idx = i;
+                com.github.shanebeee.et.model.TaxBrackets.Bracket b = brackets.get(i);
+                JPanel row = new JPanel(new java.awt.GridLayout(1, 3, 8, 0));
+                row.setOpaque(false);
+                row.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+
+                boolean isLast = (i == brackets.size() - 1);
+                JTextField upToField = new JTextField(
+                    isLast ? "No limit" : String.format("%.0f", b.getUpTo()));
+                upToField.setEnabled(!isLast);
+                JTextField rateField = new JTextField(
+                    String.format("%.2f", b.getRate() * 100));
+
+                JButton delBtn = new JButton("✕");
+                delBtn.putClientProperty("JButton.buttonType", "roundRect");
+                delBtn.setFont(delBtn.getFont().deriveFont(Font.PLAIN, 10f));
+                delBtn.setEnabled(brackets.size() > 1);
+                delBtn.addActionListener(e -> {
+                    brackets.remove(idx);
+                    rowsPanel.removeAll();
+                    rowsPanel.revalidate();
+                });
+
+                row.add(upToField);
+                row.add(rateField);
+                row.add(delBtn);
+                rowsPanel.add(row);
+
+                // Wire field changes into bracket object on focus-lost
+                upToField.addFocusListener(new java.awt.event.FocusAdapter() {
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        if (!isLast) try { b.setUpTo(Double.parseDouble(upToField.getText().trim())); } catch (NumberFormatException ignored) {}
+                    }
+                });
+                rateField.addFocusListener(new java.awt.event.FocusAdapter() {
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        try { b.setRate(Double.parseDouble(rateField.getText().trim()) / 100.0); } catch (NumberFormatException ignored) {}
+                    }
+                });
+            }
+            rowsPanel.revalidate();
+            rowsPanel.repaint();
+        };
+        refreshRows.run();
+        card.add(rowsPanel);
+        card.add(makeDivider());
+
+        // Add bracket + Save buttons
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
+        btnRow.setOpaque(false);
+
+        JButton btnAdd = new JButton("+ Add Bracket");
+        btnAdd.putClientProperty("JButton.buttonType", "roundRect");
+        btnAdd.setFont(btnAdd.getFont().deriveFont(Font.PLAIN, 11f));
+        btnAdd.addActionListener(e -> {
+            // Insert before the last ("no limit") bracket
+            double prevUpTo = brackets.size() > 1
+                ? brackets.get(brackets.size() - 2).getUpTo() + 10000 : 50000;
+            com.github.shanebeee.et.model.TaxBrackets.Bracket newB =
+                new com.github.shanebeee.et.model.TaxBrackets.Bracket(prevUpTo, 0.20);
+            brackets.add(brackets.size() - 1, newB); // before the last
+            refreshRows.run();
+        });
+
+        JButton btnSave = new JButton("Save Brackets");
+        btnSave.putClientProperty("JButton.buttonType", "roundRect");
+        btnSave.setBackground(new Color(16, 185, 129));
+        btnSave.setForeground(Color.WHITE);
+        btnSave.addActionListener(e -> {
+            // Ensure last bracket has 1e12 as upTo
+            if (!brackets.isEmpty()) brackets.get(brackets.size() - 1).setUpTo(1e12);
+            if (isFederal) taxBrackets.setFederal(brackets);
+            else           taxBrackets.setBc(brackets);
+            storage.saveTaxBrackets(taxBrackets);
+            JOptionPane.showMessageDialog(this, title + " saved.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        btnRow.add(btnAdd);
+        btnRow.add(btnSave);
+        card.add(btnRow);
+        return card;
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
 
     private JLabel makeDialogLabel(String text) {
         JLabel lbl = new JLabel(text);

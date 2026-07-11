@@ -10,6 +10,7 @@ import com.github.shanebeee.et.model.Expenditure;
 import com.github.shanebeee.et.model.KmOdometer;
 import com.github.shanebeee.et.model.KmTrip;
 import com.github.shanebeee.et.model.LogEntry;
+import com.github.shanebeee.et.model.TaxBrackets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -222,6 +223,22 @@ public class DataStorage {
         cats.add(new ExpenseCategory("Home Office",              "Business-use-of-home expenses (% of home)",      "9945", "#8B5CF6", true));
         cats.add(new ExpenseCategory("Other",                    "Miscellaneous business expenses (line 9270)",    "9270", "#94A3B8", true));
         return cats;
+    }
+
+    // Tax Brackets
+    public TaxBrackets loadTaxBrackets(int year) {
+        String file = SETTINGS_DIR + "tax_brackets_" + year + ".json";
+        TaxBrackets brackets = loadObject(file, TaxBrackets.class);
+        if (brackets == null) {
+            brackets = new TaxBrackets();
+            brackets.setYear(year);
+            saveTaxBrackets(brackets);
+        }
+        return brackets;
+    }
+
+    public void saveTaxBrackets(TaxBrackets brackets) {
+        saveToFile(SETTINGS_DIR + "tax_brackets_" + brackets.getYear() + ".json", brackets);
     }
 
     // CCA Assets (not year-scoped — assets span multiple tax years)
