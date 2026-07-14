@@ -66,6 +66,17 @@ public class ProfileManager {
         return System.getProperty("user.home") + File.separator + "Reconciled" + File.separator;
     }
 
+    /**
+     * Returns the explicitly saved rootDirectory preference, or null if none has
+     * ever been saved. Unlike {@link #getRootDir()}, this does NOT fall back to
+     * guessing — callers use the null case to know they need to derive a root
+     * (e.g. on first run) rather than silently trusting a guessed value.
+     */
+    public static String getSavedRootDirOrNull() {
+        Preferences prefs = Preferences.userNodeForPackage(ProfileManager.class);
+        return prefs.get(PREFS_ROOT_KEY, null);
+    }
+
     public static void saveRootDir(String path) {
         if (!path.endsWith(File.separator)) path = path + File.separator;
         try {

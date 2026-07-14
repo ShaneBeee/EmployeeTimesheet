@@ -51,17 +51,29 @@ public class Main {
                 currentDataDir = DataStorage.getSavedDataDirectory();
             }
 
-            // ── Step 3: rootDir is always the dataDirectory itself ────────────
-            // (For single user: dataDir = Reconciled/ = rootDir)
-            // (For multi user: dataDir = Reconciled/Username/ but rootDir = Reconciled/)
-            // Extract rootDir by truncating at Reconciled/
+            // ── Step 3: Resolve rootDir ─────────────────────────────────
+            // Prefer the explicitly saved rootDirectory preference — this is the
+            // authoritative source of truth once set. Only fall back to deriving
+            // it from the data path (legacy/first-run) when nothing is saved yet,
+            // and never let that derivation nest under an existing rootDir.
+            String savedRootDir = ProfileManager.getSavedRootDirOrNull();
             String rootDir;
-            String norm = currentDataDir.replace("//", "/");
-            int idx = norm.indexOf("Reconciled" + File.separator);
-            if (idx >= 0) {
-                rootDir = norm.substring(0, idx + "Reconciled".length() + 1);
+            if (savedRootDir != null && !savedRootDir.isBlank()) {
+                rootDir = savedRootDir;
             } else {
-                rootDir = currentDataDir;
+                // First run / legacy fallback: derive from the data directory by
+                // truncating at the app folder name, whatever it's currently called.
+                String norm = currentDataDir.replace("//", "/");
+                int idx = norm.indexOf("Reconciled" + File.separator);
+                if (idx >= 0) {
+                    rootDir = norm.substring(0, idx + "Reconciled".length() + 1);
+                } else {
+                    // Couldn't find the marker — treat currentDataDir's parent as root
+                    // rather than the full (possibly deep) path itself, so we never
+                    // start nesting new profile folders inside an existing one.
+                    File parent = new File(currentDataDir).getParentFile();
+                    rootDir = (parent != null ? parent.getAbsolutePath() : currentDataDir) + File.separator;
+                }
             }
             ProfileManager.saveRootDir(rootDir);
             ProfileManager profileManager = new ProfileManager(rootDir);

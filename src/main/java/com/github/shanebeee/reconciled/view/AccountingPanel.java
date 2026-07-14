@@ -274,7 +274,7 @@ public class AccountingPanel extends JPanel {
 
         java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
         java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Save CSV Export", java.awt.FileDialog.SAVE);
-        fd.setFile("EmployeeTimesheet_" + year + "_CSV.zip");
+        fd.setFile("Reconciled_" + year + "_CSV.zip");
         fd.setVisible(true);
         if (fd.getFile() == null) return;
         String outputPath = fd.getDirectory() + fd.getFile();
@@ -313,7 +313,7 @@ public class AccountingPanel extends JPanel {
 
         java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
         java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Save Excel Export", java.awt.FileDialog.SAVE);
-        fd.setFile("EmployeeTimesheet_" + year + ".xlsx");
+        fd.setFile("Reconciled_" + year + ".xlsx");
         fd.setVisible(true);
         if (fd.getFile() == null) return;
         String outputPath = fd.getDirectory() + fd.getFile();
@@ -445,7 +445,7 @@ public class AccountingPanel extends JPanel {
         // Native save dialog
         java.awt.Frame owner = (java.awt.Frame) SwingUtilities.getWindowAncestor(this);
         java.awt.FileDialog fd = new java.awt.FileDialog(owner, "Save Year Archive", java.awt.FileDialog.SAVE);
-        fd.setFile("EmployeeTimesheet_Archive_" + year + ".zip");
+        fd.setFile("Reconciled_Archive_" + year + ".zip");
         fd.setVisible(true);
         if (fd.getFile() == null) return;
         String zipPath = fd.getDirectory() + fd.getFile();

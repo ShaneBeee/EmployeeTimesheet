@@ -42,7 +42,7 @@ public class ExcelExporter {
 
         // Ensure venv with openpyxl
         String venvDir    = System.getProperty("user.home") + File.separator
-            + "ShaneApps" + File.separator + "EmployeeTimesheet" + File.separator + "python_venv";
+            + "ShaneApps" + File.separator + "Reconciled" + File.separator + "python_venv";
         String venvPython = venvDir + File.separator + "bin" + File.separator + "python3";
         if (!new File(venvPython).exists()) run(new String[]{"python3", "-m", "venv", venvDir});
         String marker = venvDir + File.separator + "lib_marker_openpyxl";
@@ -452,7 +452,7 @@ public class ExcelExporter {
         py.append(String.format("wb.save(r'%s')\n", outputPath.replace("\\", "\\\\")));
         py.append("print('ok')\n");
 
-        File script = File.createTempFile("et_export_", ".py");
+        File script = File.createTempFile("reconciled_export_", ".py");
         try (FileWriter fw = new FileWriter(script)) { fw.write(py.toString()); }
 
         ProcessBuilder pb = new ProcessBuilder(venvPython, script.getAbsolutePath());
