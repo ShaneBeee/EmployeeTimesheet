@@ -169,9 +169,10 @@ public class OnboardingWizard extends JDialog {
                 yield true;
             }
             case STEP_BOSS -> {
-                if (bossNameField.getText().trim().isBlank()) {
-                    JOptionPane.showMessageDialog(this, "Please enter a name for your boss/client.", "Required", JOptionPane.WARNING_MESSAGE);
-                    yield false;
+                String bossName = bossNameField.getText().trim();
+                if (bossName.isBlank()) {
+                    // No name entered — treat this step as skipped, nothing to validate.
+                    yield true;
                 }
                 try { Double.parseDouble(hourlyField.getText().trim()); } catch (NumberFormatException e) {
                     JOptionPane.showMessageDialog(this, "Please enter a valid hourly rate.", "Invalid", JOptionPane.WARNING_MESSAGE);
@@ -640,6 +641,13 @@ public class OnboardingWizard extends JDialog {
         sub.setForeground(SLATE);
         sub.setAlignmentX(LEFT_ALIGNMENT);
         p.add(sub);
+        p.add(Box.createVerticalStrut(4));
+
+        JLabel skipNote = new JLabel("You can skip this step and add a boss/client later.");
+        skipNote.setFont(skipNote.getFont().deriveFont(Font.ITALIC, 11f));
+        skipNote.setForeground(SLATE);
+        skipNote.setAlignmentX(LEFT_ALIGNMENT);
+        p.add(skipNote);
         p.add(Box.createVerticalStrut(20));
 
         bossNameField = new JTextField();
