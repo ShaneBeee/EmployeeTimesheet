@@ -1,6 +1,6 @@
-# Employee Timesheet
+# Reconciled
 
-A personal desktop application for self-employed professionals to track work hours, log kilometrage, manage expenses, generate invoices, and prepare CRA-ready tax documentation — all in one place.
+A personal desktop application for self-employed professionals and sole proprietors to track work hours, log kilometrage, manage expenses, generate invoices, and prepare CRA-ready tax documentation — all in one place.
 
 ---
 
@@ -177,7 +177,7 @@ Multiple people can use the same installation with completely separate books. Ea
 
 **Switching users** — a **Switch** button appears at the bottom of the sidebar when multiple profiles exist. Clicking it opens the profile picker mid-session and relaunches the app scoped to the chosen profile.
 
-**Adding profiles** — use the **+ Add Profile** button on the launch picker or in Settings → User Profiles. Each new profile gets its own named subfolder inside the root `EmployeeTimesheet/` directory.
+**Adding profiles** — use the **+ Add Profile** button on the launch picker or in Settings → User Profiles. Each new profile gets its own named subfolder inside the root `Reconciled/` directory.
 
 **Editing profiles** — the Edit button in Settings → User Profiles opens a dialog to change the display name, avatar colour, and all employee info (name, company, address, phone, email, home office sq ft) for that specific profile. Changes save to that profile's own `settings/employee.json`.
 
@@ -211,11 +211,11 @@ The wizard only appears once. On subsequent launches the app goes straight to th
 
 ## Data Storage
 
-The data directory is chosen during onboarding and saved to macOS Preferences (`~/Library/Preferences/com.github.shanebeee.plist` under the `/com/github/shanebeee/et/storage/` node).
+The data directory is chosen during onboarding and saved to macOS Preferences (`~/Library/Preferences/com.github.shanebeee.plist` under the `/com/github/shanebeee/reconciled/storage/` node).
 
 **Root layout** (one named subfolder per user profile):
 ```
-EmployeeTimesheet/
+Reconciled/
 ├── profiles.json            # List of all profiles (id, name, dataPath, avatarColor)
 ├── Shane_Bolenback/         # Each user's data lives in their own named subfolder
 │   ├── settings/
@@ -239,8 +239,8 @@ EmployeeTimesheet/
 ```
 
 **Default root locations:**
-- iCloud Drive: `~/Library/Mobile Documents/com~apple~CloudDocs/EmployeeTimesheet/`
-- Local: `~/EmployeeTimesheet/`
+- iCloud Drive: `~/Library/Mobile Documents/com~apple~CloudDocs/Reconciled/`
+- Local: `~/Reconciled/`
 
 No database, no accounts — everything is plain JSON on disk, synced automatically if stored in iCloud Drive.
 
