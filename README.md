@@ -14,7 +14,7 @@ A personal desktop application for self-employed professionals and sole propriet
 | Data Serialization | [Gson 2.11.0](https://github.com/google/gson) |
 | PDF Generation | [iText 8](https://itextpdf.com/) |
 | Excel Export | Python 3 + openpyxl (auto-installed into a local venv on first export) |
-| Packaging | jpackage (macOS DMG) |
+| Packaging | jpackage (macOS DMG, Windows EXE) |
 
 ---
 
@@ -255,9 +255,14 @@ No database, no accounts — everything is plain JSON on disk, synced automatica
 # Build fat JAR
 ./gradlew jar
 
-# Package as macOS DMG (requires jpackage)
+# Package as macOS DMG (requires jpackage, must be run on macOS)
 ./gradlew jpackageMac
+
+# Package as Windows EXE installer (requires jpackage, must be run on Windows)
+./gradlew jpackageWindows
 ```
+
+jpackage cannot cross-compile installers for another OS — each packaging task must be run on that same platform (`jpackageMac` on macOS, `jpackageWindows` on Windows). `jpackageWindows` defaults to an `.exe` installer, which avoids requiring the WiX Toolset (switch to `--type msi` in `build.gradle.kts` if WiX is installed and an `.msi` is preferred).
 
 Requires Java 25+.
 

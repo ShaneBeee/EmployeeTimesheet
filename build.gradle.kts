@@ -54,9 +54,10 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+// NOTE: jpackage cannot cross-compile installers — this task must be run ON macOS
+// (jpackage bundles a platform-native launcher + runtime image for the OS it's running on).
 tasks.register<Exec>("jpackageMac") {
     dependsOn(tasks.jar)
-
     doFirst {
         mkdir(layout.buildDirectory.dir("jpackage"))
 
@@ -72,6 +73,34 @@ tasks.register<Exec>("jpackageMac") {
             "--app-version", project.version.toString(),
             "--dest", layout.buildDirectory.dir("jpackage").get().asFile.absolutePath,
             "--icon", "src/main/resources/images/1024.icns"
+        )
+    }
+}
+
+// NOTE: jpackage cannot cross-compile installers — this task must be run ON Windows
+// (jpackage bundles a platform-native launcher + runtime image for the OS it's running on).
+// --type exe avoids requiring the WiX Toolset; switch to "msi" if WiX is installed and you
+// want an .msi installer instead.
+tasks.register<Exec>("jpackageWindows") {
+    dependsOn(tasks.jar)
+
+    doFirst {
+        mkdir(layout.buildDirectory.dir("jpackage"))
+
+        val jarFile = tasks.jar.get().archiveFile.get().asFile
+
+        commandLine(
+            "jpackage",
+            "--type", "exe",
+            "--input", jarFile.parent,
+            "--main-jar", jarFile.name,
+            "--main-class", "com.github.shanebeee.reconciled.Main",
+            "--name", "Reconciled",
+            "--app-version", project.version.toString(),
+            "--dest", layout.buildDirectory.dir("jpackage").get().asFile.absolutePath,
+            "--icon", "src/main/resources/images/icon.ico",
+            "--win-menu",
+            "--win-shortcut"
         )
     }
 }
