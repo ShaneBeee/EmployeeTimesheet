@@ -57,8 +57,13 @@ public class DataStorage {
 
     /** Persists the chosen data directory to Preferences. */
     public static void saveDataDirectory(String path) {
-        Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
-        prefs.put(PREFS_KEY, path.endsWith(File.separator) ? path : path + File.separator);
+        try {
+            Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
+            prefs.put(PREFS_KEY, path.endsWith(File.separator) ? path : path + File.separator);
+            prefs.flush();
+        } catch (java.util.prefs.BackingStoreException e) {
+            e.printStackTrace();
+        }
     }
 
     /** Returns true if a data directory has been explicitly chosen (onboarding completed). */
@@ -84,8 +89,13 @@ public class DataStorage {
     private final Gson gson;
 
     public DataStorage() {
+        this(getSavedDataDirectory());
+    }
+
+    /** Constructs a DataStorage instance scoped to a specific path (e.g. a different user profile). */
+    public DataStorage(String basePath) {
         this.gson = new GsonBuilder().setPrettyPrinting().create();
-        String base = getSavedDataDirectory();
+        String base = basePath;
         if (!base.endsWith(File.separator)) base = base + File.separator;
         BASE_DIR      = base;
         SETTINGS_DIR  = BASE_DIR + "settings/";

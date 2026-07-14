@@ -3,7 +3,9 @@ package com.github.shanebeee.et.view;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.github.shanebeee.et.model.Boss;
 import com.github.shanebeee.et.model.EmployeeInfo;
+import com.github.shanebeee.et.model.UserProfile;
 import com.github.shanebeee.et.storage.DataStorage;
+import com.github.shanebeee.et.storage.ProfileManager;
 import com.github.shanebeee.et.util.SearchEngine;
 import com.github.shanebeee.et.util.UIUtils;
 
@@ -28,6 +30,8 @@ import java.util.Map;
 public class MainFrame extends JFrame {
 
     private final DataStorage storage;
+    private final UserProfile activeProfile;
+    private final ProfileManager profileManager;
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private InvoicePanel invoicePanel;
@@ -43,8 +47,10 @@ public class MainFrame extends JFrame {
         "SETTINGS",   new Color(100, 116, 139)
     );
 
-    public MainFrame() {
+    public MainFrame(UserProfile activeProfile, ProfileManager profileManager) {
         this.storage = new DataStorage();
+        this.activeProfile = activeProfile;
+        this.profileManager = profileManager;
         setTitle("Employee Timesheet");
         setIconImage(UIUtils.createAppIcon(64));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -223,6 +229,9 @@ public class MainFrame extends JFrame {
 
         sidebar.add(sidebarContent, BorderLayout.NORTH);
 
+        // ── Profile strip at bottom of sidebar ──────────────────────────────────
+        sidebar.add(buildProfileStrip(), BorderLayout.SOUTH);
+
         // Content Area
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
@@ -239,30 +248,18 @@ public class MainFrame extends JFrame {
         contentPanel.add(wrapInCard(new KmLogPanel(storage)),      "KM");
         contentPanel.add(wrapInCard(new AccountingPanel(storage)),  "ACCOUNTING");
         contentPanel.add(wrapInCard(new BossPanel(storage)),        "BOSSES");
-        contentPanel.add(wrapInCard(new SettingsPanel(storage)),  "SETTINGS");
+        contentPanel.add(wrapInCard(new SettingsPanel(storage, profileManager)),  "SETTINGS");
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
 
-        // Show dashboard by default and refresh it each time it becomes visible
+        // Show dashboard by default
         updateNavButtons(dashBtn);
         cardLayout.show(contentPanel, "DASHBOARD");
         dashboardPanel.refresh();
-
-        // Refresh dashboard whenever it becomes visible
         dashBtn.addActionListener(e -> dashboardPanel.refresh());
 
-        // Show onboarding wizard on first launch
-        SwingUtilities.invokeLater(() -> {
-            if (!DataStorage.isOnboardingComplete()) {
-                OnboardingWizard wizard = new OnboardingWizard(this);
-                wizard.setVisible(true);
-                // After wizard closes, reinitialize storage and refresh
-                dashboardPanel.refresh();
-            } else {
-                checkBosses();
-            }
-        });
+        SwingUtilities.invokeLater(this::checkBosses);
     }
 
     private JPanel wrapInCard(JPanel panel) {
@@ -307,6 +304,81 @@ public class MainFrame extends JFrame {
         return card;
     }
 
+    private JPanel buildProfileStrip() {
+        JPanel strip = new JPanel(new BorderLayout(10, 0));
+        strip.setBackground(new Color(248, 250, 252));
+        strip.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)),
+            BorderFactory.createEmptyBorder(10, 14, 10, 14)));
+
+        // Avatar circle
+        Color avatarColor;
+        try { avatarColor = Color.decode(activeProfile.getAvatarColor()); }
+        catch (Exception e) { avatarColor = new Color(59, 130, 246); }
+        final Color ac = avatarColor;
+        String initials = activeProfile.initials();
+
+        JPanel avatar = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(ac);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.setColor(Color.WHITE);
+                g2.setFont(getFont().deriveFont(Font.BOLD, 12f));
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(initials,
+                    (getWidth() - fm.stringWidth(initials)) / 2,
+                    (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+                g2.dispose();
+            }
+        };
+        avatar.setOpaque(false);
+        avatar.setPreferredSize(new Dimension(32, 32));
+        avatar.setMinimumSize(new Dimension(32, 32));
+
+        // Name
+        JLabel nameLbl = new JLabel(activeProfile.getName());
+        nameLbl.setFont(nameLbl.getFont().deriveFont(Font.BOLD, 12f));
+        nameLbl.setForeground(new Color(30, 41, 59));
+
+        // Switch button — only show if multiple profiles exist
+        JPanel right = new JPanel(new BorderLayout());
+        right.setOpaque(false);
+        right.add(nameLbl, BorderLayout.CENTER);
+
+        if (profileManager.loadProfiles().size() > 1) {
+            JButton switchBtn = new JButton("Switch");
+            switchBtn.putClientProperty("JButton.buttonType", "roundRect");
+            switchBtn.setFont(switchBtn.getFont().deriveFont(Font.PLAIN, 10f));
+            switchBtn.setForeground(new Color(100, 116, 139));
+            switchBtn.addActionListener(e -> switchUser());
+            right.add(switchBtn, BorderLayout.EAST);
+        }
+
+        strip.add(avatar, BorderLayout.WEST);
+        strip.add(right,  BorderLayout.CENTER);
+        return strip;
+    }
+
+    private void switchUser() {
+        ProfilePickerDialog picker = new ProfilePickerDialog(this, profileManager);
+        picker.setVisible(true);
+        UserProfile chosen = picker.getChosen();
+        if (chosen == null || chosen.getId().equals(activeProfile.getId())) return;
+        // Save chosen profile and restart
+        DataStorage.saveDataDirectory(chosen.getDataPath());
+        ProfileManager.saveActiveProfileId(chosen.getId());
+        JOptionPane.showMessageDialog(this,
+            "Switching to " + chosen.getName() + ".\nThe app will restart.",
+            "Switching User", JOptionPane.INFORMATION_MESSAGE);
+        dispose();
+        SwingUtilities.invokeLater(() -> {
+            MainFrame newFrame = new MainFrame(chosen, profileManager);
+            newFrame.setVisible(true);
+        });
+    }
+
     public void checkBosses() {
         List<Boss> bosses = storage.loadBosses();
         if (bosses.isEmpty()) {
@@ -338,6 +410,8 @@ public class MainFrame extends JFrame {
     public void showTaxSetAside(com.github.shanebeee.et.model.Invoice inv) {
         invoicePanel.showTaxSetAsideDialog(inv);
     }
+
+    public ProfileManager getProfileManager() { return profileManager; }
 
     private JButton createNavButton(String text, String cardName, String iconName) {
         Color navColor = NAV_COLORS.getOrDefault(cardName, new Color(100, 116, 139));

@@ -322,15 +322,29 @@ public class OnboardingWizard extends JDialog {
         });
         p.add(btnCustom);
 
+        JButton[] selectedBtn = {iCloudAvailable ? btnICloud : btnLocal};
+
+        Runnable updateSelection = () -> {
+            for (JButton b : new JButton[]{btnICloud, btnLocal}) {
+                b.putClientProperty("selected", b == selectedBtn[0]);
+                b.repaint();
+            }
+        };
+        updateSelection.run();
+
         // Button actions
         btnICloud.addActionListener(e -> {
             if (!iCloudAvailable) return;
             chosenPath = iCloudPath;
             pathLabel.setText(chosenPath);
+            selectedBtn[0] = btnICloud;
+            updateSelection.run();
         });
         btnLocal.addActionListener(e -> {
             chosenPath = DataStorage.DEFAULT_LOCAL_BASE;
             pathLabel.setText(chosenPath);
+            selectedBtn[0] = btnLocal;
+            updateSelection.run();
         });
 
         // Default to iCloud if available
@@ -347,11 +361,12 @@ public class OnboardingWizard extends JDialog {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(isEnabled() ? Color.WHITE : new Color(248, 250, 252));
+                boolean selected = Boolean.TRUE.equals(getClientProperty("selected"));
+                g2.setColor(selected ? new Color(239, 246, 255) : isEnabled() ? Color.WHITE : new Color(248, 250, 252));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                g2.setColor(new Color(226, 232, 240));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                g2.setColor(selected ? BLUE : new Color(226, 232, 240));
+                g2.setStroke(new BasicStroke(selected ? 2.5f : 1.5f));
+                g2.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 12, 12);
                 g2.dispose();
                 super.paintComponent(g);
             }

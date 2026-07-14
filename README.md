@@ -60,13 +60,13 @@ Two-tab panel for generating and tracking invoices.
 - Outstanding (Sent) invoices surface on the Dashboard
 
 **Tax set-aside dialog**
-Shown automatically when marking an invoice as Paid. Breaks down the received amount into:
+Shown automatically when marking an invoice as Paid. Uses your YTD paid invoices annualized against the current tax year's configured brackets to calculate:
 - GST to remit to CRA (5%)
-- Federal income tax to set aside (15%)
-- BC provincial tax to set aside (5.06%)
-- CPP contributions to set aside (11.9% both sides)
-- Total to set aside (all four combined)
-- Yours to keep (pre-GST amount minus income tax and CPP)
+- Federal income tax (marginal rate from your configured federal brackets)
+- BC provincial tax (marginal rate from your configured BC brackets)
+- CPP contributions (combined employee + employer rate, capped at annual maximum)
+- Total to set aside and amount yours to keep
+- Displays the annualized income estimate used for bracket lookup and a disclaimer
 
 ### 💸 Expenses
 Two-tab panel for tracking business expenses and capital assets.
@@ -84,7 +84,7 @@ Two-tab panel for tracking business expenses and capital assets.
 - `FULL` — 100% deductible (default)
 - `FIXED_PERCENT` — fixed business-use % you set (e.g. 60% for cell phone)
 - `KM_PERCENT` — auto-calculated from KM log (business KM ÷ total KM); used for vehicle expenses
-- `HOME_OFFICE` — calculated from office sq ft ÷ total home sq ft set in Settings → Profile
+- `HOME_OFFICE` — calculated from office sq ft ÷ total home sq ft set in Settings → Employee Info
 
 **Default categories sourced from CRA T2125 E (25) Part 4:**
 Advertising (8521), Meals & Entertainment (8523), Insurance (8690), Interest & Bank Charges (8710), Licences & Memberships (8760), Office Expenses (8810), Office Supplies (8811), Professional Fees (8860), Management & Admin Fees (8871), Rent (8910), Repairs & Maintenance (8960), Travel (9200), Utilities (9220), Fuel non-vehicle (9224), Delivery & Freight (9275), Motor Vehicle (9281), Home Office (9945), Other (9270)
@@ -162,11 +162,34 @@ Sidebar search bar with live dropdown results across work logs, expenses, and KM
 Deleting a work log entry, expense, or KM trip shows a snackbar with an **Undo** button. Clicking Undo within 8 seconds restores the item; otherwise the delete is committed to disk.
 
 ### ⚙️ Settings
-Three tabs:
+Five tabs:
 
-- **Profile** — employee info (name, company, address, phone, email) used on invoices and exports; **Home Office** section with office sq ft and total home sq ft fields and a live "Deductible portion: X%" calculation
-- **Preferences** — default start/end times for new log entries; Data Location with a **Change...** button to migrate data to a new folder
+- **Employee Info** — name, company, address, phone, and email used on invoices and exports; **Home Office** section with office sq ft and total home sq ft fields and a live "Deductible portion: X%" calculation
+- **Preferences** — default start/end times for new log entries
+- **User Profiles** — manage all profiles on this installation (see [Multi-User Profiles](#-multi-user-profiles) below); add new profiles, edit each profile's employee info and avatar colour, delete profiles
 - **Expense Categories** — per-year category management; add, edit, or delete categories; each category has a **Business Use** type (100% / Fixed % / KM-based / Home office) with optional fixed-% field; colour picker for category swatch; "Reset to Defaults" restores the full T2125-aligned list
+- **Tax Brackets** — configure federal and BC tax brackets and CPP settings per year (see [Tax Brackets](#tax-brackets) below)
+
+### 👤 Multi-User Profiles
+Multiple people can use the same installation with completely separate books. Each profile has its own independent data directory — nothing is shared between profiles.
+
+**Profile picker** — when two or more profiles exist the app shows a profile selection screen on launch. Each card shows the user's name, avatar (coloured circle with initials), and their data path. Click a card to load that user's data.
+
+**Switching users** — a **Switch** button appears at the bottom of the sidebar when multiple profiles exist. Clicking it opens the profile picker mid-session and relaunches the app scoped to the chosen profile.
+
+**Adding profiles** — use the **+ Add Profile** button on the launch picker or in Settings → User Profiles. Each new profile gets its own named subfolder inside the root `EmployeeTimesheet/` directory.
+
+**Editing profiles** — the Edit button in Settings → User Profiles opens a dialog to change the display name, avatar colour, and all employee info (name, company, address, phone, email, home office sq ft) for that specific profile. Changes save to that profile's own `settings/employee.json`.
+
+### 🧮 Tax Brackets
+Tax rates and CPP settings used in the Tax Set-Aside dialog are fully configurable per year.
+
+- **Tax Year spinner** — switch between years; each year's brackets are stored independently
+- **CPP card** — combined employee + employer rate (%) and annual contribution maximum ($); defaults to current CRA published values
+- **Federal brackets** — editable table of income thresholds and marginal rates; add or remove brackets; last bracket always has "No limit" as its upper bound
+- **BC provincial brackets** — same structure as federal
+- All bracket changes save independently with a "Save Brackets" button per card
+- Default values pre-loaded for 2025 and 2026 based on CRA published rates
 
 ---
 
@@ -182,41 +205,42 @@ On first launch the app shows a 7-step setup wizard:
 6. **First Boss** — add your first client with hourly rate, KM rate, tax rate, and income type
 7. **Done** — confirmation with a summary of the chosen save location
 
-The wizard only appears once. Existing users who already have a data directory preference skip it entirely.
+The wizard only appears once. On subsequent launches the app goes straight to the profile picker (if multiple profiles exist) or directly to the main window.
 
 ---
 
 ## Data Storage
 
-Data directory is chosen during onboarding and saved to macOS `Preferences` (`~/Library/Preferences/com.github.shanebeee.et.plist`).
+The data directory is chosen during onboarding and saved to macOS Preferences (`~/Library/Preferences/com.github.shanebeee.plist` under the `/com/github/shanebeee/et/storage/` node).
 
-**Default paths:**
+**Root layout** (one named subfolder per user profile):
+```
+EmployeeTimesheet/
+├── profiles.json            # List of all profiles (id, name, dataPath, avatarColor)
+├── Shane_Bolenback/         # Each user's data lives in their own named subfolder
+│   ├── settings/
+│   │   ├── employee.json                    # Employee info (incl. home office sq ft)
+│   │   ├── bosses.json                      # Boss list
+│   │   ├── settings.json                    # App settings (invoice counter, default times)
+│   │   ├── expense_categories_{year}.json   # Per-year expense categories
+│   │   ├── tax_brackets_{year}.json         # Per-year tax brackets and CPP settings
+│   │   └── cca_assets.json                  # CCA assets
+│   ├── logs/
+│   │   └── yyyy-MM.json                     # Work log entries per month
+│   ├── invoices/
+│   │   ├── invoice_log.json                 # Invoice history and status
+│   │   └── *.pdf                            # Generated PDFs
+│   ├── receipts/
+│   │   └── {year}/{month}/                  # Receipt files + expenses.json
+│   └── km/
+│       └── {year}/                          # trips.json + odometer.json
+└── Jenny_Francisco/         # Second user's data (completely independent)
+    └── ...
+```
+
+**Default root locations:**
 - iCloud Drive: `~/Library/Mobile Documents/com~apple~CloudDocs/EmployeeTimesheet/`
 - Local: `~/EmployeeTimesheet/`
-
-```
-{data_directory}/
-├── settings/
-│   ├── employee.json                    # Employee info (incl. home office sq ft)
-│   ├── bosses.json                      # Boss list
-│   ├── settings.json                    # App settings (invoice counter, default times)
-│   ├── expense_categories_{year}.json   # Per-year expense categories with deduction types
-│   └── cca_assets.json                  # CCA assets (not year-scoped; span multiple years)
-├── logs/
-│   └── yyyy-MM.json                     # Work log entries per month
-├── invoices/
-│   ├── invoice_log.json                 # Invoice history and status tracking
-│   └── *.pdf                            # Generated invoice and summary PDFs
-├── receipts/
-│   └── {year}/
-│       ├── expenses.json                # Expense records for the year
-│       └── {month}/                     # Receipt files (jpg, png, pdf, heic)
-├── km/
-│   └── {year}/
-│       ├── trips.json                   # KM trip log for the year
-│       └── odometer.json                # Year start/end odometer readings
-└── python_venv/                         # Auto-created Python venv for Excel export
-```
 
 No database, no accounts — everything is plain JSON on disk, synced automatically if stored in iCloud Drive.
 
