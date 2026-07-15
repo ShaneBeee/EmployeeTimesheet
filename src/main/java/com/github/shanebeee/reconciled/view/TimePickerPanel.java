@@ -15,6 +15,7 @@ public class TimePickerPanel extends JPanel {
 
     private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH);
     private int hour;
+    private int prevHour;
     private int minute;
     private boolean isAm;
     private JSpinner spinnerHour;
@@ -31,10 +32,12 @@ public class TimePickerPanel extends JPanel {
             int h = time.getHour();
             this.hour = h % 12;
             if (this.hour == 0) this.hour = 12;
+            this.prevHour = this.hour;
             this.minute = (int) Math.round(time.getMinute() / 5.0) * 5 % 60; // snap to nearest 5
             this.isAm = h < 12;
         } catch (Exception e) {
             this.hour = 11;
+            this.prevHour = 11;
             this.minute = 0;
             this.isAm = true;
         }
@@ -56,8 +59,15 @@ public class TimePickerPanel extends JPanel {
         JPanel timeInputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
         timeInputPanel.setOpaque(false);
 
-        // Hour Spinner
-        SpinnerNumberModel hourModel = new SpinnerNumberModel(hour, 1, 12, 1);
+        // Hour Spinner — circular model so wrap triggers AM/PM flip
+        SpinnerNumberModel hourModel = new SpinnerNumberModel(hour, 1, 12, 1) {
+            @Override public Object getNextValue() {
+                return getValue().equals(12) ? 1 : ((Integer) getValue()) + 1;
+            }
+            @Override public Object getPreviousValue() {
+                return getValue().equals(1) ? 12 : ((Integer) getValue()) - 1;
+            }
+        };
         spinnerHour = new JSpinner(hourModel);
         spinnerHour.setPreferredSize(new Dimension(70, 36));
         configureSpinner(spinnerHour, false);
@@ -66,8 +76,15 @@ public class TimePickerPanel extends JPanel {
         JLabel colonLabel = new JLabel(":");
         colonLabel.setFont(colonLabel.getFont().deriveFont(18f));
 
-        // Minute Spinner
-        SpinnerNumberModel minuteModel = new SpinnerNumberModel(minute, 0, 59, 5);
+        // Minute Spinner — circular model so 55 wraps to 0 and vice versa
+        SpinnerNumberModel minuteModel = new SpinnerNumberModel(minute, 0, 55, 5) {
+            @Override public Object getNextValue() {
+                return getValue().equals(55) ? 0 : ((Integer) getValue()) + 5;
+            }
+            @Override public Object getPreviousValue() {
+                return getValue().equals(0) ? 55 : ((Integer) getValue()) - 5;
+            }
+        };
         spinnerMinute = new JSpinner(minuteModel);
         spinnerMinute.setPreferredSize(new Dimension(70, 36));
         configureSpinner(spinnerMinute, true);
@@ -111,7 +128,19 @@ public class TimePickerPanel extends JPanel {
 
         // ===== ADD CHANGE LISTENERS =====
         spinnerHour.addChangeListener(e -> {
-            hour = (Integer) spinnerHour.getValue();
+            int newHour = (Integer) spinnerHour.getValue();
+            // Detect wrap: 11→12 or 12→11 means crossing noon/midnight boundary
+            if (prevHour == 11 && newHour == 12) {
+                isAm = !isAm;
+                styleToggleButton(btnAm, isAm);
+                styleToggleButton(btnPm, !isAm);
+            } else if (prevHour == 12 && newHour == 11) {
+                isAm = !isAm;
+                styleToggleButton(btnAm, isAm);
+                styleToggleButton(btnPm, !isAm);
+            }
+            prevHour = newHour;
+            hour = newHour;
             updatePreview();
             if (onSelect != null) onSelect.run();
         });
