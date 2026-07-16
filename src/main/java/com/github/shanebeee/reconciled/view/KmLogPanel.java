@@ -76,8 +76,14 @@ public class KmLogPanel extends JPanel {
         yearLabel = new JLabel(String.valueOf(currentYear), JLabel.CENTER);
         yearLabel.setFont(yearLabel.getFont().deriveFont(Font.BOLD, 14f));
         yearLabel.setPreferredSize(new Dimension(60, 20));
-        btnPrev.addActionListener(e -> { currentYear--; loadYear(); });
-        btnNext.addActionListener(e -> { currentYear++; loadYear(); });
+        btnPrev.addActionListener(e -> {
+            currentYear--;
+            loadYear();
+        });
+        btnNext.addActionListener(e -> {
+            currentYear++;
+            loadYear();
+        });
         yearNav.add(btnPrev);
         yearNav.add(yearLabel);
         yearNav.add(btnNext);
@@ -192,7 +198,7 @@ public class KmLogPanel extends JPanel {
         valLabel.setToolTipText("Click to edit");
 
         if (isStart) startOdoLabel = valLabel;
-        else         endOdoLabel   = valLabel;
+        else endOdoLabel = valLabel;
 
         valLabel.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
@@ -205,7 +211,7 @@ public class KmLogPanel extends JPanel {
                 try {
                     double val = Double.parseDouble(input.trim());
                     if (isStart) odometer.setStartKm(val);
-                    else         odometer.setEndKm(val);
+                    else odometer.setEndKm(val);
                     storage.saveKmOdometer(String.valueOf(currentYear), odometer);
                     refreshSidebar();
                 } catch (NumberFormatException ignored) {
@@ -215,7 +221,7 @@ public class KmLogPanel extends JPanel {
             }
         });
 
-        row.add(lbl,      BorderLayout.WEST);
+        row.add(lbl, BorderLayout.WEST);
         row.add(valLabel, BorderLayout.EAST);
         return row;
     }
@@ -235,8 +241,8 @@ public class KmLogPanel extends JPanel {
         val.setFont(val.getFont().deriveFont(Font.PLAIN, 11f));
         val.setForeground(new Color(30, 41, 59));
 
-        if (isTotal) totalKmLabel     = val;
-        else         businessPctLabel = val;
+        if (isTotal) totalKmLabel = val;
+        else businessPctLabel = val;
 
         row.add(lbl, BorderLayout.WEST);
         row.add(val, BorderLayout.EAST);
@@ -246,7 +252,7 @@ public class KmLogPanel extends JPanel {
     private void loadYear() {
         yearLabel.setText(String.valueOf(currentYear));
         currentTrips = storage.loadKmTrips(String.valueOf(currentYear));
-        odometer     = storage.loadKmOdometer(String.valueOf(currentYear));
+        odometer = storage.loadKmOdometer(String.valueOf(currentYear));
         refresh();
     }
 
@@ -381,28 +387,43 @@ public class KmLogPanel extends JPanel {
         subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 11f));
         subLbl.setForeground(new Color(100, 116, 139));
         text.add(titleLbl, BorderLayout.NORTH);
-        text.add(subLbl,   BorderLayout.SOUTH);
+        text.add(subLbl, BorderLayout.SOUTH);
 
         JLabel kmLbl = new JLabel(String.format("%.1f km", trip.getKm()), JLabel.RIGHT);
         kmLbl.setFont(kmLbl.getFont().deriveFont(Font.BOLD, 13f));
         kmLbl.setForeground(new Color(30, 41, 59));
 
-        card.add(icon,  BorderLayout.WEST);
-        card.add(text,  BorderLayout.CENTER);
+        card.add(icon, BorderLayout.WEST);
+        card.add(text, BorderLayout.CENTER);
         card.add(kmLbl, BorderLayout.EAST);
 
         if (!isAuto) {
             card.addMouseListener(new MouseAdapter() {
-                public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-                public void mouseExited(MouseEvent e)  { hovered[0] = false; card.repaint(); }
+                public void mouseEntered(MouseEvent e) {
+                    hovered[0] = true;
+                    card.repaint();
+                }
+
+                public void mouseExited(MouseEvent e) {
+                    hovered[0] = false;
+                    card.repaint();
+                }
+
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2) showTripDialog(trip);
                 }
             });
         } else {
             card.addMouseListener(new MouseAdapter() {
-                public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-                public void mouseExited(MouseEvent e)  { hovered[0] = false; card.repaint(); }
+                public void mouseEntered(MouseEvent e) {
+                    hovered[0] = true;
+                    card.repaint();
+                }
+
+                public void mouseExited(MouseEvent e) {
+                    hovered[0] = false;
+                    card.repaint();
+                }
             });
         }
 
@@ -454,15 +475,20 @@ public class KmLogPanel extends JPanel {
         noteField.putClientProperty("JTextField.placeholderText", "e.g. showed a house on Main St");
 
         form.add(makeFormLabel("Date"), gbc);
-        gbc.gridy++; gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 12, 0);
         form.add(dateBtn, gbc);
-        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 4, 0);
         form.add(makeFormLabel("Distance (km)"), gbc);
-        gbc.gridy++; gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 12, 0);
         form.add(kmField, gbc);
-        gbc.gridy++; gbc.insets = new Insets(0, 0, 4, 0);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 4, 0);
         form.add(makeFormLabel("Note / Purpose"), gbc);
-        gbc.gridy++; gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 0, 0);
         form.add(noteField, gbc);
 
         dialog.add(new JScrollPane(form) {{
@@ -473,7 +499,7 @@ public class KmLogPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.WHITE);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
-        JPanel footerLeft  = new JPanel(new FlowLayout(FlowLayout.LEFT,  10, 12));
+        JPanel footerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 12));
         footerLeft.setOpaque(false);
         JPanel footerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         footerRight.setOpaque(false);
@@ -528,7 +554,7 @@ public class KmLogPanel extends JPanel {
 
         footerRight.add(btnCancel);
         footerRight.add(btnSave);
-        footer.add(footerLeft,  BorderLayout.WEST);
+        footer.add(footerLeft, BorderLayout.WEST);
         footer.add(footerRight, BorderLayout.EAST);
         dialog.add(footer, BorderLayout.SOUTH);
 
@@ -536,7 +562,9 @@ public class KmLogPanel extends JPanel {
         dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "cancel");
         dialog.getRootPane().getActionMap().put("cancel", new AbstractAction() {
-            public void actionPerformed(java.awt.event.ActionEvent e) { dialog.dispose(); }
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                dialog.dispose();
+            }
         });
 
         dialog.setLocationRelativeTo(this);
@@ -557,7 +585,7 @@ public class KmLogPanel extends JPanel {
         int year = LocalDate.now().getYear();
         LocalDate today = LocalDate.now();
         int importedCount = 0;
-        int skippedCount  = 0;
+        int skippedCount = 0;
 
         for (Month month : Month.values()) {
             YearMonth ym = YearMonth.of(year, month);
@@ -576,7 +604,7 @@ public class KmLogPanel extends JPanel {
                 if (entry.getBossUuid() != null) {
                     bossName = storage.loadBosses().stream()
                         .filter(b -> b.getId().equals(entry.getBossUuid())
-                                  || b.getName().equals(entry.getBossUuid()))
+                            || b.getName().equals(entry.getBossUuid()))
                         .map(com.github.shanebeee.reconciled.model.Boss::getName)
                         .findFirst().orElse("");
                 }
@@ -608,9 +636,9 @@ public class KmLogPanel extends JPanel {
         loadYear();
         String msg = importedCount > 0
             ? importedCount + " trip" + (importedCount != 1 ? "s" : "") + " imported from Work Logs."
-            + (skippedCount > 0 ? "\n" + skippedCount + " already existed and were skipped." : "")
+              + (skippedCount > 0 ? "\n" + skippedCount + " already existed and were skipped." : "")
             : "No new trips found to import."
-            + (skippedCount > 0 ? "\n" + skippedCount + " trip" + (skippedCount != 1 ? "s" : "") + " were already imported." : "");
+              + (skippedCount > 0 ? "\n" + skippedCount + " trip" + (skippedCount != 1 ? "s" : "") + " were already imported." : "");
         JOptionPane.showMessageDialog(this, msg,
             "Import Complete", JOptionPane.INFORMATION_MESSAGE);
     }
@@ -643,4 +671,5 @@ public class KmLogPanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(4, 14, 16, 14));
         return card;
     }
+
 }

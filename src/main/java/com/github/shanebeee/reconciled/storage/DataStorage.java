@@ -2,11 +2,11 @@ package com.github.shanebeee.reconciled.storage;
 
 import com.github.shanebeee.reconciled.model.Boss;
 import com.github.shanebeee.reconciled.model.CcaAsset;
-import com.github.shanebeee.reconciled.model.Invoice;
 import com.github.shanebeee.reconciled.model.EmployeeInfo;
+import com.github.shanebeee.reconciled.model.Expenditure;
 import com.github.shanebeee.reconciled.model.ExpenseCategory;
 import com.github.shanebeee.reconciled.model.ExpenseTemplate;
-import com.github.shanebeee.reconciled.model.Expenditure;
+import com.github.shanebeee.reconciled.model.Invoice;
 import com.github.shanebeee.reconciled.model.KmOdometer;
 import com.github.shanebeee.reconciled.model.KmTrip;
 import com.github.shanebeee.reconciled.model.LogEntry;
@@ -34,28 +34,38 @@ import java.util.prefs.Preferences;
 public class DataStorage {
 
     private static final String PREFS_KEY = "dataDirectory";
-    private static final String APP_NAME  = "Reconciled";
+    private static final String APP_NAME = "Reconciled";
 
-    /** iCloud Drive root on macOS */
+    /**
+     * iCloud Drive root on macOS
+     */
     public static final String ICLOUD_BASE =
         System.getProperty("user.home") + "/Library/Mobile Documents/com~apple~CloudDocs/";
 
-    /** Default local path (used when iCloud is unavailable or user picks Local) */
+    /**
+     * Default local path (used when iCloud is unavailable or user picks Local)
+     */
     public static final String DEFAULT_LOCAL_BASE =
         System.getProperty("user.home") + File.separator + APP_NAME + File.separator;
 
-    /** Returns true if iCloud Drive is available on this machine. */
+    /**
+     * Returns true if iCloud Drive is available on this machine.
+     */
     public static boolean isICloudAvailable() {
         return new File(ICLOUD_BASE).exists();
     }
 
-    /** Reads the saved data directory from Preferences, or returns the default local path. */
+    /**
+     * Reads the saved data directory from Preferences, or returns the default local path.
+     */
     public static String getSavedDataDirectory() {
         Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
         return prefs.get(PREFS_KEY, DEFAULT_LOCAL_BASE);
     }
 
-    /** Persists the chosen data directory to Preferences. */
+    /**
+     * Persists the chosen data directory to Preferences.
+     */
     public static void saveDataDirectory(String path) {
         try {
             Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
@@ -66,7 +76,9 @@ public class DataStorage {
         }
     }
 
-    /** Returns true if a data directory has been explicitly chosen (onboarding completed). */
+    /**
+     * Returns true if a data directory has been explicitly chosen (onboarding completed).
+     */
     public static boolean isOnboardingComplete() {
         Preferences prefs = Preferences.userNodeForPackage(DataStorage.class);
         return prefs.get(PREFS_KEY, null) != null;
@@ -92,22 +104,24 @@ public class DataStorage {
         this(getSavedDataDirectory());
     }
 
-    /** Constructs a DataStorage instance scoped to a specific path (e.g. a different user profile). */
+    /**
+     * Constructs a DataStorage instance scoped to a specific path (e.g. a different user profile).
+     */
     public DataStorage(String basePath) {
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         String base = basePath;
         if (!base.endsWith(File.separator)) base = base + File.separator;
-        BASE_DIR      = base;
-        SETTINGS_DIR  = BASE_DIR + "settings/";
-        BOSSES_FILE   = SETTINGS_DIR + "bosses.json";
+        BASE_DIR = base;
+        SETTINGS_DIR = BASE_DIR + "settings/";
+        BOSSES_FILE = SETTINGS_DIR + "bosses.json";
         EMPLOYEE_FILE = SETTINGS_DIR + "employee.json";
         SETTINGS_FILE = SETTINGS_DIR + "settings.json";
         CATEGORIES_FILE = SETTINGS_DIR + "expense_categories.json";
-        TEMPLATES_FILE  = SETTINGS_DIR + "expense_templates.json";
-        LOGS_DIR     = BASE_DIR + "logs/";
+        TEMPLATES_FILE = SETTINGS_DIR + "expense_templates.json";
+        LOGS_DIR = BASE_DIR + "logs/";
         INVOICES_DIR = BASE_DIR + "invoices/";
         RECEIPTS_DIR = BASE_DIR + "receipts/";
-        KM_DIR       = BASE_DIR + "km/";
+        KM_DIR = BASE_DIR + "km/";
         initDirectories();
     }
 
@@ -127,7 +141,8 @@ public class DataStorage {
     public List<ExpenseCategory> loadExpenseCategories(String year) {
         String file = categoriesFile(year);
         List<ExpenseCategory> cats = loadList(file,
-            new TypeToken<List<ExpenseCategory>>() {}.getType());
+            new TypeToken<List<ExpenseCategory>>() {
+            }.getType());
         if (cats.isEmpty()) {
             cats = seedCategoriesForYear(year);
             saveExpenseCategories(year, cats);
@@ -149,12 +164,16 @@ public class DataStorage {
         saveToFile(categoriesFile(year), categories);
     }
 
-    /** Backwards-compat overload — loads current year's categories. */
+    /**
+     * Backwards-compat overload — loads current year's categories.
+     */
     public List<ExpenseCategory> loadExpenseCategories() {
         return loadExpenseCategories(String.valueOf(java.time.LocalDate.now().getYear()));
     }
 
-    /** Backwards-compat overload — saves current year's categories. */
+    /**
+     * Backwards-compat overload — saves current year's categories.
+     */
     public void saveExpenseCategories(List<ExpenseCategory> categories) {
         saveExpenseCategories(String.valueOf(java.time.LocalDate.now().getYear()), categories);
     }
@@ -173,7 +192,8 @@ public class DataStorage {
             File f = new File(categoriesFile(String.valueOf(prev)));
             if (f.exists()) {
                 List<ExpenseCategory> prevCats = loadList(f.getAbsolutePath(),
-                    new TypeToken<List<ExpenseCategory>>() {}.getType());
+                    new TypeToken<List<ExpenseCategory>>() {
+                    }.getType());
                 if (!prevCats.isEmpty()) {
                     return prevCats;
                 }
@@ -181,13 +201,16 @@ public class DataStorage {
         }
         // Also check the old global file for migration
         List<ExpenseCategory> legacy = loadList(CATEGORIES_FILE,
-            new TypeToken<List<ExpenseCategory>>() {}.getType());
+            new TypeToken<List<ExpenseCategory>>() {
+            }.getType());
         if (!legacy.isEmpty()) return legacy;
         return defaultCategories();
     }
 
-    /** Resolves an Expenditure to its ExpenseCategory.
-     *  Tries categoryId first, falls back to matching the legacy enum label. */
+    /**
+     * Resolves an Expenditure to its ExpenseCategory.
+     * Tries categoryId first, falls back to matching the legacy enum label.
+     */
     public ExpenseCategory resolveCategory(Expenditure exp, List<ExpenseCategory> allCats) {
         if (exp.getCategoryId() != null) {
             return allCats.stream()
@@ -214,24 +237,24 @@ public class DataStorage {
     private List<ExpenseCategory> defaultCategories() {
         List<ExpenseCategory> cats = new ArrayList<>();
         // Line numbers from CRA T2125 E (25) Part 4
-        cats.add(new ExpenseCategory("Advertising",              "Business cards, online ads, marketing",          "8521", "#EC4899", true));
-        cats.add(new ExpenseCategory("Meals & Entertainment",    "50% deductible by CRA",                          "8523", "#F59E0B", true));
-        cats.add(new ExpenseCategory("Insurance",                "Business insurance premiums",                    "8690", "#6366F1", true));
-        cats.add(new ExpenseCategory("Interest & Bank Charges",  "Loan interest, bank fees",                       "8710", "#8B5CF6", true));
-        cats.add(new ExpenseCategory("Licences & Memberships",   "Business taxes, licences, memberships, dues",    "8760", "#0EA5E9", true));
-        cats.add(new ExpenseCategory("Office Expenses",          "General office costs, software subscriptions",   "8810", "#14B8A6", true));
-        cats.add(new ExpenseCategory("Office Supplies",          "Paper, ink, printer supplies, stationery",       "8811", "#10B981", true));
-        cats.add(new ExpenseCategory("Professional Fees",        "Accountant, lawyer, consultant fees",            "8860", "#3B82F6", true));
-        cats.add(new ExpenseCategory("Management & Admin Fees",  "Management or administration fees paid",         "8871", "#64748B", true));
-        cats.add(new ExpenseCategory("Rent",                     "Office or workspace rent",                       "8910", "#F97316", true));
-        cats.add(new ExpenseCategory("Repairs & Maintenance",    "Equipment or workspace repairs",                 "8960", "#EF4444", true));
-        cats.add(new ExpenseCategory("Travel",                   "Flights, hotels, transit for business travel",   "9200", "#06B6D4", true));
-        cats.add(new ExpenseCategory("Utilities",                "Phone, internet, heat, electricity",             "9220", "#84CC16", true));
-        cats.add(new ExpenseCategory("Fuel (non-vehicle)",       "Fuel costs not related to a motor vehicle",      "9224", "#F59E0B", true));
-        cats.add(new ExpenseCategory("Delivery & Freight",       "Courier, shipping, postage",                     "9275", "#A78BFA", true));
-        cats.add(new ExpenseCategory("Motor Vehicle",            "Gas, maintenance, insurance, registration",      "9281", "#EF4444", true));
-        cats.add(new ExpenseCategory("Home Office",              "Business-use-of-home expenses (% of home)",      "9945", "#8B5CF6", true));
-        cats.add(new ExpenseCategory("Other",                    "Miscellaneous business expenses (line 9270)",    "9270", "#94A3B8", true));
+        cats.add(new ExpenseCategory("Advertising", "Business cards, online ads, marketing", "8521", "#EC4899", true));
+        cats.add(new ExpenseCategory("Meals & Entertainment", "50% deductible by CRA", "8523", "#F59E0B", true));
+        cats.add(new ExpenseCategory("Insurance", "Business insurance premiums", "8690", "#6366F1", true));
+        cats.add(new ExpenseCategory("Interest & Bank Charges", "Loan interest, bank fees", "8710", "#8B5CF6", true));
+        cats.add(new ExpenseCategory("Licences & Memberships", "Business taxes, licences, memberships, dues", "8760", "#0EA5E9", true));
+        cats.add(new ExpenseCategory("Office Expenses", "General office costs, software subscriptions", "8810", "#14B8A6", true));
+        cats.add(new ExpenseCategory("Office Supplies", "Paper, ink, printer supplies, stationery", "8811", "#10B981", true));
+        cats.add(new ExpenseCategory("Professional Fees", "Accountant, lawyer, consultant fees", "8860", "#3B82F6", true));
+        cats.add(new ExpenseCategory("Management & Admin Fees", "Management or administration fees paid", "8871", "#64748B", true));
+        cats.add(new ExpenseCategory("Rent", "Office or workspace rent", "8910", "#F97316", true));
+        cats.add(new ExpenseCategory("Repairs & Maintenance", "Equipment or workspace repairs", "8960", "#EF4444", true));
+        cats.add(new ExpenseCategory("Travel", "Flights, hotels, transit for business travel", "9200", "#06B6D4", true));
+        cats.add(new ExpenseCategory("Utilities", "Phone, internet, heat, electricity", "9220", "#84CC16", true));
+        cats.add(new ExpenseCategory("Fuel (non-vehicle)", "Fuel costs not related to a motor vehicle", "9224", "#F59E0B", true));
+        cats.add(new ExpenseCategory("Delivery & Freight", "Courier, shipping, postage", "9275", "#A78BFA", true));
+        cats.add(new ExpenseCategory("Motor Vehicle", "Gas, maintenance, insurance, registration", "9281", "#EF4444", true));
+        cats.add(new ExpenseCategory("Home Office", "Business-use-of-home expenses (% of home)", "9945", "#8B5CF6", true));
+        cats.add(new ExpenseCategory("Other", "Miscellaneous business expenses (line 9270)", "9270", "#94A3B8", true));
         return cats;
     }
 
@@ -254,7 +277,8 @@ public class DataStorage {
     // CCA Assets (not year-scoped — assets span multiple tax years)
     public List<CcaAsset> loadCcaAssets() {
         return loadList(SETTINGS_DIR + "cca_assets.json",
-            new TypeToken<List<CcaAsset>>() {}.getType());
+            new TypeToken<List<CcaAsset>>() {
+            }.getType());
     }
 
     public void saveCcaAssets(List<CcaAsset> assets) {
@@ -263,14 +287,17 @@ public class DataStorage {
 
     // Expense Templates
     public List<ExpenseTemplate> loadTemplates() {
-        return loadList(TEMPLATES_FILE, new TypeToken<List<ExpenseTemplate>>() {}.getType());
+        return loadList(TEMPLATES_FILE, new TypeToken<List<ExpenseTemplate>>() {
+        }.getType());
     }
 
     public void saveTemplates(List<ExpenseTemplate> templates) {
         saveToFile(TEMPLATES_FILE, templates);
     }
 
-    /** Upserts a template — updates existing by name, or adds new. */
+    /**
+     * Upserts a template — updates existing by name, or adds new.
+     */
     public void upsertTemplate(ExpenseTemplate template) {
         List<ExpenseTemplate> templates = loadTemplates();
         templates.removeIf(t -> t.getName().equalsIgnoreCase(template.getName()));
@@ -387,7 +414,7 @@ public class DataStorage {
      */
     public void migrateDataTo(String newBasePath) throws IOException {
         if (!newBasePath.endsWith(File.separator)) newBasePath = newBasePath + File.separator;
-        Path src  = Paths.get(BASE_DIR);
+        Path src = Paths.get(BASE_DIR);
         Path dest = Paths.get(newBasePath);
         if (Files.exists(src)) {
             Files.walk(src).forEach(source -> {
@@ -414,7 +441,8 @@ public class DataStorage {
     public List<KmTrip> loadKmTrips(String year) {
         ensureKmYearDir(year);
         return loadList(KM_DIR + year + "/trips.json",
-            new TypeToken<List<KmTrip>>() {}.getType());
+            new TypeToken<List<KmTrip>>() {
+            }.getType());
     }
 
     public void saveKmTrips(String year, List<KmTrip> trips) {
@@ -435,7 +463,10 @@ public class DataStorage {
     }
 
     private void ensureKmYearDir(String year) {
-        try { Files.createDirectories(Paths.get(KM_DIR, year)); } catch (IOException ignored) {}
+        try {
+            Files.createDirectories(Paths.get(KM_DIR, year));
+        } catch (IOException ignored) {
+        }
     }
 
     /**
@@ -573,21 +604,26 @@ public class DataStorage {
     // Invoice log
 
     public List<Invoice> loadInvoices() {
-        return loadList(INVOICES_DIR + "invoice_log.json", new TypeToken<List<Invoice>>() {}.getType());
+        return loadList(INVOICES_DIR + "invoice_log.json", new TypeToken<List<Invoice>>() {
+        }.getType());
     }
 
     public void saveInvoices(List<Invoice> invoices) {
         saveToFile(INVOICES_DIR + "invoice_log.json", invoices);
     }
 
-    /** Appends a newly generated invoice record to the log. */
+    /**
+     * Appends a newly generated invoice record to the log.
+     */
     public void recordInvoice(Invoice invoice) {
         List<Invoice> invoices = loadInvoices();
         invoices.add(invoice);
         saveInvoices(invoices);
     }
 
-    /** Persists a status change (or any field change) for an existing invoice. */
+    /**
+     * Persists a status change (or any field change) for an existing invoice.
+     */
     public void updateInvoice(Invoice updated) {
         List<Invoice> invoices = loadInvoices();
         for (int i = 0; i < invoices.size(); i++) {

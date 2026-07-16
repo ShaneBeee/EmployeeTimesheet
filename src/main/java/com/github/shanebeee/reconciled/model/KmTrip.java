@@ -14,17 +14,40 @@ public class KmTrip {
         this.id = UUID.randomUUID().toString();
     }
 
-    public String getId()                   { return id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getDate()                 { return date; }
-    public void   setDate(String d)         { this.date = d; }
+    public String getDate() {
+        return date;
+    }
 
-    public double getKm()                   { return km; }
-    public void   setKm(double km)          { this.km = km; }
+    public void setDate(String d) {
+        this.date = d;
+    }
 
-    public String getNote()                 { return note; }
-    public void   setNote(String n)         { this.note = n; }
+    public double getKm() {
+        return km;
+    }
 
-    public String getSourceLogId()          { return sourceLogId; }
-    public void   setSourceLogId(String id) { this.sourceLogId = id; }
+    public void setKm(double km) {
+        this.km = km;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String n) {
+        this.note = n;
+    }
+
+    public String getSourceLogId() {
+        return sourceLogId;
+    }
+
+    public void setSourceLogId(String id) {
+        this.sourceLogId = id;
+    }
+
 }

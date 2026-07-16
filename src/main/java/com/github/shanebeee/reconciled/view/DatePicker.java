@@ -252,4 +252,5 @@ public class DatePicker extends JDialog {
     public LocalDate getSelectedDate() {
         return confirmed ? selectedDate : null;
     }
+
 }

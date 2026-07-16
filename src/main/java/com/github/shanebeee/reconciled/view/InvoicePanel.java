@@ -35,7 +35,7 @@ import java.util.List;
 public class InvoicePanel extends JPanel {
 
     private static final DateTimeFormatter DISPLAY_FMT = DateTimeFormatter.ofPattern("MMM d, yyyy");
-    private static final DateTimeFormatter SHORT_FMT   = DateTimeFormatter.ofPattern("MMM d");
+    private static final DateTimeFormatter SHORT_FMT = DateTimeFormatter.ofPattern("MMM d");
 
     private final DataStorage storage;
     private JComboBox<Boss> bossCombo;
@@ -111,7 +111,7 @@ public class InvoicePanel extends JPanel {
         invoiceCard.add(makeDivider());
 
         startBtn = makeDateButton(YearMonth.now().atDay(1).toString());
-        endBtn   = makeDateButton(YearMonth.now().atEndOfMonth().toString());
+        endBtn = makeDateButton(YearMonth.now().atEndOfMonth().toString());
         startBtn.addActionListener(e -> DatePicker.showPicker(InvoicePanel.this, startBtn));
         endBtn.addActionListener(e -> DatePicker.showPicker(InvoicePanel.this, endBtn));
 
@@ -211,7 +211,10 @@ public class InvoicePanel extends JPanel {
         // Table
         String[] columns = {"#", "Boss", "Period", "Generated", "Status", "Amount"};
         historyModel = new DefaultTableModel(columns, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return false; }
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
         };
         historyTable = new JTable(historyModel);
         historyTable.setRowHeight(36);
@@ -238,9 +241,18 @@ public class InvoicePanel extends JPanel {
                 if (value instanceof Invoice.Status status) {
                     lbl.setText(status.getLabel());
                     switch (status) {
-                        case DRAFT -> { lbl.setBackground(new Color(241, 245, 249)); lbl.setForeground(new Color(100, 116, 139)); }
-                        case SENT  -> { lbl.setBackground(new Color(219, 234, 254)); lbl.setForeground(new Color(37, 99, 235)); }
-                        case PAID  -> { lbl.setBackground(new Color(209, 250, 229)); lbl.setForeground(new Color(5, 150, 105)); }
+                        case DRAFT -> {
+                            lbl.setBackground(new Color(241, 245, 249));
+                            lbl.setForeground(new Color(100, 116, 139));
+                        }
+                        case SENT -> {
+                            lbl.setBackground(new Color(219, 234, 254));
+                            lbl.setForeground(new Color(37, 99, 235));
+                        }
+                        case PAID -> {
+                            lbl.setBackground(new Color(209, 250, 229));
+                            lbl.setForeground(new Color(5, 150, 105));
+                        }
                     }
                 }
                 if (isSelected) {
@@ -305,7 +317,11 @@ public class InvoicePanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "PDF not found at:\n" + inv.getPdfPath());
                 return;
             }
-            try { Desktop.getDesktop().open(pdf); } catch (IOException ex) { ex.printStackTrace(); }
+            try {
+                Desktop.getDesktop().open(pdf);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
 
         btnEmail.addActionListener(e -> {
@@ -367,7 +383,7 @@ public class InvoicePanel extends JPanel {
             if (inv == null) return;
             int confirm = JOptionPane.showConfirmDialog(this,
                 "Delete Invoice #" + inv.getInvoiceNumber() + " (" + inv.getBossName() + ")?\n"
-                + "The PDF will not be deleted from disk.",
+                    + "The PDF will not be deleted from disk.",
                 "Delete Invoice", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
             if (confirm != JOptionPane.OK_OPTION) return;
             List<Invoice> invoices = storage.loadInvoices();
@@ -378,7 +394,8 @@ public class InvoicePanel extends JPanel {
 
         // Double-click row → open PDF
         historyTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) btnOpenPdf.doClick();
             }
         });
@@ -404,13 +421,13 @@ public class InvoicePanel extends JPanel {
         double annualizedIncome = (ytdGross / monthsElapsed) * 12;
 
         // ── This payment ───────────────────────────────────────────────────────────
-        double total  = inv.getTotalAmount();
+        double total = inv.getTotalAmount();
         double preGst = total / 1.05;
-        double gst    = total - preGst;
+        double gst = total - preGst;
 
         // ── Tax rates from brackets (based on annualized income) ───────────────
         double fedRate = brackets.federalRateFor(annualizedIncome);
-        double bcRate  = brackets.bcRateFor(annualizedIncome);
+        double bcRate = brackets.bcRateFor(annualizedIncome);
 
         // CPP — check YTD already paid, cap at annual max
         double ytdCppPaid = allInvoices.stream()
@@ -423,10 +440,10 @@ public class InvoicePanel extends JPanel {
         double ytdCppCapped = Math.min(ytdCppPaid, brackets.getCppMaxContribution());
         double cpp = brackets.cppFor(preGst, ytdCppCapped);
 
-        double fedTax        = preGst * fedRate;
-        double bcTax         = preGst * bcRate;
+        double fedTax = preGst * fedRate;
+        double bcTax = preGst * bcRate;
         double totalSetAside = gst + fedTax + bcTax + cpp;
-        double keepAmount    = preGst - (fedTax + bcTax + cpp);
+        double keepAmount = preGst - (fedTax + bcTax + cpp);
 
         JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this),
             "Invoice #" + inv.getInvoiceNumber() + " — Paid!", true);
@@ -484,7 +501,7 @@ public class InvoicePanel extends JPanel {
 
         String cppNote = cpp < preGst * brackets.getCppRate()
             ? String.format("%.1f%% CPP (capped — $%.2f remaining to annual max)",
-                brackets.getCppRate() * 100, brackets.getCppMaxContribution() - ytdCppCapped)
+            brackets.getCppRate() * 100, brackets.getCppMaxContribution() - ytdCppCapped)
             : String.format("%.1f%% CPP (employee + employer)", brackets.getCppRate() * 100);
         body.add(makeTaxRow("💼  CPP Contributions",
             String.format("$%.2f", cpp),
@@ -551,12 +568,14 @@ public class InvoicePanel extends JPanel {
         amtLbl.setFont(amtLbl.getFont().deriveFont(Font.BOLD, 15f));
         amtLbl.setForeground(textColor.darker());
 
-        row.add(left,   BorderLayout.CENTER);
+        row.add(left, BorderLayout.CENTER);
         row.add(amtLbl, BorderLayout.EAST);
         return row;
     }
 
-    /** Reloads invoice list from storage and repopulates the table. */
+    /**
+     * Reloads invoice list from storage and repopulates the table.
+     */
     public void refreshHistory() {
         invoiceCache = storage.loadInvoices();
         // Sort newest first
@@ -587,7 +606,9 @@ public class InvoicePanel extends JPanel {
         return invoiceCache.get(row);
     }
 
-    /** Shows a simple date-picker dialog and returns the chosen ISO date string, or null if cancelled. */
+    /**
+     * Shows a simple date-picker dialog and returns the chosen ISO date string, or null if cancelled.
+     */
     private String pickDate(String label, String initialDate) {
         JButton btn = makeDateButton(initialDate);
         btn.addActionListener(e -> DatePicker.showPicker(InvoicePanel.this, btn));
@@ -619,7 +640,7 @@ public class InvoicePanel extends JPanel {
             EmployeeInfo employee = storage.loadEmployeeInfo();
 
             LocalDate start = LocalDate.parse(startBtn.getText());
-            LocalDate end   = LocalDate.parse(endBtn.getText());
+            LocalDate end = LocalDate.parse(endBtn.getText());
 
             List<LogEntry> allLogs = new ArrayList<>();
             LocalDate curr = start.withDayOfMonth(1);
@@ -707,7 +728,8 @@ public class InvoicePanel extends JPanel {
         JComboBox<YearMonth> monthCombo = new JComboBox<>();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy");
         monthCombo.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean s, boolean f) {
+            @Override
+            public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean s, boolean f) {
                 super.getListCellRendererComponent(l, v, i, s, f);
                 if (v instanceof YearMonth ym) setText(ym.format(fmt));
                 return this;
@@ -771,8 +793,8 @@ public class InvoicePanel extends JPanel {
         body.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         String vibeEmoji = grandTotal > 5000 ? "🤑" : grandTotal > 2000 ? "😊" : grandTotal > 500 ? "😐" : "😬";
-        String vibeText  = grandTotal > 5000 ? "YAY I'M RICH" : grandTotal > 2000 ? "Not bad!" : grandTotal > 500 ? "Getting there..." : "AHHH SHIT I'M BROKE";
-        Color  vibeColor = grandTotal > 5000 ? new Color(34, 197, 94) : grandTotal > 2000 ? new Color(59, 130, 246) : grandTotal > 500 ? new Color(245, 158, 11) : new Color(239, 68, 68);
+        String vibeText = grandTotal > 5000 ? "YAY I'M RICH" : grandTotal > 2000 ? "Not bad!" : grandTotal > 500 ? "Getting there..." : "AHHH SHIT I'M BROKE";
+        Color vibeColor = grandTotal > 5000 ? new Color(34, 197, 94) : grandTotal > 2000 ? new Color(59, 130, 246) : grandTotal > 500 ? new Color(245, 158, 11) : new Color(239, 68, 68);
 
         JLabel emojiLabel = new JLabel(vibeEmoji, JLabel.CENTER);
         emojiLabel.setFont(emojiLabel.getFont().deriveFont(Font.PLAIN, 48f));
@@ -815,8 +837,10 @@ public class InvoicePanel extends JPanel {
             bossHeader.add(bossTotal, BorderLayout.EAST);
             bossCard.add(bossHeader);
 
-            if (d[0] > 0) bossCard.add(makeSummaryRow(String.format("%.2f hrs @ $%.2f/hr", d[0], boss.getHourlyRate()), String.format("$%.2f", d[0] * boss.getHourlyRate())));
-            if (d[1] > 0) bossCard.add(makeSummaryRow(String.format("%.1f km @ $%.2f/km", d[1], boss.getKmRate() != null ? boss.getKmRate() : 0), String.format("$%.2f", d[1] * (boss.getKmRate() != null ? boss.getKmRate() : 0))));
+            if (d[0] > 0)
+                bossCard.add(makeSummaryRow(String.format("%.2f hrs @ $%.2f/hr", d[0], boss.getHourlyRate()), String.format("$%.2f", d[0] * boss.getHourlyRate())));
+            if (d[1] > 0)
+                bossCard.add(makeSummaryRow(String.format("%.1f km @ $%.2f/km", d[1], boss.getKmRate() != null ? boss.getKmRate() : 0), String.format("$%.2f", d[1] * (boss.getKmRate() != null ? boss.getKmRate() : 0))));
             if (d[2] > 0) bossCard.add(makeSummaryRow("Extras", String.format("$%.2f", d[2])));
             bossCard.add(makeSummaryRow("Tax (" + (int) boss.getTaxRate() + "%)", String.format("$%.2f", d[4])));
 
@@ -850,7 +874,7 @@ public class InvoicePanel extends JPanel {
         if (boss == null) return;
         EmployeeInfo employee = storage.loadEmployeeInfo();
         LocalDate start = LocalDate.parse(startBtn.getText());
-        LocalDate end   = LocalDate.parse(endBtn.getText());
+        LocalDate end = LocalDate.parse(endBtn.getText());
 
         List<LogEntry> allLogs = new ArrayList<>();
         LocalDate curr = start.withDayOfMonth(1);
@@ -859,7 +883,10 @@ public class InvoicePanel extends JPanel {
             curr = curr.plusMonths(1);
         }
         List<LogEntry> logs = allLogs.stream()
-            .filter(l -> { LocalDate d = LocalDate.parse(l.getDate()); return !d.isBefore(start) && !d.isAfter(end); })
+            .filter(l -> {
+                LocalDate d = LocalDate.parse(l.getDate());
+                return !d.isBefore(start) && !d.isAfter(end);
+            })
             .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
             .toList();
 
@@ -883,10 +910,10 @@ public class InvoicePanel extends JPanel {
             }
         }
         double subtotalHours = totalHours * boss.getHourlyRate();
-        double subtotalKm    = totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0);
-        double subtotal      = subtotalHours + subtotalKm + totalExtras;
-        double tax           = subtotal * (boss.getTaxRate() / 100.0);
-        double grandTotal    = subtotal + tax;
+        double subtotalKm = totalKm * (boss.getKmRate() != null ? boss.getKmRate() : 0);
+        double subtotal = subtotalHours + subtotalKm + totalExtras;
+        double tax = subtotal * (boss.getTaxRate() / 100.0);
+        double grandTotal = subtotal + tax;
 
         JDialog dialog = new JDialog((java.awt.Frame) SwingUtilities.getWindowAncestor(this), "Invoice Preview", true);
         dialog.setLayout(new BorderLayout());
@@ -953,8 +980,10 @@ public class InvoicePanel extends JPanel {
         body.add(makeThinDivider(new Color(226, 232, 240)));
         body.add(Box.createVerticalStrut(4));
 
-        if (totalHours > 0) body.add(makeLineItem("Labour", String.format("%.2f hrs @ $%.2f/hr", totalHours, boss.getHourlyRate()), String.format("$%.2f", subtotalHours)));
-        if (totalKm > 0)    body.add(makeLineItem("Travel", String.format("%.1f km @ $%.2f/km", totalKm, boss.getKmRate() != null ? boss.getKmRate() : 0), String.format("$%.2f", subtotalKm)));
+        if (totalHours > 0)
+            body.add(makeLineItem("Labour", String.format("%.2f hrs @ $%.2f/hr", totalHours, boss.getHourlyRate()), String.format("$%.2f", subtotalHours)));
+        if (totalKm > 0)
+            body.add(makeLineItem("Travel", String.format("%.1f km @ $%.2f/km", totalKm, boss.getKmRate() != null ? boss.getKmRate() : 0), String.format("$%.2f", subtotalKm)));
         if (totalExtras > 0) body.add(makeLineItem("Extras", "Miscellaneous", String.format("$%.2f", totalExtras)));
 
         body.add(Box.createVerticalStrut(4));
@@ -984,7 +1013,10 @@ public class InvoicePanel extends JPanel {
         btnGenerate2.putClientProperty("JButton.buttonType", "roundRect");
         btnGenerate2.setBackground(new Color(59, 130, 246));
         btnGenerate2.setForeground(Color.WHITE);
-        btnGenerate2.addActionListener(ev -> { dialog.dispose(); generate(InvoiceGenerator.InvoiceMode.STANDARD); });
+        btnGenerate2.addActionListener(ev -> {
+            dialog.dispose();
+            generate(InvoiceGenerator.InvoiceMode.STANDARD);
+        });
         footer.add(btnClose);
         footer.add(btnGenerate2);
         dialog.add(footer, BorderLayout.SOUTH);
@@ -1150,4 +1182,5 @@ public class InvoicePanel extends JPanel {
         row.add(amt, BorderLayout.EAST);
         return row;
     }
+
 }

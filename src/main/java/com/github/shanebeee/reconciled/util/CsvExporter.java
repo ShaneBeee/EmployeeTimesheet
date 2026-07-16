@@ -33,11 +33,11 @@ public class CsvExporter {
         if (!outputPath.endsWith(".zip")) outputPath += ".zip";
         File zipFile = new File(outputPath);
 
-        EmployeeInfo employee   = storage.loadEmployeeInfo();
-        List<Expenditure>     expenses   = storage.loadExpenditures(String.valueOf(year));
+        EmployeeInfo employee = storage.loadEmployeeInfo();
+        List<Expenditure> expenses = storage.loadExpenditures(String.valueOf(year));
         List<ExpenseCategory> categories = storage.loadExpenseCategories(String.valueOf(year));
-        List<KmTrip>          trips      = storage.loadKmTrips(String.valueOf(year));
-        KmOdometer            odometer   = storage.loadKmOdometer(String.valueOf(year));
+        List<KmTrip> trips = storage.loadKmTrips(String.valueOf(year));
+        KmOdometer odometer = storage.loadKmOdometer(String.valueOf(year));
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFile))) {
             // ── Expenses CSV ──────────────────────────────────────────────────
@@ -61,8 +61,8 @@ public class CsvExporter {
     // ── Expenses CSV ──────────────────────────────────────────────────────────
 
     private void writeExpensesCsv(PrintWriter w, EmployeeInfo employee,
-                                   List<Expenditure> expenses,
-                                   List<ExpenseCategory> categories, int year) {
+                                  List<Expenditure> expenses,
+                                  List<ExpenseCategory> categories, int year) {
         // Header block
         w.println(csv("Employee Timesheet — Expense Report"));
         w.println(csv("Year", String.valueOf(year)));
@@ -101,7 +101,7 @@ public class CsvExporter {
                     String.format("%.2f", claimable),
                     pctLabel
                 ));
-                catTotal     += exp.getTotal();
+                catTotal += exp.getTotal();
                 catClaimable += claimable;
             }
             // Category subtotal
@@ -110,7 +110,7 @@ public class CsvExporter {
                 String.format("%.2f", catClaimable),
                 pctLabel));
             w.println();
-            grandTotal     += catTotal;
+            grandTotal += catTotal;
             grandClaimable += catClaimable;
         }
 
@@ -140,7 +140,7 @@ public class CsvExporter {
                 String.format("%.2f", ucTotal),
                 "100%"));
             w.println();
-            grandTotal     += ucTotal;
+            grandTotal += ucTotal;
             grandClaimable += ucTotal;
         }
 
@@ -153,7 +153,7 @@ public class CsvExporter {
     // ── KM Log CSV ────────────────────────────────────────────────────────────
 
     private void writeKmCsv(PrintWriter w, EmployeeInfo employee,
-                             List<KmTrip> trips, KmOdometer odometer, int year) {
+                            List<KmTrip> trips, KmOdometer odometer, int year) {
         // Header block
         w.println(csv("Employee Timesheet — Kilometre Log"));
         w.println(csv("Year", String.valueOf(year)));
@@ -166,13 +166,13 @@ public class CsvExporter {
         if (odometer != null) {
             w.println(csv("Odometer Summary"));
             w.println(csv("Year Start (km)", String.format("%.1f", odometer.getStartKm())));
-            w.println(csv("Year End (km)",   String.format("%.1f", odometer.getEndKm())));
-            double totalKm    = odometer.getEndKm() - odometer.getStartKm();
+            w.println(csv("Year End (km)", String.format("%.1f", odometer.getEndKm())));
+            double totalKm = odometer.getEndKm() - odometer.getStartKm();
             double businessKm = trips.stream().mapToDouble(KmTrip::getKm).sum();
             double businessPct = totalKm > 0 ? (businessKm / totalKm) * 100 : 0;
             w.println(csv("Total KM Driven", String.format("%.1f", totalKm)));
-            w.println(csv("Business KM",     String.format("%.1f", businessKm)));
-            w.println(csv("Business Use %",  String.format("%.1f%%", businessPct)));
+            w.println(csv("Business KM", String.format("%.1f", businessKm)));
+            w.println(csv("Business Use %", String.format("%.1f%%", businessPct)));
             w.println();
         }
 
@@ -197,7 +197,9 @@ public class CsvExporter {
 
     // ── CSV helpers ───────────────────────────────────────────────────────────
 
-    /** Escapes and joins values as a CSV row. */
+    /**
+     * Escapes and joins values as a CSV row.
+     */
     private static String csv(String... values) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < values.length; i++) {
@@ -207,7 +209,9 @@ public class CsvExporter {
         return sb.toString();
     }
 
-    /** Wraps a value in quotes if it contains commas, quotes, or newlines. */
+    /**
+     * Wraps a value in quotes if it contains commas, quotes, or newlines.
+     */
     private static String escape(String value) {
         if (value == null) return "";
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
@@ -216,5 +220,8 @@ public class CsvExporter {
         return value;
     }
 
-    private static String safe(String s) { return s == null ? "" : s; }
+    private static String safe(String s) {
+        return s == null ? "" : s;
+    }
+
 }

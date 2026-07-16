@@ -4,7 +4,18 @@ import com.github.shanebeee.reconciled.model.UserProfile;
 import com.github.shanebeee.reconciled.storage.ProfileManager;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -15,10 +26,10 @@ import java.util.List;
  */
 public class ProfilePickerDialog extends JDialog {
 
-    private static final Color NAVY  = new Color(30, 41, 59);
+    private static final Color NAVY = new Color(30, 41, 59);
     private static final Color SLATE = new Color(100, 116, 139);
     private static final Color MUTED = new Color(148, 163, 184);
-    private static final Color BG    = new Color(241, 245, 249);
+    private static final Color BG = new Color(241, 245, 249);
 
     private final ProfileManager profileManager;
     private UserProfile chosen = null;
@@ -113,7 +124,8 @@ public class ProfilePickerDialog extends JDialog {
         final boolean[] hovered = {false};
 
         JPanel card = new JPanel(new BorderLayout(16, 0)) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(hovered[0] ? new Color(239, 246, 255) : Color.WHITE);
@@ -133,13 +145,17 @@ public class ProfilePickerDialog extends JDialog {
 
         // Avatar
         Color avatarColor;
-        try { avatarColor = Color.decode(profile.getAvatarColor()); }
-        catch (Exception ex) { avatarColor = new Color(59, 130, 246); }
+        try {
+            avatarColor = Color.decode(profile.getAvatarColor());
+        } catch (Exception ex) {
+            avatarColor = new Color(59, 130, 246);
+        }
         final Color ac = avatarColor;
 
         String initials = profile.initials();
         JPanel avatar = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(ac);
@@ -177,12 +193,22 @@ public class ProfilePickerDialog extends JDialog {
         arrow.setForeground(MUTED);
 
         card.add(avatar, BorderLayout.WEST);
-        card.add(text,   BorderLayout.CENTER);
-        card.add(arrow,  BorderLayout.EAST);
+        card.add(text, BorderLayout.CENTER);
+        card.add(arrow, BorderLayout.EAST);
 
         card.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); arrow.setForeground(new Color(59, 130, 246)); }
-            public void mouseExited (MouseEvent e) { hovered[0] = false; card.repaint(); arrow.setForeground(MUTED); }
+            public void mouseEntered(MouseEvent e) {
+                hovered[0] = true;
+                card.repaint();
+                arrow.setForeground(new Color(59, 130, 246));
+            }
+
+            public void mouseExited(MouseEvent e) {
+                hovered[0] = false;
+                card.repaint();
+                arrow.setForeground(MUTED);
+            }
+
             public void mousePressed(MouseEvent e) {
                 chosen = profile;
                 ProfileManager.saveActiveProfileId(profile.getId());
@@ -193,10 +219,16 @@ public class ProfilePickerDialog extends JDialog {
         return card;
     }
 
-    /** Returns the profile the user chose, or null if they closed the dialog. */
-    public UserProfile getChosen() { return chosen; }
+    /**
+     * Returns the profile the user chose, or null if they closed the dialog.
+     */
+    public UserProfile getChosen() {
+        return chosen;
+    }
 
-    /** Shortens a path to show just .../{last two segments} */
+    /**
+     * Shortens a path to show just .../{last two segments}
+     */
     private String shortenPath(String path) {
         if (path == null) return "";
         String p = path.endsWith(java.io.File.separator)
@@ -205,4 +237,5 @@ public class ProfilePickerDialog extends JDialog {
         if (parts.length <= 3) return path;
         return "\u2026/" + parts[parts.length - 2] + "/" + parts[parts.length - 1] + "/";
     }
+
 }

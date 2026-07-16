@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * Represents a depreciable capital asset tracked for CRA Capital Cost Allowance (CCA).
- *
+ * <p>
  * UCC and deduction amounts are always derived mathematically from cost + purchaseDate —
  * there is no mutable running balance. Assets stay on the books until manually removed
  * (e.g. when sold or disposed of).
@@ -27,34 +27,74 @@ public class CcaAsset {
 
     // ── Getters & Setters ─────────────────────────────────────────────────────
 
-    public String getId()                         { return id; }
-    public void   setId(String v)                 { this.id = v; }
+    public String getId() {
+        return id;
+    }
 
-    public String getDescription()                { return description; }
-    public void   setDescription(String v)        { this.description = v; }
+    public void setId(String v) {
+        this.id = v;
+    }
 
-    public String getPurchaseDate()               { return purchaseDate; }
-    public void   setPurchaseDate(String v)       { this.purchaseDate = v; }
+    public String getDescription() {
+        return description;
+    }
 
-    public double getCost()                       { return cost; }
-    public void   setCost(double v)               { this.cost = v; }
+    public void setDescription(String v) {
+        this.description = v;
+    }
 
-    public String getAssetClass()                 { return assetClass; }
-    public void   setAssetClass(String v)         { this.assetClass = v; }
+    public String getPurchaseDate() {
+        return purchaseDate;
+    }
 
-    public double getClassRate()                  { return classRate; }
-    public void   setClassRate(double v)          { this.classRate = v; }
+    public void setPurchaseDate(String v) {
+        this.purchaseDate = v;
+    }
 
-    public List<String> getReceiptFiles()         { return receiptFiles != null ? receiptFiles : new ArrayList<>(); }
-    public void         setReceiptFiles(List<String> v) { this.receiptFiles = v; }
+    public double getCost() {
+        return cost;
+    }
+
+    public void setCost(double v) {
+        this.cost = v;
+    }
+
+    public String getAssetClass() {
+        return assetClass;
+    }
+
+    public void setAssetClass(String v) {
+        this.assetClass = v;
+    }
+
+    public double getClassRate() {
+        return classRate;
+    }
+
+    public void setClassRate(double v) {
+        this.classRate = v;
+    }
+
+    public List<String> getReceiptFiles() {
+        return receiptFiles != null ? receiptFiles : new ArrayList<>();
+    }
+
+    public void setReceiptFiles(List<String> v) {
+        this.receiptFiles = v;
+    }
 
     // ── Pure computed properties ──────────────────────────────────────────────
 
-    /** Year the asset was purchased, derived from purchaseDate. */
+    /**
+     * Year the asset was purchased, derived from purchaseDate.
+     */
     public int getPurchaseYear() {
         if (purchaseDate == null || purchaseDate.length() < 4) return 0;
-        try { return Integer.parseInt(purchaseDate.substring(0, 4)); }
-        catch (NumberFormatException e) { return 0; }
+        try {
+            return Integer.parseInt(purchaseDate.substring(0, 4));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /**
@@ -95,4 +135,5 @@ public class CcaAsset {
     public double closingUccForYear(int taxYear) {
         return Math.max(0, openingUccForYear(taxYear) - deductionForYear(taxYear));
     }
+
 }

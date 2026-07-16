@@ -43,8 +43,13 @@ public class Expenditure {
         this.category = category;
     }
 
-    public String getCategoryId()              { return categoryId; }
-    public void   setCategoryId(String id)     { this.categoryId = id; }
+    public String getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(String id) {
+        this.categoryId = id;
+    }
 
     public String getDescription() {
         return description;

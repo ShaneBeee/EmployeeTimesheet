@@ -35,8 +35,8 @@ public class InvoiceGenerator {
         WITH_BREAKDOWN   // page 1 = standard invoice, page 2 = work log detail
     }
 
-    private static final DeviceRgb NAVY  = new DeviceRgb(30,  41,  59);
-    private static final DeviceRgb BLUE  = new DeviceRgb(59,  130, 246);
+    private static final DeviceRgb NAVY = new DeviceRgb(30, 41, 59);
+    private static final DeviceRgb BLUE = new DeviceRgb(59, 130, 246);
     private static final DeviceRgb SLATE = new DeviceRgb(100, 116, 139);
     private static final DeviceRgb LIGHT = new DeviceRgb(241, 245, 249);
     private static final DeviceRgb AMBER = new DeviceRgb(245, 158, 11);
@@ -46,9 +46,9 @@ public class InvoiceGenerator {
     public static void generateInvoice(Boss boss, EmployeeInfo employee, List<LogEntry> logs,
                                        String startDate, String endDate, int invoiceNum,
                                        String outputPath, InvoiceMode mode) throws Exception {
-        PdfWriter   writer = new PdfWriter(outputPath);
-        PdfDocument pdf    = new PdfDocument(writer);
-        Document    doc    = new Document(pdf);
+        PdfWriter writer = new PdfWriter(outputPath);
+        PdfDocument pdf = new PdfDocument(writer);
+        Document doc = new Document(pdf);
         doc.setMargins(50, 50, 50, 50);
 
         // Pre-compute totals (needed for both pages)
@@ -145,7 +145,7 @@ public class InvoiceGenerator {
             if (log.getType() == LogEntry.EntryType.EXTRA
                 && (boss.getId().equals(log.getBossUuid()) || boss.getName().equals(log.getBossUuid()))) {
                 double units = log.getUnits() != null ? log.getUnits() : 0;
-                double cost  = log.getCostPerUnit() != null ? log.getCostPerUnit() : 0;
+                double cost = log.getCostPerUnit() != null ? log.getCostPerUnit() : 0;
                 addRow(table, alt, safe(log.getDescription()),
                     String.format("%.2f", units),
                     String.format("$%.2f", cost),
@@ -211,9 +211,9 @@ public class InvoiceGenerator {
                 if (perc <= 0) continue;
 
                 LocalTime startT = TimePickerPanel.parseTime(log.getStartTime());
-                LocalTime endT   = TimePickerPanel.parseTime(log.getEndTime());
-                double billable  = Duration.between(startT, endT).toMinutes() / 60.0 * perc;
-                double rate      = rateForDate(boss, log.getDate());
+                LocalTime endT = TimePickerPanel.parseTime(log.getEndTime());
+                double billable = Duration.between(startT, endT).toMinutes() / 60.0 * perc;
+                double rate = rateForDate(boss, log.getDate());
 
                 String desc = TimePickerPanel.formatTime(log.getStartTime())
                     + " – " + TimePickerPanel.formatTime(log.getEndTime());
@@ -229,7 +229,7 @@ public class InvoiceGenerator {
 
             } else if (log.getType() == LogEntry.EntryType.KILOMETER) {
                 if (!boss.getId().equals(log.getBossUuid()) && !boss.getName().equals(log.getBossUuid())) continue;
-                double km    = log.getKilometers() != null ? log.getKilometers() : 0;
+                double km = log.getKilometers() != null ? log.getKilometers() : 0;
                 double kmRate = boss.getKmRate() != null ? boss.getKmRate() : 0;
                 if (km <= 0) continue;
                 String dateStr = LocalDate.parse(log.getDate()).format(displayFmt);
@@ -244,7 +244,7 @@ public class InvoiceGenerator {
             } else if (log.getType() == LogEntry.EntryType.EXTRA) {
                 if (!boss.getId().equals(log.getBossUuid()) && !boss.getName().equals(log.getBossUuid())) continue;
                 double units = log.getUnits() != null ? log.getUnits() : 0;
-                double cost  = log.getCostPerUnit() != null ? log.getCostPerUnit() : 0;
+                double cost = log.getCostPerUnit() != null ? log.getCostPerUnit() : 0;
                 String dateStr = LocalDate.parse(log.getDate()).format(displayFmt);
                 addDetailRow(table, alt, dateStr, safe(log.getDescription()),
                     String.format("%.2f", units),
@@ -256,7 +256,7 @@ public class InvoiceGenerator {
             if (log.getKmEntries() != null) {
                 for (LogEntry.KmEntry ke : log.getKmEntries()) {
                     if (!boss.getId().equals(ke.getBossUuid()) && !boss.getName().equals(ke.getBossUuid())) continue;
-                    double km    = ke.getKilometers();
+                    double km = ke.getKilometers();
                     double kmRate = boss.getKmRate() != null ? boss.getKmRate() : 0;
                     if (km <= 0) continue;
                     boolean a = (rowIdx++ % 2 == 0);
@@ -298,19 +298,19 @@ public class InvoiceGenerator {
 
     private static void addRow(Table t, boolean alt, String desc, String units, String rate, String total) {
         DeviceRgb bg = alt ? LIGHT : new DeviceRgb(255, 255, 255);
-        t.addCell(cell(desc,  bg, TextAlignment.LEFT));
+        t.addCell(cell(desc, bg, TextAlignment.LEFT));
         t.addCell(cell(units, bg, TextAlignment.RIGHT));
-        t.addCell(cell(rate,  bg, TextAlignment.RIGHT));
+        t.addCell(cell(rate, bg, TextAlignment.RIGHT));
         t.addCell(cell(total, bg, TextAlignment.RIGHT));
     }
 
     private static void addDetailRow(Table t, boolean alt, String date, String desc,
                                      String units, String rate, String total) {
         DeviceRgb bg = alt ? LIGHT : new DeviceRgb(255, 255, 255);
-        t.addCell(cell(date,  bg, TextAlignment.LEFT));
-        t.addCell(cell(desc,  bg, TextAlignment.LEFT));
+        t.addCell(cell(date, bg, TextAlignment.LEFT));
+        t.addCell(cell(desc, bg, TextAlignment.LEFT));
         t.addCell(cell(units, bg, TextAlignment.RIGHT));
-        t.addCell(cell(rate,  bg, TextAlignment.RIGHT));
+        t.addCell(cell(rate, bg, TextAlignment.RIGHT));
         t.addCell(cell(total, bg, TextAlignment.RIGHT));
     }
 
@@ -326,7 +326,10 @@ public class InvoiceGenerator {
         DeviceRgb color = bold ? BLUE : NAVY;
         Paragraph labelP = new Paragraph(label).setFontSize(size).setFontColor(NAVY);
         Paragraph valueP = new Paragraph(value).setFontSize(size).setFontColor(color).setTextAlignment(TextAlignment.RIGHT);
-        if (bold) { labelP.setBold(); valueP.setBold(); }
+        if (bold) {
+            labelP.setBold();
+            valueP.setBold();
+        }
         t.addCell(new Cell().add(labelP).setBorder(Border.NO_BORDER).setPadding(4));
         t.addCell(new Cell().add(valueP).setBorder(Border.NO_BORDER).setPadding(4));
     }
@@ -343,7 +346,8 @@ public class InvoiceGenerator {
     // ── Totals computation ────────────────────────────────────────────────────
 
     public record Totals(double totalHours, double totalHoursCost, double totalKm,
-                  double kmCost, double extrasCost, double subtotal, double tax, double total) {}
+                         double kmCost, double extrasCost, double subtotal, double tax, double total) {
+    }
 
     public static Totals computeTotals(Boss boss, List<LogEntry> logs) {
         double hours = 0, hoursCost = 0, km = 0, extras = 0;
@@ -359,7 +363,7 @@ public class InvoiceGenerator {
                         TimePickerPanel.parseTime(log.getStartTime()),
                         TimePickerPanel.parseTime(log.getEndTime())).toMinutes() / 60.0 * perc;
                     double rate = rateForDate(boss, log.getDate());
-                    hours     += h;
+                    hours += h;
                     hoursCost += h * rate;
                 }
             } else if (log.getType() == LogEntry.EntryType.KILOMETER) {
@@ -377,9 +381,9 @@ public class InvoiceGenerator {
                 }
             }
         }
-        double kmCost   = km * (boss.getKmRate() != null ? boss.getKmRate() : 0);
+        double kmCost = km * (boss.getKmRate() != null ? boss.getKmRate() : 0);
         double subtotal = hoursCost + kmCost + extras;
-        double tax      = subtotal * (boss.getTaxRate() / 100.0);
+        double tax = subtotal * (boss.getTaxRate() / 100.0);
         return new Totals(hours, hoursCost, km, kmCost, extras, subtotal, tax, subtotal + tax);
     }
 
@@ -394,5 +398,8 @@ public class InvoiceGenerator {
             .orElse(boss.getHourlyRate());
     }
 
-    private static String safe(String s) { return s == null ? "" : s; }
+    private static String safe(String s) {
+        return s == null ? "" : s;
+    }
+
 }

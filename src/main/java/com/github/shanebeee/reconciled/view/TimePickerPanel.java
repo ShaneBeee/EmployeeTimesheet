@@ -61,10 +61,13 @@ public class TimePickerPanel extends JPanel {
 
         // Hour Spinner — circular model so wrap triggers AM/PM flip
         SpinnerNumberModel hourModel = new SpinnerNumberModel(hour, 1, 12, 1) {
-            @Override public Object getNextValue() {
+            @Override
+            public Object getNextValue() {
                 return getValue().equals(12) ? 1 : ((Integer) getValue()) + 1;
             }
-            @Override public Object getPreviousValue() {
+
+            @Override
+            public Object getPreviousValue() {
                 return getValue().equals(1) ? 12 : ((Integer) getValue()) - 1;
             }
         };
@@ -78,10 +81,13 @@ public class TimePickerPanel extends JPanel {
 
         // Minute Spinner — circular model so 55 wraps to 0 and vice versa
         SpinnerNumberModel minuteModel = new SpinnerNumberModel(minute, 0, 55, 5) {
-            @Override public Object getNextValue() {
+            @Override
+            public Object getNextValue() {
                 return getValue().equals(55) ? 0 : ((Integer) getValue()) + 5;
             }
-            @Override public Object getPreviousValue() {
+
+            @Override
+            public Object getPreviousValue() {
                 return getValue().equals(0) ? 55 : ((Integer) getValue()) - 5;
             }
         };
@@ -276,7 +282,9 @@ public class TimePickerPanel extends JPanel {
         dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "cancel");
         dialog.getRootPane().getActionMap().put("cancel", new javax.swing.AbstractAction() {
-            public void actionPerformed(java.awt.event.ActionEvent e) { dialog.dispose(); }
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                dialog.dispose();
+            }
         });
 
         dialog.setVisible(true);

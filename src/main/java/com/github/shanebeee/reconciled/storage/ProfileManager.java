@@ -18,23 +18,23 @@ import java.util.prefs.Preferences;
 /**
  * Manages user profiles. Profiles are stored in a profiles.json file
  * at the root storage location (parent of all user data directories).
- *
+ * <p>
  * Root layout:
- *   {rootDir}/
- *     profiles.json
- *     {profileName}/      ← each user's data directory
- *       settings/
- *       logs/
- *       ...
- *
+ * {rootDir}/
+ * profiles.json
+ * {profileName}/      ← each user's data directory
+ * settings/
+ * logs/
+ * ...
+ * <p>
  * Migration: if the app has existing single-user data (Preferences key set,
  * no profiles.json), we auto-create a "Default" profile pointing at that path.
  */
 public class ProfileManager {
 
-    private static final String PREFS_KEY      = "dataDirectory";
+    private static final String PREFS_KEY = "dataDirectory";
     private static final String PREFS_ROOT_KEY = "rootDirectory";
-    private static final String PROFILES_FILE  = "profiles.json";
+    private static final String PROFILES_FILE = "profiles.json";
 
     // Palette of avatar colours to cycle through for new profiles
     private static final String[] AVATAR_COLORS = {
@@ -48,7 +48,10 @@ public class ProfileManager {
     public ProfileManager(String rootDir) {
         if (!rootDir.endsWith(File.separator)) rootDir = rootDir + File.separator;
         this.rootDir = rootDir;
-        try { Files.createDirectories(Paths.get(rootDir)); } catch (IOException ignored) {}
+        try {
+            Files.createDirectories(Paths.get(rootDir));
+        } catch (IOException ignored) {
+        }
     }
 
     // ── Static helpers ────────────────────────────────────────────────────────
@@ -108,7 +111,8 @@ public class ProfileManager {
         File f = new File(rootDir + PROFILES_FILE);
         if (!f.exists()) return new ArrayList<>();
         try (FileReader r = new FileReader(f)) {
-            List<UserProfile> list = gson.fromJson(r, new TypeToken<List<UserProfile>>() {}.getType());
+            List<UserProfile> list = gson.fromJson(r, new TypeToken<List<UserProfile>>() {
+            }.getType());
             return list != null ? list : new ArrayList<>();
         } catch (IOException e) {
             return new ArrayList<>();
@@ -144,7 +148,10 @@ public class ProfileManager {
             suffix++;
         }
         UserProfile profile = new UserProfile(name.trim(), dataPath, color);
-        try { Files.createDirectories(Paths.get(dataPath)); } catch (IOException ignored) {}
+        try {
+            Files.createDirectories(Paths.get(dataPath));
+        } catch (IOException ignored) {
+        }
         profiles.add(profile);
         saveProfiles(profiles);
         return profile;
@@ -190,7 +197,7 @@ public class ProfileManager {
         // Move existing data into the named subfolder (unless it's already there)
         if (!legacyPath.equals(newDataPath)) {
             try {
-                java.nio.file.Path src  = java.nio.file.Paths.get(legacyPath);
+                java.nio.file.Path src = java.nio.file.Paths.get(legacyPath);
                 java.nio.file.Path dest = java.nio.file.Paths.get(newDataPath);
                 java.nio.file.Files.createDirectories(dest);
 
@@ -232,5 +239,8 @@ public class ProfileManager {
         return existing.stream().noneMatch(p -> p.getDataPath().equals(path));
     }
 
-    public String getRootDirPath() { return rootDir; }
+    public String getRootDirPath() {
+        return rootDir;
+    }
+
 }

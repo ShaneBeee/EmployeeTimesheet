@@ -25,10 +25,10 @@ public class DeductionCalculator {
     public double percentFor(ExpenseCategory cat, int year) {
         if (cat == null) return 1.0;
         return switch (cat.getDeductionType()) {
-            case FULL          -> 1.0;
+            case FULL -> 1.0;
             case FIXED_PERCENT -> cat.getFixedPercent();
-            case KM_PERCENT    -> kmPercent(year);
-            case HOME_OFFICE   -> storage.loadEmployeeInfo().homeOfficePercent();
+            case KM_PERCENT -> kmPercent(year);
+            case HOME_OFFICE -> storage.loadEmployeeInfo().homeOfficePercent();
         };
     }
 
@@ -45,10 +45,10 @@ public class DeductionCalculator {
     public String percentLabel(ExpenseCategory cat, int year) {
         if (cat == null) return "100%";
         return switch (cat.getDeductionType()) {
-            case FULL          -> "100%";
+            case FULL -> "100%";
             case FIXED_PERCENT -> String.format("%.0f%%", cat.getFixedPercent() * 100);
-            case KM_PERCENT    -> String.format("KM-based (%.1f%%)", kmPercent(year) * 100);
-            case HOME_OFFICE   -> {
+            case KM_PERCENT -> String.format("KM-based (%.1f%%)", kmPercent(year) * 100);
+            case HOME_OFFICE -> {
                 double pct = storage.loadEmployeeInfo().homeOfficePercent();
                 yield String.format("Home office (%.1f%%)", pct * 100);
             }
@@ -73,4 +73,5 @@ public class DeductionCalculator {
         if (totalKm <= 0 || businessKm <= 0) return 0;
         return Math.min(1.0, businessKm / totalKm);
     }
+
 }

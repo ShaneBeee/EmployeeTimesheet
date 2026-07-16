@@ -29,10 +29,10 @@ public class Main {
         UIManager.put("TextComponent.arc", 12);
         UIManager.put("Button.background", Color.WHITE);
         UIManager.put("Button.foreground", new Color(30, 41, 59));
-        UIManager.put("App.accent",  new Color(59, 130, 246));
+        UIManager.put("App.accent", new Color(59, 130, 246));
         UIManager.put("App.success", new Color(34, 197, 94));
         UIManager.put("App.warning", new Color(245, 158, 11));
-        UIManager.put("App.danger",  new Color(239, 68, 68));
+        UIManager.put("App.danger", new Color(239, 68, 68));
         setupLaf();
 
         SwingUtilities.invokeLater(() -> {
@@ -155,34 +155,37 @@ public class Main {
         UIManager.put("Component.arc", 12);
         UIManager.put("ProgressBar.arc", 999);
         UIManager.put("TextComponent.arc", 12);
-        Color accent    = (Color) UIManager.get("App.accent");
+        Color accent = (Color) UIManager.get("App.accent");
         Color selection = new Color(239, 246, 255);
-        UIManager.put("Component.accentColor",            accent);
-        UIManager.put("Component.focusColor",             new Color(191, 219, 254));
-        UIManager.put("Button.focusedBorderColor",        accent);
-        UIManager.put("Selection.background",             selection);
-        UIManager.put("Selection.foreground",             new Color(30, 64, 175));
-        UIManager.put("List.selectionBackground",         selection);
-        UIManager.put("List.selectionForeground",         new Color(30, 64, 175));
-        UIManager.put("Table.selectionBackground",        selection);
-        UIManager.put("Table.selectionForeground",        new Color(30, 64, 175));
-        UIManager.put("TextField.background",             Color.WHITE);
-        UIManager.put("TextField.borderColor",            new Color(226, 232, 240));
-        UIManager.put("ComboBox.background",              Color.WHITE);
-        UIManager.put("ComboBox.selectionBackground",     selection);
-        UIManager.put("Panel.background",                 Color.WHITE);
-        UIManager.put("MainContent.background",           new Color(241, 245, 249));
-        UIManager.put("TabbedPane.selectedBackground",    Color.WHITE);
-        UIManager.put("TableHeader.background",           new Color(248, 250, 252));
-        UIManager.put("TableHeader.separatorColor",       new Color(226, 232, 240));
+        UIManager.put("Component.accentColor", accent);
+        UIManager.put("Component.focusColor", new Color(191, 219, 254));
+        UIManager.put("Button.focusedBorderColor", accent);
+        UIManager.put("Selection.background", selection);
+        UIManager.put("Selection.foreground", new Color(30, 64, 175));
+        UIManager.put("List.selectionBackground", selection);
+        UIManager.put("List.selectionForeground", new Color(30, 64, 175));
+        UIManager.put("Table.selectionBackground", selection);
+        UIManager.put("Table.selectionForeground", new Color(30, 64, 175));
+        UIManager.put("TextField.background", Color.WHITE);
+        UIManager.put("TextField.borderColor", new Color(226, 232, 240));
+        UIManager.put("ComboBox.background", Color.WHITE);
+        UIManager.put("ComboBox.selectionBackground", selection);
+        UIManager.put("Panel.background", Color.WHITE);
+        UIManager.put("MainContent.background", new Color(241, 245, 249));
+        UIManager.put("TabbedPane.selectedBackground", Color.WHITE);
+        UIManager.put("TableHeader.background", new Color(248, 250, 252));
+        UIManager.put("TableHeader.separatorColor", new Color(226, 232, 240));
         UIManager.put("TableHeader.bottomSeparatorColor", new Color(226, 232, 240));
-        UIManager.put("TableHeader.font",                 UIManager.getFont("Label.font").deriveFont(Font.BOLD));
-        UIManager.put("TitlePane.background",             new Color(64, 64, 64));
-        UIManager.put("TitlePane.foreground",             Color.WHITE);
-        UIManager.put("TitlePane.buttonHoverBackground",   new Color(80, 80, 80));
+        UIManager.put("TableHeader.font", UIManager.getFont("Label.font").deriveFont(Font.BOLD));
+        UIManager.put("TitlePane.background", new Color(64, 64, 64));
+        UIManager.put("TitlePane.foreground", Color.WHITE);
+        UIManager.put("TitlePane.buttonHoverBackground", new Color(80, 80, 80));
         UIManager.put("TitlePane.buttonPressedBackground", new Color(100, 100, 100));
-        try { UIManager.setLookAndFeel(new FlatLightLaf()); }
-        catch (Exception ex) { System.err.println("Failed to initialize FlatLaf"); }
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (Exception ex) {
+            System.err.println("Failed to initialize FlatLaf");
+        }
     }
 
     private static String getAppVersion() {
@@ -191,6 +194,9 @@ public class Main {
             var props = new java.util.Properties();
             props.load(stream);
             return props.getProperty("version", "unknown");
-        } catch (Exception e) { return "unknown"; }
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
+
 }

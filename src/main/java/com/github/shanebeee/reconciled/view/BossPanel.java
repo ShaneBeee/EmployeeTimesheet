@@ -13,9 +13,9 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GradientPaint;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -86,7 +86,9 @@ public class BossPanel extends JPanel {
         }
         // Add empty placeholder if odd number
         if (bosses.size() % 2 != 0) {
-            cardsPanel.add(new JPanel() {{ setOpaque(false); }});
+            cardsPanel.add(new JPanel() {{
+                setOpaque(false);
+            }});
         }
         cardsPanel.revalidate();
         cardsPanel.repaint();
@@ -97,7 +99,8 @@ public class BossPanel extends JPanel {
         final boolean[] hovered = {false};
 
         JPanel card = new JPanel(new BorderLayout(0, 0)) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 // Shadow
@@ -137,9 +140,20 @@ public class BossPanel extends JPanel {
         card.setPreferredSize(new Dimension(0, 160));
 
         card.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-            @Override public void mouseExited(MouseEvent e)  { hovered[0] = false; card.repaint(); }
-            @Override public void mouseClicked(MouseEvent e) {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                hovered[0] = true;
+                card.repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                hovered[0] = false;
+                card.repaint();
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) showBossDialog(boss);
             }
         });
@@ -157,7 +171,8 @@ public class BossPanel extends JPanel {
         final String fin = initials;
 
         JPanel avatar = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 // Gradient fill
@@ -236,7 +251,7 @@ public class BossPanel extends JPanel {
         chipsRow.setOpaque(false);
         chipsRow.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
         chipsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        ((FlowLayout)chipsRow.getLayout()).setVgap(6);
+        ((FlowLayout) chipsRow.getLayout()).setVgap(6);
 
         chipsRow.add(makeChip("$" + String.format("%.2f", boss.getHourlyRate()) + "/hr", new Color(59, 130, 246)));
         chipsRow.add(makeChip(String.format("%.1f%%", boss.getTaxRate()) + " tax", new Color(139, 92, 246)));
@@ -267,7 +282,8 @@ public class BossPanel extends JPanel {
 
     private JPanel makeChip(String text, Color color) {
         JPanel chip = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 15));
@@ -315,7 +331,8 @@ public class BossPanel extends JPanel {
         final String fin = initials;
 
         JPanel avatar = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 GradientPaint gp = new GradientPaint(0, 0, accent.brighter(), 0, getHeight(), accent);
@@ -359,15 +376,15 @@ public class BossPanel extends JPanel {
         form.setBackground(new Color(248, 250, 252));
         form.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
 
-        JTextField nameField     = new JTextField(b.getName());
-        JTextField companyField  = new JTextField(b.getCompany());
-        JTextField addressField  = new JTextField(b.getAddress());
+        JTextField nameField = new JTextField(b.getName());
+        JTextField companyField = new JTextField(b.getCompany());
+        JTextField addressField = new JTextField(b.getAddress());
         JTextField address2Field = new JTextField(b.getAddress2());
-        JTextField phoneField    = new JTextField(b.getPhoneNumber());
-        JTextField emailField    = new JTextField(b.getEmail());
-        JTextField rateField     = new JTextField(String.valueOf(b.getHourlyRate()));
-        JTextField taxField      = new JTextField(String.valueOf(b.getTaxRate()));
-        JTextField kmField       = new JTextField(b.getKmRate() != null ? String.valueOf(b.getKmRate()) : "");
+        JTextField phoneField = new JTextField(b.getPhoneNumber());
+        JTextField emailField = new JTextField(b.getEmail());
+        JTextField rateField = new JTextField(String.valueOf(b.getHourlyRate()));
+        JTextField taxField = new JTextField(String.valueOf(b.getTaxRate()));
+        JTextField kmField = new JTextField(b.getKmRate() != null ? String.valueOf(b.getKmRate()) : "");
 
         form.add(makeSectionLabel("Contact Info"));
         form.add(Box.createVerticalStrut(8));
@@ -495,4 +512,5 @@ public class BossPanel extends JPanel {
         p.add(field, BorderLayout.CENTER);
         return p;
     }
+
 }

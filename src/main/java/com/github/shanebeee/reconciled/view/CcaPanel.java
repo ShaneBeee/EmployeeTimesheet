@@ -26,27 +26,27 @@ import java.util.List;
 
 public class CcaPanel extends JPanel {
 
-    private static final Color ACCENT       = new Color(99, 102, 241);
-    private static final Color NAVY         = new Color(30,  41,  59);
-    private static final Color SLATE        = new Color(100, 116, 139);
-    private static final Color MUTED        = new Color(148, 163, 184);
+    private static final Color ACCENT = new Color(99, 102, 241);
+    private static final Color NAVY = new Color(30, 41, 59);
+    private static final Color SLATE = new Color(100, 116, 139);
+    private static final Color MUTED = new Color(148, 163, 184);
     private static final Color BORDER_COLOR = new Color(226, 232, 240);
-    private static final Color LIGHT_BG     = new Color(241, 245, 249);
+    private static final Color LIGHT_BG = new Color(241, 245, 249);
 
-    private static final double[] COL_WEIGHTS = { 2.5, 1.0, 1.0, 1.0, 1.0, 1.0 };
-    private static final String[] COL_HEADERS = { "DESCRIPTION", "CLASS", "COST", "OPENING UCC", "DEDUCTION", "CLOSING UCC" };
+    private static final double[] COL_WEIGHTS = {2.5, 1.0, 1.0, 1.0, 1.0, 1.0};
+    private static final String[] COL_HEADERS = {"DESCRIPTION", "CLASS", "COST", "OPENING UCC", "DEDUCTION", "CLOSING UCC"};
 
     private static final String[][] PRESET_CLASSES = {
-        { "Class 50",  "0.55", "Computers, laptops, tablets (55%)" },
-        { "Class 10",  "0.30", "Vehicles (30%)" },
-        { "Class 8",   "0.20", "Equipment, furniture, tools (20%)" },
-        { "Class 12",  "1.00", "Small tools under $500 (100%)" },
-        { "Class 10.1","0.30", "Passenger vehicles over cost limit (30%)" },
-        { "Class 14.1","0.05", "Intangibles, goodwill (5%)" },
+        {"Class 50", "0.55", "Computers, laptops, tablets (55%)"},
+        {"Class 10", "0.30", "Vehicles (30%)"},
+        {"Class 8", "0.20", "Equipment, furniture, tools (20%)"},
+        {"Class 12", "1.00", "Small tools under $500 (100%)"},
+        {"Class 10.1", "0.30", "Passenger vehicles over cost limit (30%)"},
+        {"Class 14.1", "0.05", "Intangibles, goodwill (5%)"},
     };
 
     private final DataStorage storage;
-    private List<CcaAsset> assets;
+    private final List<CcaAsset> assets;
     private JPanel tablePanel;
     private JLabel totalDeductionLabel;
     private int previewYear;
@@ -88,7 +88,10 @@ public class CcaPanel extends JPanel {
         JSpinner.NumberEditor yearEditor = new JSpinner.NumberEditor(yearSpinner, "#");
         yearEditor.getTextField().setHorizontalAlignment(JTextField.CENTER);
         yearSpinner.setEditor(yearEditor);
-        yearSpinner.addChangeListener(e -> { previewYear = (int) yearSpinner.getValue(); refreshList(); });
+        yearSpinner.addChangeListener(e -> {
+            previewYear = (int) yearSpinner.getValue();
+            refreshList();
+        });
 
         JButton btnAdd = new JButton("+ Add Asset");
         btnAdd.putClientProperty("JButton.buttonType", "roundRect");
@@ -101,7 +104,7 @@ public class CcaPanel extends JPanel {
         rightBar.add(yearSpinner);
         rightBar.add(btnAdd);
         topBar.add(summaryLeft, BorderLayout.WEST);
-        topBar.add(rightBar,    BorderLayout.EAST);
+        topBar.add(rightBar, BorderLayout.EAST);
         add(topBar, BorderLayout.NORTH);
 
         // ── Table (header + rows share one GridBagLayout) ─────────────────────
@@ -125,10 +128,12 @@ public class CcaPanel extends JPanel {
 
         // Row 0: column headers
         GridBagConstraints hc = new GridBagConstraints();
-        hc.gridy = 0; hc.fill = GridBagConstraints.HORIZONTAL;
+        hc.gridy = 0;
+        hc.fill = GridBagConstraints.HORIZONTAL;
         hc.insets = new Insets(0, 6, 8, 6);
         for (int col = 0; col < COL_HEADERS.length; col++) {
-            hc.gridx = col; hc.weightx = COL_WEIGHTS[col];
+            hc.gridx = col;
+            hc.weightx = COL_WEIGHTS[col];
             JLabel lbl = new JLabel(COL_HEADERS[col]);
             lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 9f));
             lbl.setForeground(MUTED);
@@ -138,7 +143,9 @@ public class CcaPanel extends JPanel {
 
         if (assets.isEmpty()) {
             GridBagConstraints ec = new GridBagConstraints();
-            ec.gridy = 1; ec.gridx = 0; ec.gridwidth = 6;
+            ec.gridy = 1;
+            ec.gridx = 0;
+            ec.gridwidth = 6;
             ec.fill = GridBagConstraints.HORIZONTAL;
             ec.insets = new Insets(40, 0, 0, 0);
             JLabel empty = new JLabel("No CCA assets yet. Click \"+ Add Asset\" to get started.", JLabel.CENTER);
@@ -154,9 +161,14 @@ public class CcaPanel extends JPanel {
             }
             // Filler to push rows upward
             GridBagConstraints fc = new GridBagConstraints();
-            fc.gridy = assets.size() + 1; fc.gridx = 0; fc.gridwidth = 6;
-            fc.weighty = 1.0; fc.fill = GridBagConstraints.BOTH;
-            tablePanel.add(new JPanel() {{ setOpaque(false); }}, fc);
+            fc.gridy = assets.size() + 1;
+            fc.gridx = 0;
+            fc.gridwidth = 6;
+            fc.weighty = 1.0;
+            fc.fill = GridBagConstraints.BOTH;
+            tablePanel.add(new JPanel() {{
+                setOpaque(false);
+            }}, fc);
             totalDeductionLabel.setText(String.format("Total deduction (%d): $%.2f", previewYear, totalDeduction));
         }
 
@@ -165,9 +177,9 @@ public class CcaPanel extends JPanel {
     }
 
     private void addAssetCard(CcaAsset asset, int gridy) {
-        double opening    = asset.openingUccForYear(previewYear);
-        double deduction  = asset.deductionForYear(previewYear);
-        double closing    = asset.closingUccForYear(previewYear);
+        double opening = asset.openingUccForYear(previewYear);
+        double deduction = asset.deductionForYear(previewYear);
+        double closing = asset.closingUccForYear(previewYear);
 
         final boolean[] hovered = {false};
         JPanel card = new JPanel(new GridBagLayout()) {
@@ -189,16 +201,28 @@ public class CcaPanel extends JPanel {
         card.setOpaque(false);
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         card.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-            public void mouseExited (MouseEvent e) { hovered[0] = false; card.repaint(); }
-            public void mouseClicked(MouseEvent e) { showAssetDialog(asset); }
+            public void mouseEntered(MouseEvent e) {
+                hovered[0] = true;
+                card.repaint();
+            }
+
+            public void mouseExited(MouseEvent e) {
+                hovered[0] = false;
+                card.repaint();
+            }
+
+            public void mouseClicked(MouseEvent e) {
+                showAssetDialog(asset);
+            }
         });
 
         GridBagConstraints ic = new GridBagConstraints();
-        ic.gridy = 0; ic.fill = GridBagConstraints.HORIZONTAL;
+        ic.gridy = 0;
+        ic.fill = GridBagConstraints.HORIZONTAL;
 
         // Col 0: description + date
-        ic.gridx = 0; ic.weightx = COL_WEIGHTS[0];
+        ic.gridx = 0;
+        ic.weightx = COL_WEIGHTS[0];
         ic.insets = new Insets(12, 14, 12, 6);
         JPanel descPanel = new JPanel(new BorderLayout(0, 2));
         descPanel.setOpaque(false);
@@ -215,7 +239,8 @@ public class CcaPanel extends JPanel {
         ic.insets = new Insets(12, 6, 12, 6);
 
         // Col 1: class + rate
-        ic.gridx = 1; ic.weightx = COL_WEIGHTS[1];
+        ic.gridx = 1;
+        ic.weightx = COL_WEIGHTS[1];
         JPanel classPanel = new JPanel(new BorderLayout(0, 2));
         classPanel.setOpaque(false);
         JLabel classLbl = new JLabel(asset.getAssetClass() != null ? asset.getAssetClass() : "—");
@@ -227,33 +252,40 @@ public class CcaPanel extends JPanel {
         rateLbl.setForeground(MUTED);
         rateLbl.setHorizontalAlignment(SwingConstants.RIGHT);
         classPanel.add(classLbl, BorderLayout.NORTH);
-        classPanel.add(rateLbl,  BorderLayout.SOUTH);
+        classPanel.add(rateLbl, BorderLayout.SOUTH);
         card.add(classPanel, ic);
 
         // Col 2: cost
-        ic.gridx = 2; ic.weightx = COL_WEIGHTS[2];
+        ic.gridx = 2;
+        ic.weightx = COL_WEIGHTS[2];
         card.add(amountLabel(String.format("$%.2f", asset.getCost())), ic);
 
         // Col 3: opening UCC
-        ic.gridx = 3; ic.weightx = COL_WEIGHTS[3];
+        ic.gridx = 3;
+        ic.weightx = COL_WEIGHTS[3];
         card.add(amountLabel(opening > 0 ? String.format("$%.2f", opening) : "—"), ic);
 
         // Col 4: deduction
-        ic.gridx = 4; ic.weightx = COL_WEIGHTS[4];
+        ic.gridx = 4;
+        ic.weightx = COL_WEIGHTS[4];
         JLabel deductLbl = new JLabel(deduction > 0 ? String.format("-$%.2f", deduction) : "—", SwingConstants.RIGHT);
         deductLbl.setFont(deductLbl.getFont().deriveFont(Font.BOLD, 12f));
         deductLbl.setForeground(deduction > 0 ? ACCENT : MUTED);
         card.add(deductLbl, ic);
 
         // Col 5: closing UCC
-        ic.gridx = 5; ic.weightx = COL_WEIGHTS[5];
+        ic.gridx = 5;
+        ic.weightx = COL_WEIGHTS[5];
         ic.insets = new Insets(12, 6, 12, 14);
         card.add(amountLabel(closing > 0 ? String.format("$%.2f", closing) : "—"), ic);
 
         // Place card as full-width spanning cell
         GridBagConstraints rc = new GridBagConstraints();
-        rc.gridy = gridy; rc.gridx = 0; rc.gridwidth = 6;
-        rc.weightx = 1.0; rc.fill = GridBagConstraints.HORIZONTAL;
+        rc.gridy = gridy;
+        rc.gridx = 0;
+        rc.gridwidth = 6;
+        rc.weightx = 1.0;
+        rc.fill = GridBagConstraints.HORIZONTAL;
         rc.insets = new Insets(0, 0, 6, 0);
         tablePanel.add(card, rc);
     }
@@ -296,26 +328,34 @@ public class CcaPanel extends JPanel {
         form.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0; gbc.gridx = 0; gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 4, 0);
 
         JTextField descField = new JTextField(asset.getDescription() != null ? asset.getDescription() : "");
-        form.add(formLabel("Description"), gbc); gbc.gridy++;
+        form.add(formLabel("Description"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 14, 0);
-        form.add(descField, gbc); gbc.gridy++;
+        form.add(descField, gbc);
+        gbc.gridy++;
 
         JButton dateBtn = new JButton(asset.getPurchaseDate() != null ? asset.getPurchaseDate() : LocalDate.now().toString());
         dateBtn.putClientProperty("JButton.buttonType", "roundRect");
-        dateBtn.setBackground(LIGHT_BG); dateBtn.setForeground(NAVY);
+        dateBtn.setBackground(LIGHT_BG);
+        dateBtn.setForeground(NAVY);
         dateBtn.setHorizontalAlignment(SwingConstants.LEFT);
         dateBtn.addActionListener(e -> DatePicker.showPicker(dialog, dateBtn));
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(formLabel("Purchase Date"), gbc); gbc.gridy++;
+        form.add(formLabel("Purchase Date"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 14, 0);
-        form.add(dateBtn, gbc); gbc.gridy++;
+        form.add(dateBtn, gbc);
+        gbc.gridy++;
 
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(formLabel("CCA Class"), gbc); gbc.gridy++;
+        form.add(formLabel("CCA Class"), gbc);
+        gbc.gridy++;
 
         String[] classNames = new String[PRESET_CLASSES.length + 1];
         classNames[0] = "Custom";
@@ -338,8 +378,8 @@ public class CcaPanel extends JPanel {
         });
 
         JTextField classField = new JTextField(asset.getAssetClass() != null ? asset.getAssetClass() : "");
-        JTextField rateField  = new JTextField(asset.getClassRate() > 0 ? String.format("%.2f", asset.getClassRate()) : "");
-        JTextField costField  = new JTextField(asset.getCost() > 0 ? String.format("%.2f", asset.getCost()) : "");
+        JTextField rateField = new JTextField(asset.getClassRate() > 0 ? String.format("%.2f", asset.getClassRate()) : "");
+        JTextField costField = new JTextField(asset.getCost() > 0 ? String.format("%.2f", asset.getCost()) : "");
 
         JLabel classHint = new JLabel(" ");
         classHint.setFont(classHint.getFont().deriveFont(Font.ITALIC, 11f));
@@ -349,10 +389,15 @@ public class CcaPanel extends JPanel {
         JPanel classRateRow = new JPanel(new GridBagLayout());
         classRateRow.setOpaque(false);
         GridBagConstraints cr = new GridBagConstraints();
-        cr.fill = GridBagConstraints.HORIZONTAL; cr.gridy = 0;
-        cr.weightx = 2.0; cr.gridx = 0; cr.insets = new Insets(0, 0, 0, 8);
+        cr.fill = GridBagConstraints.HORIZONTAL;
+        cr.gridy = 0;
+        cr.weightx = 2.0;
+        cr.gridx = 0;
+        cr.insets = new Insets(0, 0, 0, 8);
         classRateRow.add(classField, cr);
-        cr.weightx = 1.0; cr.gridx = 1; cr.insets = new Insets(0, 0, 0, 0);
+        cr.weightx = 1.0;
+        cr.gridx = 1;
+        cr.insets = new Insets(0, 0, 0, 0);
         JPanel rateWrap = new JPanel(new BorderLayout(4, 0));
         rateWrap.setOpaque(false);
         JLabel ratePct = new JLabel("Rate (0–1):");
@@ -380,30 +425,43 @@ public class CcaPanel extends JPanel {
             boolean custom = (sel == 0);
             if (!custom) {
                 String[] p = PRESET_CLASSES[sel - 1];
-                classField.setText(p[0]); rateField.setText(p[1]); classHint.setText(p[2]);
+                classField.setText(p[0]);
+                rateField.setText(p[1]);
+                classHint.setText(p[2]);
             } else {
-                classField.setText(""); rateField.setText(""); classHint.setText("Enter a class name and rate below");
+                classField.setText("");
+                rateField.setText("");
+                classHint.setText("Enter a class name and rate below");
             }
-            classRateLabel.setVisible(custom); classRateRow.setVisible(custom);
-            dialog.revalidate(); dialog.repaint();
+            classRateLabel.setVisible(custom);
+            classRateRow.setVisible(custom);
+            dialog.revalidate();
+            dialog.repaint();
         });
 
         gbc.insets = new Insets(0, 0, 2, 0);
-        form.add(classCombo, gbc); gbc.gridy++;
+        form.add(classCombo, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(classHint, gbc); gbc.gridy++;
-        form.add(classRateLabel, gbc); gbc.gridy++;
+        form.add(classHint, gbc);
+        gbc.gridy++;
+        form.add(classRateLabel, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 14, 0);
-        form.add(classRateRow, gbc); gbc.gridy++;
+        form.add(classRateRow, gbc);
+        gbc.gridy++;
 
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(formLabel("Capital Cost ($)"), gbc); gbc.gridy++;
-        form.add(costField, gbc); gbc.gridy++;
+        form.add(formLabel("Capital Cost ($)"), gbc);
+        gbc.gridy++;
+        form.add(costField, gbc);
+        gbc.gridy++;
         JLabel costHint = new JLabel("Enter the pre-tax cost (excluding GST — claimed separately as an ITC).");
         costHint.setFont(costHint.getFont().deriveFont(Font.ITALIC, 10f));
         costHint.setForeground(MUTED);
         gbc.insets = new Insets(0, 0, 0, 0);
-        form.add(costHint, gbc); gbc.gridy++;
+        form.add(costHint, gbc);
+        gbc.gridy++;
 
         // ── Receipts ─────────────────────────────────────────────────────────
         List<String> pendingReceipts = new ArrayList<>(asset.getReceiptFiles());
@@ -415,8 +473,8 @@ public class CcaPanel extends JPanel {
 
         java.util.function.Consumer<List<java.io.File>> addFiles = files -> {
             String dateStr = dateBtn.getText();
-            String yr  = dateStr.length() >= 4 ? dateStr.substring(0, 4) : String.valueOf(LocalDate.now().getYear());
-            String mo  = dateStr.length() >= 7 ? dateStr.substring(5, 7) : "01";
+            String yr = dateStr.length() >= 4 ? dateStr.substring(0, 4) : String.valueOf(LocalDate.now().getYear());
+            String mo = dateStr.length() >= 7 ? dateStr.substring(5, 7) : "01";
             String desc = descField.getText().trim().isEmpty() ? "cca" : descField.getText().trim();
             for (java.io.File f : files) {
                 String n = f.getName().toLowerCase();
@@ -425,12 +483,15 @@ public class CcaPanel extends JPanel {
                 String rel = storage.addReceiptFile(f, yr, mo, asset.getId(), desc, pendingReceipts.size() + 1);
                 if (rel != null) pendingReceipts.add(rel);
             }
-            SwingUtilities.invokeLater(() -> { if (refreshHolder[0] != null) refreshHolder[0].run(); });
+            SwingUtilities.invokeLater(() -> {
+                if (refreshHolder[0] != null) refreshHolder[0].run();
+            });
         };
 
         final boolean[] dropHover = {false};
         JPanel dropZone = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(dropHover[0] ? new Color(99, 102, 241, 18) : LIGHT_BG);
@@ -439,7 +500,8 @@ public class CcaPanel extends JPanel {
                 g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, dash, 0));
                 g2.setColor(dropHover[0] ? ACCENT : BORDER_COLOR);
                 g2.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 10, 10);
-                g2.dispose(); super.paintComponent(g);
+                g2.dispose();
+                super.paintComponent(g);
             }
         };
         dropZone.setOpaque(false);
@@ -451,16 +513,27 @@ public class CcaPanel extends JPanel {
         dropLabel.setForeground(MUTED);
         dropZone.add(dropLabel, BorderLayout.CENTER);
         dropZone.setDropTarget(new java.awt.dnd.DropTarget() {
-            public synchronized void dragEnter(java.awt.dnd.DropTargetDragEvent e) { dropHover[0] = true;  dropZone.repaint(); }
-            public synchronized void dragExit (java.awt.dnd.DropTargetEvent e)     { dropHover[0] = false; dropZone.repaint(); }
+            public synchronized void dragEnter(java.awt.dnd.DropTargetDragEvent e) {
+                dropHover[0] = true;
+                dropZone.repaint();
+            }
+
+            public synchronized void dragExit(java.awt.dnd.DropTargetEvent e) {
+                dropHover[0] = false;
+                dropZone.repaint();
+            }
+
             @SuppressWarnings("unchecked")
             public synchronized void drop(java.awt.dnd.DropTargetDropEvent e) {
-                dropHover[0] = false; dropZone.repaint();
+                dropHover[0] = false;
+                dropZone.repaint();
                 try {
                     e.acceptDrop(java.awt.dnd.DnDConstants.ACTION_COPY);
                     addFiles.accept((List<java.io.File>) e.getTransferable().getTransferData(java.awt.datatransfer.DataFlavor.javaFileListFlavor));
                     e.dropComplete(true);
-                } catch (Exception ex) { e.rejectDrop(); }
+                } catch (Exception ex) {
+                    e.rejectDrop();
+                }
             }
         });
 
@@ -470,7 +543,8 @@ public class CcaPanel extends JPanel {
                 final String rel = pendingReceipts.get(i);
                 final int idx = i;
                 JPanel row = new JPanel(new BorderLayout(8, 0));
-                row.setOpaque(false); row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+                row.setOpaque(false);
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
                 JButton openBtn = new JButton("📄 " + storage.getReceiptFile(rel).getName());
                 openBtn.putClientProperty("JButton.buttonType", "roundRect");
                 openBtn.setFont(openBtn.getFont().deriveFont(Font.PLAIN, 11f));
@@ -484,14 +558,17 @@ public class CcaPanel extends JPanel {
                     java.io.File f = storage.getReceiptFile(rel);
                     if (f.exists()) f.delete();
                     pendingReceipts.remove(idx);
-                    SwingUtilities.invokeLater(() -> { if (refreshHolder[0] != null) refreshHolder[0].run(); });
+                    SwingUtilities.invokeLater(() -> {
+                        if (refreshHolder[0] != null) refreshHolder[0].run();
+                    });
                 });
                 row.add(openBtn, BorderLayout.CENTER);
                 row.add(removeBtn, BorderLayout.EAST);
                 receiptsPanel.add(row);
                 receiptsPanel.add(Box.createVerticalStrut(4));
             }
-            receiptsPanel.revalidate(); receiptsPanel.repaint();
+            receiptsPanel.revalidate();
+            receiptsPanel.repaint();
         };
         refreshHolder[0] = refreshReceipts;
         refreshReceipts.run();
@@ -508,15 +585,18 @@ public class CcaPanel extends JPanel {
         btnAddReceipt.setFont(btnAddReceipt.getFont().deriveFont(Font.PLAIN, 12f));
         btnAddReceipt.addActionListener(e -> {
             java.awt.FileDialog fd = new java.awt.FileDialog((Frame) SwingUtilities.getWindowAncestor(dialog), "Select Receipt", java.awt.FileDialog.LOAD);
-            fd.setMultipleMode(true); fd.setVisible(true);
+            fd.setMultipleMode(true);
+            fd.setVisible(true);
             java.io.File[] chosen = fd.getFiles();
             if (chosen != null && chosen.length > 0) addFiles.accept(java.util.Arrays.asList(chosen));
         });
 
         gbc.insets = new Insets(14, 0, 4, 0);
-        form.add(formLabel("Invoice / Receipt"), gbc); gbc.gridy++;
+        form.add(formLabel("Invoice / Receipt"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(receiptsContainer, gbc); gbc.gridy++;
+        form.add(receiptsContainer, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 0, 0);
         form.add(btnAddReceipt, gbc);
 
@@ -529,23 +609,42 @@ public class CcaPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.WHITE);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_COLOR));
-        JPanel footerLeft  = new JPanel(new FlowLayout(FlowLayout.LEFT,  10, 12)); footerLeft.setOpaque(false);
-        JPanel footerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12)); footerRight.setOpaque(false);
+        JPanel footerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 12));
+        footerLeft.setOpaque(false);
+        JPanel footerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
+        footerRight.setOpaque(false);
 
         JButton btnSave = new JButton(isNew ? "Add Asset" : "Save Changes");
         btnSave.putClientProperty("JButton.buttonType", "roundRect");
-        btnSave.setBackground(ACCENT); btnSave.setForeground(Color.WHITE);
+        btnSave.setBackground(ACCENT);
+        btnSave.setForeground(Color.WHITE);
         btnSave.addActionListener(e -> {
             String desc = descField.getText().trim();
-            if (desc.isBlank()) { JOptionPane.showMessageDialog(dialog, "Please enter a description.", "Missing Field", JOptionPane.WARNING_MESSAGE); return; }
+            if (desc.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Please enter a description.", "Missing Field", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             String className = classField.getText().trim();
-            if (className.isBlank()) { JOptionPane.showMessageDialog(dialog, "Please select or enter a CCA class.", "Missing Field", JOptionPane.WARNING_MESSAGE); return; }
+            if (className.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Please select or enter a CCA class.", "Missing Field", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             double rate;
-            try { rate = Double.parseDouble(rateField.getText().trim()); if (rate <= 0 || rate > 1) throw new NumberFormatException(); }
-            catch (NumberFormatException ex) { JOptionPane.showMessageDialog(dialog, "Rate must be between 0 and 1 (e.g. 0.55 for 55%).", "Invalid Rate", JOptionPane.WARNING_MESSAGE); return; }
+            try {
+                rate = Double.parseDouble(rateField.getText().trim());
+                if (rate <= 0 || rate > 1) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Rate must be between 0 and 1 (e.g. 0.55 for 55%).", "Invalid Rate", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             double cost;
-            try { cost = Double.parseDouble(costField.getText().trim()); if (cost <= 0) throw new NumberFormatException(); }
-            catch (NumberFormatException ex) { JOptionPane.showMessageDialog(dialog, "Please enter a valid cost greater than 0.", "Invalid Cost", JOptionPane.WARNING_MESSAGE); return; }
+            try {
+                cost = Double.parseDouble(costField.getText().trim());
+                if (cost <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Please enter a valid cost greater than 0.", "Invalid Cost", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             asset.setDescription(desc);
             asset.setPurchaseDate(dateBtn.getText());
             asset.setAssetClass(className);
@@ -561,12 +660,18 @@ public class CcaPanel extends JPanel {
         if (!isNew) {
             JButton btnDelete = new JButton("Delete");
             btnDelete.putClientProperty("JButton.buttonType", "roundRect");
-            btnDelete.setBackground((Color) UIManager.get("App.danger")); btnDelete.setForeground(Color.WHITE);
+            btnDelete.setBackground((Color) UIManager.get("App.danger"));
+            btnDelete.setForeground(Color.WHITE);
             btnDelete.addActionListener(e -> {
                 int c = JOptionPane.showConfirmDialog(dialog,
                     "Delete \"" + asset.getDescription() + "\"?\nThis cannot be undone.",
                     "Delete Asset", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
-                if (c == JOptionPane.OK_OPTION) { assets.remove(asset); storage.saveCcaAssets(assets); dialog.dispose(); refreshList(); }
+                if (c == JOptionPane.OK_OPTION) {
+                    assets.remove(asset);
+                    storage.saveCcaAssets(assets);
+                    dialog.dispose();
+                    refreshList();
+                }
             });
             footerLeft.add(btnDelete);
         }
@@ -584,7 +689,9 @@ public class CcaPanel extends JPanel {
         dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "cancel");
         dialog.getRootPane().getActionMap().put("cancel", new AbstractAction() {
-            public void actionPerformed(java.awt.event.ActionEvent e) { dialog.dispose(); }
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                dialog.dispose();
+            }
         });
 
         dialog.setLocationRelativeTo(this);
@@ -597,4 +704,5 @@ public class CcaPanel extends JPanel {
         lbl.setForeground(new Color(71, 85, 105));
         return lbl;
     }
+
 }

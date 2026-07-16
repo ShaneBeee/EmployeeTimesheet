@@ -24,32 +24,99 @@ public class Invoice {
 
     // ── Getters ───────────────────────────────────────────────────────────────
 
-    public String getId()            { return id; }
-    public int getInvoiceNumber()    { return invoiceNumber; }
-    public String getBossId()        { return bossId; }
-    public String getBossName()      { return bossName; }
-    public String getStartDate()     { return startDate; }
-    public String getEndDate()       { return endDate; }
-    public String getGeneratedDate() { return generatedDate; }
-    public Status getStatus()        { return status; }
-    public String getSentDate()      { return sentDate; }
-    public String getPaidDate()      { return paidDate; }
-    public double getTotalAmount()   { return totalAmount; }
-    public String getPdfPath()       { return pdfPath; }
+    public String getId() {
+        return id;
+    }
+
+    public int getInvoiceNumber() {
+        return invoiceNumber;
+    }
+
+    public String getBossId() {
+        return bossId;
+    }
+
+    public String getBossName() {
+        return bossName;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public String getGeneratedDate() {
+        return generatedDate;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public String getSentDate() {
+        return sentDate;
+    }
+
+    public String getPaidDate() {
+        return paidDate;
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public String getPdfPath() {
+        return pdfPath;
+    }
 
     // ── Setters ───────────────────────────────────────────────────────────────
 
-    public void setInvoiceNumber(int invoiceNumber)    { this.invoiceNumber = invoiceNumber; }
-    public void setBossId(String bossId)               { this.bossId = bossId; }
-    public void setBossName(String bossName)           { this.bossName = bossName; }
-    public void setStartDate(String startDate)         { this.startDate = startDate; }
-    public void setEndDate(String endDate)             { this.endDate = endDate; }
-    public void setGeneratedDate(String generatedDate) { this.generatedDate = generatedDate; }
-    public void setStatus(Status status)               { this.status = status; }
-    public void setSentDate(String sentDate)           { this.sentDate = sentDate; }
-    public void setPaidDate(String paidDate)           { this.paidDate = paidDate; }
-    public void setTotalAmount(double totalAmount)     { this.totalAmount = totalAmount; }
-    public void setPdfPath(String pdfPath)             { this.pdfPath = pdfPath; }
+    public void setInvoiceNumber(int invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
+    }
+
+    public void setBossId(String bossId) {
+        this.bossId = bossId;
+    }
+
+    public void setBossName(String bossName) {
+        this.bossName = bossName;
+    }
+
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setGeneratedDate(String generatedDate) {
+        this.generatedDate = generatedDate;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public void setSentDate(String sentDate) {
+        this.sentDate = sentDate;
+    }
+
+    public void setPaidDate(String paidDate) {
+        this.paidDate = paidDate;
+    }
+
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public void setPdfPath(String pdfPath) {
+        this.pdfPath = pdfPath;
+    }
 
     // ── Status enum ───────────────────────────────────────────────────────────
 
@@ -59,7 +126,14 @@ public class Invoice {
         PAID("Paid");
 
         private final String label;
-        Status(String label) { this.label = label; }
-        public String getLabel() { return label; }
+
+        Status(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
     }
+
 }

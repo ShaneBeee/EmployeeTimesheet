@@ -1,14 +1,20 @@
 package com.github.shanebeee.reconciled.util;
 
-import com.github.shanebeee.reconciled.model.ExpenseCategory;
+import com.github.shanebeee.reconciled.model.Boss;
+import com.github.shanebeee.reconciled.model.CcaAsset;
+import com.github.shanebeee.reconciled.model.EmployeeInfo;
 import com.github.shanebeee.reconciled.model.Expenditure;
+import com.github.shanebeee.reconciled.model.ExpenseCategory;
 import com.github.shanebeee.reconciled.model.KmOdometer;
 import com.github.shanebeee.reconciled.model.KmTrip;
+import com.github.shanebeee.reconciled.model.LogEntry;
 import com.github.shanebeee.reconciled.storage.DataStorage;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,24 +30,24 @@ public class ExcelExporter {
     }
 
     public File export(int year, String outputPath) throws IOException, InterruptedException {
-        List<Expenditure>     expenses = storage.loadExpenditures(String.valueOf(year));
+        List<Expenditure> expenses = storage.loadExpenditures(String.valueOf(year));
         expenses.sort((a, b) -> a.getDate().compareTo(b.getDate()));
-        List<ExpenseCategory> cats     = storage.loadExpenseCategories(String.valueOf(year));
-        List<KmTrip>          trips    = storage.loadKmTrips(String.valueOf(year));
+        List<ExpenseCategory> cats = storage.loadExpenseCategories(String.valueOf(year));
+        List<KmTrip> trips = storage.loadKmTrips(String.valueOf(year));
         trips.sort((a, b) -> a.getDate().compareTo(b.getDate()));
         KmOdometer odometer = storage.loadKmOdometer(String.valueOf(year));
-        List<com.github.shanebeee.reconciled.model.Boss> allBosses = storage.loadBosses();
-        List<com.github.shanebeee.reconciled.model.Boss> selfEmployedBosses = allBosses.stream()
-            .filter(com.github.shanebeee.reconciled.model.Boss::isSelfEmployed).toList();
-        List<com.github.shanebeee.reconciled.model.CcaAsset> ccaAssets = storage.loadCcaAssets();
+        List<Boss> allBosses = storage.loadBosses();
+        List<Boss> selfEmployedBosses = allBosses.stream()
+            .filter(Boss::isSelfEmployed).toList();
+        List<CcaAsset> ccaAssets = storage.loadCcaAssets();
 
         double businessKm = trips.stream().mapToDouble(KmTrip::getKm).sum();
-        double totalKm    = odometer.totalKm();
-        double pct        = (totalKm > 0 && businessKm > 0)
+        double totalKm = odometer.totalKm();
+        double pct = (totalKm > 0 && businessKm > 0)
             ? Math.min(100.0, businessKm / totalKm * 100.0) : 0.0;
 
         // Ensure venv with openpyxl
-        String venvDir    = System.getProperty("user.home") + File.separator
+        String venvDir = System.getProperty("user.home") + File.separator
             + "ShaneApps" + File.separator + "Reconciled" + File.separator + "python_venv";
         String venvPython = venvDir + File.separator + "bin" + File.separator + "python3";
         if (!new File(venvPython).exists()) run(new String[]{"python3", "-m", "venv", venvDir});
@@ -70,10 +76,10 @@ public class ExcelExporter {
         py.append("data_font  = Font(name='Arial', size=10)\n\n");
 
         // ── Load employee info once (reused by all sheets) ────────────────────
-        com.github.shanebeee.reconciled.model.EmployeeInfo info = storage.loadEmployeeInfo();
+        EmployeeInfo info = storage.loadEmployeeInfo();
         String addr = info.getAddress() != null && !info.getAddress().isBlank()
             ? info.getAddress() + (info.getAddress2() != null && !info.getAddress2().isBlank()
-                ? ", " + info.getAddress2() : "")
+                                   ? ", " + info.getAddress2() : "")
             : null;
         String contactLine = "";
         if (info.getPhoneNumber() != null && !info.getPhoneNumber().isBlank()) contactLine += info.getPhoneNumber();
@@ -93,19 +99,23 @@ public class ExcelExporter {
         int infoRow = 2;
         if (info.getFullName() != null && !info.getFullName().isBlank()) {
             py.append(String.format("ws.cell(row=%d,column=1,value=%s).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", infoRow, pyStr(info.getFullName())));
-            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow)); infoRow++;
+            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow));
+            infoRow++;
         }
         if (info.getCompany() != null && !info.getCompany().isBlank()) {
             py.append(String.format("ws.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", infoRow, pyStr(info.getCompany())));
-            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow)); infoRow++;
+            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow));
+            infoRow++;
         }
         if (addr != null) {
             py.append(String.format("ws.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", infoRow, pyStr(addr)));
-            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow)); infoRow++;
+            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow));
+            infoRow++;
         }
         if (!contactLine.isEmpty()) {
             py.append(String.format("ws.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", infoRow, pyStr(contactLine)));
-            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow)); infoRow++;
+            py.append(String.format("ws.merge_cells('A%d:E%d')\n", infoRow, infoRow));
+            infoRow++;
         }
 
         int headerRow = infoRow + 1;
@@ -127,10 +137,10 @@ public class ExcelExporter {
             List<Expenditure> catExps = byCat.getOrDefault(cat.getId(), List.of());
             if (catExps.isEmpty()) continue;
             String hex = cat.getColor() != null ? cat.getColor().replace("#", "") : "94A3B8";
-            String pctStr  = new DeductionCalculator(storage).percentLabel(cat, year);
+            String pctStr = new DeductionCalculator(storage).percentLabel(cat, year);
             String catLabel = cat.getLabel().toUpperCase()
                 + (cat.getT2125Line() != null && !cat.getT2125Line().isBlank()
-                   ? " \u2014 Line " + cat.getT2125Line() : "")
+                ? " \u2014 Line " + cat.getT2125Line() : "")
                 + " (" + pctStr + " claimable)";
             py.append(String.format("cf=PatternFill('solid',start_color='%s')\n", hex));
             py.append(String.format("c=ws.cell(row=%d,column=1,value=%s)\n", row, pyStr(catLabel)));
@@ -138,20 +148,22 @@ public class ExcelExporter {
             py.append(String.format("c.font=Font(name='Arial',bold=True,size=10,color='FFFFFF');c.fill=cf;c.border=border\n"));
             py.append(String.format("for ci in range(2,8):\n  ws.cell(row=%d,column=ci).fill=cf\n  ws.cell(row=%d,column=ci).border=border\n", row, row));
             row++;
-            int dataStart = row; int ri = 0;
+            int dataStart = row;
+            int ri = 0;
             for (Expenditure e : catExps) {
                 boolean alt = (ri % 2 == 1);
                 double claimable = e.getTotal() * new DeductionCalculator(storage).percentFor(cat, year);
                 py.append(String.format("ws.cell(row=%d,column=1,value='%s')\n", row, e.getDate()));
-                py.append(String.format("ws.cell(row=%d,column=2,value=%s)\n",   row, pyStr(escape(e.getDescription()))));
-                py.append(String.format("ws.cell(row=%d,column=3,value=%s)\n",   row, pyStr(cat.getLabel())));
+                py.append(String.format("ws.cell(row=%d,column=2,value=%s)\n", row, pyStr(escape(e.getDescription()))));
+                py.append(String.format("ws.cell(row=%d,column=3,value=%s)\n", row, pyStr(cat.getLabel())));
                 py.append(String.format("ws.cell(row=%d,column=4,value=%.2f).number_format='$#,##0.00'\n", row, e.getSubtotal()));
                 py.append(String.format("ws.cell(row=%d,column=5,value=%.2f).number_format='$#,##0.00'\n", row, e.getGst()));
                 py.append(String.format("ws.cell(row=%d,column=6,value=%.2f).number_format='$#,##0.00'\n", row, e.getTotal()));
                 py.append(String.format("ws.cell(row=%d,column=7,value=%.2f).number_format='$#,##0.00'\n", row, claimable));
                 py.append(String.format("for ci in range(1,8):\n  c=ws.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
                     row, alt ? ";c.fill=alt_fill" : ""));
-                row++; ri++;
+                row++;
+                ri++;
             }
             int dataEnd = row - 1;
             py.append(String.format("ws.cell(row=%d,column=1,value='Subtotal \u2014 %s')\n", row, cat.getLabel()));
@@ -188,30 +200,34 @@ public class ExcelExporter {
         int kmInfoRow = 2;
         if (info.getFullName() != null && !info.getFullName().isBlank()) {
             py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", kmInfoRow, pyStr(info.getFullName())));
-            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow)); kmInfoRow++;
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
         }
         if (info.getCompany() != null && !info.getCompany().isBlank()) {
             py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", kmInfoRow, pyStr(info.getCompany())));
-            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow)); kmInfoRow++;
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
         }
         if (addr != null) {
             py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", kmInfoRow, pyStr(addr)));
-            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow)); kmInfoRow++;
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
         }
         if (!contactLine.isEmpty()) {
             py.append(String.format("ws2.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", kmInfoRow, pyStr(contactLine)));
-            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow)); kmInfoRow++;
+            py.append(String.format("ws2.merge_cells('A%d:D%d')\n", kmInfoRow, kmInfoRow));
+            kmInfoRow++;
         }
         int kmSummaryRow = kmInfoRow + 1;
 
         py.append(String.format("ws2.cell(row=%d,column=1,value='SUMMARY').font=Font(name='Arial',bold=True,size=10,color='64748B')\n", kmSummaryRow));
-        py.append(String.format("ws2.cell(row=%d,column=1,value='Start Odometer (km)');ws2.cell(row=%d,column=2,value=%.0f)\n", kmSummaryRow+1, kmSummaryRow+1, odometer.getStartKm()));
-        py.append(String.format("ws2.cell(row=%d,column=1,value='End Odometer (km)');  ws2.cell(row=%d,column=2,value=%.0f)\n", kmSummaryRow+2, kmSummaryRow+2, odometer.getEndKm()));
-        py.append(String.format("ws2.cell(row=%d,column=1,value='Total KM (year)');    ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow+3, kmSummaryRow+3, totalKm));
-        py.append(String.format("ws2.cell(row=%d,column=1,value='Business KM');        ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow+4, kmSummaryRow+4, businessKm));
-        py.append(String.format("ws2.cell(row=%d,column=1,value='Business Use %%%%');    ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow+5, kmSummaryRow+5, pct));
-        py.append(String.format("ws2.cell(row=%d,column=2).number_format='0.0\"%%\"'\n", kmSummaryRow+5));
-        py.append(String.format("for r in range(%d,%d):\n", kmSummaryRow+1, kmSummaryRow+6));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Start Odometer (km)');ws2.cell(row=%d,column=2,value=%.0f)\n", kmSummaryRow + 1, kmSummaryRow + 1, odometer.getStartKm()));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='End Odometer (km)');  ws2.cell(row=%d,column=2,value=%.0f)\n", kmSummaryRow + 2, kmSummaryRow + 2, odometer.getEndKm()));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Total KM (year)');    ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow + 3, kmSummaryRow + 3, totalKm));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Business KM');        ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow + 4, kmSummaryRow + 4, businessKm));
+        py.append(String.format("ws2.cell(row=%d,column=1,value='Business Use %%%%');    ws2.cell(row=%d,column=2,value=%.1f)\n", kmSummaryRow + 5, kmSummaryRow + 5, pct));
+        py.append(String.format("ws2.cell(row=%d,column=2).number_format='0.0\"%%\"'\n", kmSummaryRow + 5));
+        py.append(String.format("for r in range(%d,%d):\n", kmSummaryRow + 1, kmSummaryRow + 6));
         py.append("  ws2.cell(row=r,column=1).font=Font(name='Arial',size=10,color='64748B')\n");
         py.append("  ws2.cell(row=r,column=2).font=Font(name='Arial',bold=True,size=10)\n\n");
 
@@ -220,21 +236,23 @@ public class ExcelExporter {
         py.append(String.format("  c=ws2.cell(row=%d,column=ci,value=h)\n", kmHeaderRow));
         py.append("  c.font=hdr_font;c.fill=hdr_fill;c.alignment=hdr_align;c.border=border\n\n");
 
-        int kmRow = kmHeaderRow + 1; int ki = 0;
+        int kmRow = kmHeaderRow + 1;
+        int ki = 0;
         for (KmTrip t : trips) {
             boolean alt = (ki % 2 == 1);
             String src = t.getSourceLogId() != null ? "Auto (Work Log)" : "Manual";
-            py.append(String.format("ws2.cell(row=%d,column=1,value='%s')\n",  kmRow, t.getDate()));
+            py.append(String.format("ws2.cell(row=%d,column=1,value='%s')\n", kmRow, t.getDate()));
             py.append(String.format("ws2.cell(row=%d,column=2,value=%.1f).number_format='#,##0.0'\n", kmRow, t.getKm()));
-            py.append(String.format("ws2.cell(row=%d,column=3,value=%s)\n",   kmRow, pyStr(escape(t.getNote()))));
-            py.append(String.format("ws2.cell(row=%d,column=4,value=%s)\n",   kmRow, pyStr(src)));
+            py.append(String.format("ws2.cell(row=%d,column=3,value=%s)\n", kmRow, pyStr(escape(t.getNote()))));
+            py.append(String.format("ws2.cell(row=%d,column=4,value=%s)\n", kmRow, pyStr(src)));
             py.append(String.format("for ci in range(1,5):\n  c=ws2.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
                 kmRow, alt ? ";c.fill=alt_fill" : ""));
-            kmRow++; ki++;
+            kmRow++;
+            ki++;
         }
         if (!trips.isEmpty()) {
             py.append(String.format("ws2.cell(row=%d,column=1,value='TOTAL')\n", kmRow));
-            py.append(String.format("ws2.cell(row=%d,column=2,value='=SUM(B%d:B%d)').number_format='#,##0.0'\n", kmRow, kmHeaderRow+1, kmRow-1));
+            py.append(String.format("ws2.cell(row=%d,column=2,value='=SUM(B%d:B%d)').number_format='#,##0.0'\n", kmRow, kmHeaderRow + 1, kmRow - 1));
             py.append(String.format("for ci in range(1,5):\n  c=ws2.cell(row=%d,column=ci);c.font=tot_font;c.fill=tot_fill;c.border=border\n", kmRow));
         }
         py.append("for col,w in zip('ABCD',[14,16,44,18]):\n  ws2.column_dimensions[col].width=w\n");
@@ -251,19 +269,23 @@ public class ExcelExporter {
             int iRow = 2;
             if (info.getFullName() != null && !info.getFullName().isBlank()) {
                 py.append(String.format("ws3.cell(row=%d,column=1,value=%s).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", iRow, pyStr(info.getFullName())));
-                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow)); iRow++;
+                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow));
+                iRow++;
             }
             if (info.getCompany() != null && !info.getCompany().isBlank()) {
                 py.append(String.format("ws3.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", iRow, pyStr(info.getCompany())));
-                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow)); iRow++;
+                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow));
+                iRow++;
             }
             if (addr != null) {
                 py.append(String.format("ws3.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", iRow, pyStr(addr)));
-                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow)); iRow++;
+                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow));
+                iRow++;
             }
             if (!contactLine.isEmpty()) {
                 py.append(String.format("ws3.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", iRow, pyStr(contactLine)));
-                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow)); iRow++;
+                py.append(String.format("ws3.merge_cells('A%d:G%d')\n", iRow, iRow));
+                iRow++;
             }
             iRow++; // blank separator
 
@@ -274,23 +296,24 @@ public class ExcelExporter {
 
             int incDataStart = iRow;
             int bi = 0;
-            for (com.github.shanebeee.reconciled.model.Boss boss : selfEmployedBosses) {
+            for (Boss boss : selfEmployedBosses) {
                 double totalHours = 0, totalKmsBilled = 0, totalExtras = 0;
                 for (int m = 1; m <= 12; m++) {
                     String monthKey = String.format("%d-%02d", year, m);
-                    List<com.github.shanebeee.reconciled.model.LogEntry> logs = storage.loadLogs(monthKey);
-                    for (com.github.shanebeee.reconciled.model.LogEntry entry : logs) {
+                    List<LogEntry> logs = storage.loadLogs(monthKey);
+                    for (LogEntry entry : logs) {
                         if (!boss.getId().equals(entry.getBossUuid()) && !boss.getName().equals(entry.getBossUuid())) {
                             if (entry.getBossPercentages() != null && entry.getBossPercentages().containsKey(boss.getId())) {
                                 double pct2 = entry.getBossPercentages().get(boss.getId()) / 100.0;
-                                if (entry.getType() == com.github.shanebeee.reconciled.model.LogEntry.EntryType.TIME
+                                if (entry.getType() == LogEntry.EntryType.TIME
                                     && entry.getStartTime() != null && entry.getEndTime() != null) {
                                     try {
-                                        long mins = java.time.Duration.between(
-                                            java.time.LocalTime.parse(entry.getStartTime()),
-                                            java.time.LocalTime.parse(entry.getEndTime())).toMinutes();
+                                        long mins = Duration.between(
+                                            LocalTime.parse(entry.getStartTime()),
+                                            LocalTime.parse(entry.getEndTime())).toMinutes();
                                         totalHours += (mins / 60.0) * pct2;
-                                    } catch (Exception ignored) {}
+                                    } catch (Exception ignored) {
+                                    }
                                 }
                             }
                             continue;
@@ -299,37 +322,44 @@ public class ExcelExporter {
                             case TIME -> {
                                 if (entry.getStartTime() != null && entry.getEndTime() != null) {
                                     try {
-                                        long mins = java.time.Duration.between(
-                                            java.time.LocalTime.parse(entry.getStartTime()),
-                                            java.time.LocalTime.parse(entry.getEndTime())).toMinutes();
+                                        long mins = Duration.between(
+                                            LocalTime.parse(entry.getStartTime()),
+                                            LocalTime.parse(entry.getEndTime())).toMinutes();
                                         totalHours += mins / 60.0;
-                                    } catch (Exception ignored) {}
+                                    } catch (Exception ignored) {
+                                    }
                                 }
                             }
-                            case KILOMETER -> { if (entry.getKilometers() != null) totalKmsBilled += entry.getKilometers(); }
-                            case EXTRA -> { if (entry.getUnits() != null && entry.getCostPerUnit() != null) totalExtras += entry.getUnits() * entry.getCostPerUnit(); }
+                            case KILOMETER -> {
+                                if (entry.getKilometers() != null) totalKmsBilled += entry.getKilometers();
+                            }
+                            case EXTRA -> {
+                                if (entry.getUnits() != null && entry.getCostPerUnit() != null)
+                                    totalExtras += entry.getUnits() * entry.getCostPerUnit();
+                            }
                         }
                     }
                 }
-                double grossIncome  = (totalHours * boss.getHourlyRate())
+                double grossIncome = (totalHours * boss.getHourlyRate())
                     + (totalKmsBilled * (boss.getKmRate() != null ? boss.getKmRate() : 0)) + totalExtras;
                 double gstCollected = grossIncome * (boss.getTaxRate() / 100.0);
                 boolean alt = (bi % 2 == 1);
                 py.append(String.format("ws3.cell(row=%d,column=1,value=%s)\n", iRow, pyStr(boss.getName())));
                 py.append(String.format("ws3.cell(row=%d,column=2,value=%s)\n", iRow, pyStr(boss.getCompany())));
                 py.append(String.format("ws3.cell(row=%d,column=3,value=%.2f).number_format='#,##0.00'\n", iRow, totalHours));
-                py.append(String.format("ws3.cell(row=%d,column=4,value=%.1f).number_format='#,##0.0'\n",  iRow, totalKmsBilled));
+                py.append(String.format("ws3.cell(row=%d,column=4,value=%.1f).number_format='#,##0.0'\n", iRow, totalKmsBilled));
                 py.append(String.format("ws3.cell(row=%d,column=5,value=%.2f).number_format='$#,##0.00'\n", iRow, totalExtras));
                 py.append(String.format("ws3.cell(row=%d,column=6,value=%.2f).number_format='$#,##0.00'\n", iRow, grossIncome));
                 py.append(String.format("ws3.cell(row=%d,column=7,value=%.2f).number_format='$#,##0.00'\n", iRow, gstCollected));
                 py.append(String.format("for ci in range(1,8):\n  c=ws3.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
                     iRow, alt ? ";c.fill=alt_fill" : ""));
-                iRow++; bi++;
+                iRow++;
+                bi++;
             }
             int incDataEnd = iRow - 1;
             py.append(String.format("ws3.cell(row=%d,column=1,value='TOTAL GROSS INCOME')\n", iRow));
             py.append(String.format("ws3.cell(row=%d,column=3,value='=SUM(C%d:C%d)').number_format='#,##0.00'\n", iRow, incDataStart, incDataEnd));
-            py.append(String.format("ws3.cell(row=%d,column=4,value='=SUM(D%d:D%d)').number_format='#,##0.0'\n",  iRow, incDataStart, incDataEnd));
+            py.append(String.format("ws3.cell(row=%d,column=4,value='=SUM(D%d:D%d)').number_format='#,##0.0'\n", iRow, incDataStart, incDataEnd));
             py.append(String.format("ws3.cell(row=%d,column=5,value='=SUM(E%d:E%d)').number_format='$#,##0.00'\n", iRow, incDataStart, incDataEnd));
             py.append(String.format("ws3.cell(row=%d,column=6,value='=SUM(F%d:F%d)').number_format='$#,##0.00'\n", iRow, incDataStart, incDataEnd));
             py.append(String.format("ws3.cell(row=%d,column=7,value='=SUM(G%d:G%d)').number_format='$#,##0.00'\n", iRow, incDataStart, incDataEnd));
@@ -338,18 +368,21 @@ public class ExcelExporter {
             iRow += 3;
 
             double totalGstPaid = expenses.stream().mapToDouble(Expenditure::getGst).sum();
-            py.append(String.format("ws3.cell(row=%d,column=1,value='GST RECONCILIATION').font=Font(name='Arial',bold=True,size=10,color='64748B')\n", iRow)); iRow++;
+            py.append(String.format("ws3.cell(row=%d,column=1,value='GST RECONCILIATION').font=Font(name='Arial',bold=True,size=10,color='64748B')\n", iRow));
+            iRow++;
             py.append(String.format("ws3.cell(row=%d,column=1,value='GST Collected (from clients)')\n", iRow));
             py.append(String.format("ws3.cell(row=%d,column=2,value='=G%d').number_format='$#,##0.00'\n", iRow, totalRow));
             py.append(String.format("ws3.cell(row=%d,column=1).font=Font(name='Arial',size=10,color='64748B')\n", iRow));
-            py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=10)\n", iRow)); iRow++;
+            py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=10)\n", iRow));
+            iRow++;
             py.append(String.format("ws3.cell(row=%d,column=1,value='GST Paid on Expenses (ITCs)')\n", iRow));
             py.append(String.format("ws3.cell(row=%d,column=2,value=%.2f).number_format='$#,##0.00'\n", iRow, totalGstPaid));
             py.append(String.format("ws3.cell(row=%d,column=1).font=Font(name='Arial',size=10,color='64748B')\n", iRow));
             py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=10)\n", iRow));
-            int gstPaidRow = iRow; iRow++;
+            int gstPaidRow = iRow;
+            iRow++;
             py.append(String.format("ws3.cell(row=%d,column=1,value='Net GST Owing to CRA')\n", iRow));
-            py.append(String.format("ws3.cell(row=%d,column=2,value='=B%d-B%d').number_format='$#,##0.00'\n", iRow, iRow-2, gstPaidRow));
+            py.append(String.format("ws3.cell(row=%d,column=2,value='=B%d-B%d').number_format='$#,##0.00'\n", iRow, iRow - 2, gstPaidRow));
             py.append(String.format("ws3.cell(row=%d,column=1).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", iRow));
             py.append(String.format("ws3.cell(row=%d,column=2).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", iRow));
 
@@ -367,19 +400,23 @@ public class ExcelExporter {
         int ccaInfoRow = 2;
         if (info.getFullName() != null && !info.getFullName().isBlank()) {
             py.append(String.format("ws4.cell(row=%d,column=1,value=%s).font=Font(name='Arial',bold=True,size=11,color='1E3A5F')\n", ccaInfoRow, pyStr(info.getFullName())));
-            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow)); ccaInfoRow++;
+            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow));
+            ccaInfoRow++;
         }
         if (info.getCompany() != null && !info.getCompany().isBlank()) {
             py.append(String.format("ws4.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", ccaInfoRow, pyStr(info.getCompany())));
-            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow)); ccaInfoRow++;
+            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow));
+            ccaInfoRow++;
         }
         if (addr != null) {
             py.append(String.format("ws4.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", ccaInfoRow, pyStr(addr)));
-            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow)); ccaInfoRow++;
+            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow));
+            ccaInfoRow++;
         }
         if (!contactLine.isEmpty()) {
             py.append(String.format("ws4.cell(row=%d,column=1,value=%s).font=Font(name='Arial',size=10,color='64748B')\n", ccaInfoRow, pyStr(contactLine)));
-            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow)); ccaInfoRow++;
+            py.append(String.format("ws4.merge_cells('A%d:H%d')\n", ccaInfoRow, ccaInfoRow));
+            ccaInfoRow++;
         }
         ccaInfoRow++; // blank separator
 
@@ -395,10 +432,10 @@ public class ExcelExporter {
             py.append(String.format("ws4.cell(row=%d,column=1).font=Font(name='Arial',italic=True,size=10,color='94A3B8')\n", ccaInfoRow));
         } else {
             int ci2 = 0;
-            for (com.github.shanebeee.reconciled.model.CcaAsset a : ccaAssets) {
-                double opening   = a.openingUccForYear(year);
+            for (CcaAsset a : ccaAssets) {
+                double opening = a.openingUccForYear(year);
                 double deduction = a.deductionForYear(year);
-                double closing   = a.closingUccForYear(year);
+                double closing = a.closingUccForYear(year);
                 boolean alt = (ci2 % 2 == 1);
                 String rateStr = String.format("%.0f%%", a.getClassRate() * 100);
                 py.append(String.format("ws4.cell(row=%d,column=1,value=%s)\n", ccaInfoRow, pyStr(a.getDescription())));
@@ -411,7 +448,8 @@ public class ExcelExporter {
                 py.append(String.format("ws4.cell(row=%d,column=8,value=%.2f).number_format='$#,##0.00'\n", ccaInfoRow, closing));
                 py.append(String.format("for ci in range(1,9):\n  c=ws4.cell(row=%d,column=ci);c.font=data_font;c.border=border%s\n",
                     ccaInfoRow, alt ? ";c.fill=alt_fill" : ""));
-                ccaInfoRow++; ci2++;
+                ccaInfoRow++;
+                ci2++;
             }
             int ccaDataEnd = ccaInfoRow - 1;
             py.append(String.format("ws4.cell(row=%d,column=1,value='TOTAL CCA DEDUCTION \u2014 %d')\n", ccaInfoRow, year));
@@ -453,7 +491,9 @@ public class ExcelExporter {
         py.append("print('ok')\n");
 
         File script = File.createTempFile("reconciled_export_", ".py");
-        try (FileWriter fw = new FileWriter(script)) { fw.write(py.toString()); }
+        try (FileWriter fw = new FileWriter(script)) {
+            fw.write(py.toString());
+        }
 
         ProcessBuilder pb = new ProcessBuilder(venvPython, script.getAbsolutePath());
         pb.redirectErrorStream(true);
@@ -483,4 +523,5 @@ public class ExcelExporter {
         if (s == null) return null;
         return s.replace("\\", "\\\\").replace("'", "\\'");
     }
+
 }

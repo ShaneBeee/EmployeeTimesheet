@@ -11,9 +11,19 @@ public class Boss {
         T4_EMPLOYMENT("T4 Employment");
 
         private final String label;
-        IncomeType(String label) { this.label = label; }
-        public String getLabel() { return label; }
-        @Override public String toString() { return label; }
+
+        IncomeType(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 
     private final String id;
@@ -103,12 +113,25 @@ public class Boss {
         this.taxRate = taxRate;
     }
 
-    public Double getKmRate() { return kmRate; }
-    public void setKmRate(Double kmRate) { this.kmRate = kmRate; }
+    public Double getKmRate() {
+        return kmRate;
+    }
 
-    public IncomeType getIncomeType() { return incomeType != null ? incomeType : IncomeType.SELF_EMPLOYED; }
-    public void setIncomeType(IncomeType incomeType) { this.incomeType = incomeType; }
-    public boolean isSelfEmployed() { return getIncomeType() == IncomeType.SELF_EMPLOYED; }
+    public void setKmRate(Double kmRate) {
+        this.kmRate = kmRate;
+    }
+
+    public IncomeType getIncomeType() {
+        return incomeType != null ? incomeType : IncomeType.SELF_EMPLOYED;
+    }
+
+    public void setIncomeType(IncomeType incomeType) {
+        this.incomeType = incomeType;
+    }
+
+    public boolean isSelfEmployed() {
+        return getIncomeType() == IncomeType.SELF_EMPLOYED;
+    }
 
     public List<RateChange> getRateHistory() {
         return rateHistory;

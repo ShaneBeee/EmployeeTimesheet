@@ -36,14 +36,14 @@ public class MainFrame extends JFrame {
     private InvoicePanel invoicePanel;
     private final Map<String, JButton> navButtons = new HashMap<>();
     private static final Map<String, Color> NAV_COLORS = Map.of(
-        "DASHBOARD",  new Color(30,  41,  59),
-        "LOGS",       new Color(59,  130, 246),
-        "INVOICES",   new Color(139, 92,  246),
-        "EXPENSES",   new Color(245, 158, 11),
-        "KM",         new Color(16,  185, 129),
-        "ACCOUNTING", new Color(99,  102, 241),
-        "BOSSES",     new Color(20,  184, 166),
-        "SETTINGS",   new Color(100, 116, 139)
+        "DASHBOARD", new Color(30, 41, 59),
+        "LOGS", new Color(59, 130, 246),
+        "INVOICES", new Color(139, 92, 246),
+        "EXPENSES", new Color(245, 158, 11),
+        "KM", new Color(16, 185, 129),
+        "ACCOUNTING", new Color(99, 102, 241),
+        "BOSSES", new Color(20, 184, 166),
+        "SETTINGS", new Color(100, 116, 139)
     );
 
     public MainFrame(UserProfile activeProfile, ProfileManager profileManager) {
@@ -115,9 +115,18 @@ public class MainFrame extends JFrame {
         searchPopup.setBorder(BorderFactory.createLineBorder(new Color(226, 232, 240), 1));
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e)  { runSearch(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e)  { runSearch(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { runSearch(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                runSearch();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                runSearch();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                runSearch();
+            }
+
             void runSearch() {
                 SwingUtilities.invokeLater(() -> {
                     String q = searchField.getText().trim();
@@ -160,7 +169,7 @@ public class MainFrame extends JFrame {
                             text.add(title);
                             text.add(sub);
                             item.add(emoji, BorderLayout.WEST);
-                            item.add(text,  BorderLayout.CENTER);
+                            item.add(text, BorderLayout.CENTER);
                             item.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
                             item.addActionListener(ae -> {
                                 showPanel(r.panel());
@@ -241,13 +250,13 @@ public class MainFrame extends JFrame {
         dashboardPanel.setMainFrame(this);
         invoicePanel = new InvoicePanel(storage);
         contentPanel.add(wrapInCard(dashboardPanel), "DASHBOARD");
-        contentPanel.add(wrapInCard(new LogPanel(storage)),      "LOGS");
-        contentPanel.add(wrapInCard(invoicePanel),               "INVOICES");
-        contentPanel.add(wrapInCard(new ExpensesPanel(storage)),  "EXPENSES");
-        contentPanel.add(wrapInCard(new KmLogPanel(storage)),      "KM");
-        contentPanel.add(wrapInCard(new AccountingPanel(storage)),  "ACCOUNTING");
-        contentPanel.add(wrapInCard(new BossPanel(storage)),        "BOSSES");
-        contentPanel.add(wrapInCard(new SettingsPanel(storage, profileManager)),  "SETTINGS");
+        contentPanel.add(wrapInCard(new LogPanel(storage)), "LOGS");
+        contentPanel.add(wrapInCard(invoicePanel), "INVOICES");
+        contentPanel.add(wrapInCard(new ExpensesPanel(storage)), "EXPENSES");
+        contentPanel.add(wrapInCard(new KmLogPanel(storage)), "KM");
+        contentPanel.add(wrapInCard(new AccountingPanel(storage)), "ACCOUNTING");
+        contentPanel.add(wrapInCard(new BossPanel(storage)), "BOSSES");
+        contentPanel.add(wrapInCard(new SettingsPanel(storage, profileManager)), "SETTINGS");
 
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
@@ -312,13 +321,17 @@ public class MainFrame extends JFrame {
 
         // Avatar circle
         Color avatarColor;
-        try { avatarColor = Color.decode(activeProfile.getAvatarColor()); }
-        catch (Exception e) { avatarColor = new Color(59, 130, 246); }
+        try {
+            avatarColor = Color.decode(activeProfile.getAvatarColor());
+        } catch (Exception e) {
+            avatarColor = new Color(59, 130, 246);
+        }
         final Color ac = avatarColor;
         String initials = activeProfile.initials();
 
         JPanel avatar = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(ac);
@@ -356,7 +369,7 @@ public class MainFrame extends JFrame {
         }
 
         strip.add(avatar, BorderLayout.WEST);
-        strip.add(right,  BorderLayout.CENTER);
+        strip.add(right, BorderLayout.CENTER);
         return strip;
     }
 
@@ -410,7 +423,9 @@ public class MainFrame extends JFrame {
         invoicePanel.showTaxSetAsideDialog(inv);
     }
 
-    public ProfileManager getProfileManager() { return profileManager; }
+    public ProfileManager getProfileManager() {
+        return profileManager;
+    }
 
     private JButton createNavButton(String text, String cardName, String iconName) {
         Color navColor = NAV_COLORS.getOrDefault(cardName, new Color(100, 116, 139));
@@ -476,12 +491,12 @@ public class MainFrame extends JFrame {
 
     private String panelLabel(String panel) {
         return switch (panel) {
-            case "LOGS"       -> "WORK LOGS";
-            case "EXPENSES"   -> "EXPENSES";
-            case "KM"         -> "KILOMETRE LOG";
-            case "INVOICES"   -> "INVOICES";
+            case "LOGS" -> "WORK LOGS";
+            case "EXPENSES" -> "EXPENSES";
+            case "KM" -> "KILOMETRE LOG";
+            case "INVOICES" -> "INVOICES";
             case "ACCOUNTING" -> "ACCOUNTING";
-            default           -> panel;
+            default -> panel;
         };
     }
 

@@ -4,35 +4,35 @@ import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.FlowLayout;
+import java.awt.Font;
 
 /**
  * A transient snackbar-style undo bar.
- *
+ * <p>
  * Usage:
- *   UndoBar bar = new UndoBar(parentPanel, "Entry deleted.", onCommit);
- *   bar.show(() -> { /* restore logic *\/ });
- *
+ * UndoBar bar = new UndoBar(parentPanel, "Entry deleted.", onCommit);
+ * bar.show(() -> { /* restore logic *\/ });
+ * <p>
  * When shown, the bar appears at the bottom of the parent panel.
  * If the user clicks Undo within 8 seconds, the restore runnable is called.
  * If they don't, the commit runnable is called and the bar disappears.
  */
 public class UndoBar {
 
-    private static final int TIMEOUT_MS   = 8_000;
-    private static final Color BG         = new Color(30,  41,  59);
-    private static final Color TEXT_COLOR  = new Color(226, 232, 240);
-    private static final Color UNDO_COLOR  = new Color(99,  179, 237);
+    private static final int TIMEOUT_MS = 8_000;
+    private static final Color BG = new Color(30, 41, 59);
+    private static final Color TEXT_COLOR = new Color(226, 232, 240);
+    private static final Color UNDO_COLOR = new Color(99, 179, 237);
 
-    private final JPanel  parent;
-    private final String  message;
+    private final JPanel parent;
+    private final String message;
     private final Runnable onCommit;
 
-    private JPanel  barPanel;
-    private Timer   timer;
+    private JPanel barPanel;
+    private Timer timer;
     private boolean committed = false;
-    private boolean restored  = false;
+    private boolean restored = false;
 
     /**
      * @param parent   The panel to attach the bar to (must use BorderLayout).
@@ -41,8 +41,8 @@ public class UndoBar {
      *                 This is where you actually write the delete to disk.
      */
     public UndoBar(JPanel parent, String message, Runnable onCommit) {
-        this.parent   = parent;
-        this.message  = message;
+        this.parent = parent;
+        this.message = message;
         this.onCommit = onCommit;
     }
 
@@ -103,7 +103,7 @@ public class UndoBar {
         right.add(undoBtn);
         right.add(dismissBtn);
 
-        bar.add(left,  BorderLayout.CENTER);
+        bar.add(left, BorderLayout.CENTER);
         bar.add(right, BorderLayout.EAST);
         return bar;
     }
@@ -117,7 +117,10 @@ public class UndoBar {
     }
 
     private void dismiss(boolean runCommit) {
-        if (timer != null) { timer.stop(); timer = null; }
+        if (timer != null) {
+            timer.stop();
+            timer = null;
+        }
         if (barPanel != null) {
             parent.remove(barPanel);
             parent.revalidate();
@@ -126,4 +129,5 @@ public class UndoBar {
         }
         if (runCommit) commit();
     }
+
 }

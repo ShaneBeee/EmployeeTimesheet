@@ -614,13 +614,17 @@ public class LogPanel extends JPanel {
 
         // TIME RANGE section
         timeCard.add(makeFormSection("Time Range"), gbc);
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 4, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 4, 0);
         timeCard.add(makeFieldLabel("Start Time"), gbc);
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 10, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 10, 0);
         timeCard.add(startField, gbc);
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 4, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 4, 0);
         timeCard.add(makeFieldLabel("End Time"), gbc);
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 16, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 16, 0);
         timeCard.add(endField, gbc);
 
         // BOSS ALLOCATION section — sliders instead of text fields
@@ -679,26 +683,35 @@ public class LogPanel extends JPanel {
 
         allocHeader.add(allocTitle, BorderLayout.WEST);
         allocHeader.add(allocRight, BorderLayout.EAST);
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 4, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 4, 0);
         timeCard.add(allocHeader, gbc);
 
         // Progress bar — fixed 6px height via GridBagConstraints ipady
         JComponent allocBar = new JComponent() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(226, 232, 240));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
                 double total = 0;
                 for (JTextField f : percFields.values())
-                    try { total += Double.parseDouble(f.getText()); } catch (NumberFormatException ignored) {}
+                    try {
+                        total += Double.parseDouble(f.getText());
+                    } catch (NumberFormatException ignored) {
+                    }
                 int fillW = (int) (getWidth() * Math.min(total, 100) / 100.0);
                 Color fc = total > 100 ? new Color(239, 68, 68) : total == 100 ? new Color(34, 197, 94) : new Color(59, 130, 246);
-                if (fillW > 0) { g2.setColor(fc); g2.fillRoundRect(0, 0, fillW, getHeight(), getHeight(), getHeight()); }
+                if (fillW > 0) {
+                    g2.setColor(fc);
+                    g2.fillRoundRect(0, 0, fillW, getHeight(), getHeight(), getHeight());
+                }
                 g2.dispose();
             }
         };
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 8, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 8, 0);
         gbc.ipady = 6; // forces row height to exactly 6px
         timeCard.add(allocBar, gbc);
         gbc.ipady = 0;
@@ -707,7 +720,10 @@ public class LogPanel extends JPanel {
         Runnable updateAlloc = () -> {
             double total = 0;
             for (JTextField f : percFields.values())
-                try { total += Double.parseDouble(f.getText()); } catch (NumberFormatException ignored) {}
+                try {
+                    total += Double.parseDouble(f.getText());
+                } catch (NumberFormatException ignored) {
+                }
             allocStatus.setText((int) total + "%");
             allocStatus.setForeground(total > 100 ? new Color(239, 68, 68) : total == 100 ? new Color(34, 197, 94) : new Color(245, 158, 11));
             allocBar.repaint();
@@ -756,18 +772,23 @@ public class LogPanel extends JPanel {
                 updateAlloc.run();
             });
 
-            gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 2, 0);
+            gbc.gridy++;
+            gbc.insets = new java.awt.Insets(0, 0, 2, 0);
             timeCard.add(sliderHeader, gbc);
-            gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 10, 0);
+            gbc.gridy++;
+            gbc.insets = new java.awt.Insets(0, 0, 10, 0);
             timeCard.add(slider, gbc);
         }
         updateAlloc.run();
 
         // Notes field
-        gbc.gridy++; gbc.insets = new java.awt.Insets(8, 0, 4, 0);
-        gbc.weighty = 0; gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(8, 0, 4, 0);
+        gbc.weighty = 0;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
         timeCard.add(makeFormSection("Notes"), gbc);
-        gbc.gridy++; gbc.insets = new java.awt.Insets(0, 0, 10, 0);
+        gbc.gridy++;
+        gbc.insets = new java.awt.Insets(0, 0, 10, 0);
         JTextField timeNotesField = new JTextField(entry.getDescription() != null ? entry.getDescription() : "");
         timeNotesField.putClientProperty("JTextField.placeholderText", "e.g. Showed 3 properties on Pine St");
         timeCard.add(timeNotesField, gbc);
@@ -776,7 +797,9 @@ public class LogPanel extends JPanel {
         gbc.gridy++;
         gbc.weighty = 1.0;
         gbc.fill = java.awt.GridBagConstraints.BOTH;
-        timeCard.add(new JPanel() {{ setOpaque(false); }}, gbc);
+        timeCard.add(new JPanel() {{
+            setOpaque(false);
+        }}, gbc);
 
         cards.add(new JScrollPane(timeCard) {{
             setBorder(BorderFactory.createEmptyBorder());

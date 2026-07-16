@@ -38,26 +38,26 @@ import java.util.Map;
 public class AnnualTaxReportGenerator {
 
     // ── Colours ───────────────────────────────────────────────────────────────
-    private static final DeviceRgb NAVY       = new DeviceRgb(30,  41,  59);
-    private static final DeviceRgb BLUE       = new DeviceRgb(59,  130, 246);
+    private static final DeviceRgb NAVY = new DeviceRgb(30, 41, 59);
+    private static final DeviceRgb BLUE = new DeviceRgb(59, 130, 246);
     private static final DeviceRgb BLUE_LIGHT = new DeviceRgb(219, 234, 254);
-    private static final DeviceRgb GREEN      = new DeviceRgb(16,  185, 129);
-    private static final DeviceRgb GREEN_LIGHT= new DeviceRgb(209, 250, 229);
-    private static final DeviceRgb AMBER      = new DeviceRgb(245, 158, 11);
-    private static final DeviceRgb AMBER_LIGHT= new DeviceRgb(254, 243, 199);
-    private static final DeviceRgb SLATE      = new DeviceRgb(100, 116, 139);
-    private static final DeviceRgb LIGHT      = new DeviceRgb(241, 245, 249);
-    private static final DeviceRgb WHITE      = new DeviceRgb(255, 255, 255);
-    private static final DeviceRgb RED        = new DeviceRgb(239, 68,  68);
+    private static final DeviceRgb GREEN = new DeviceRgb(16, 185, 129);
+    private static final DeviceRgb GREEN_LIGHT = new DeviceRgb(209, 250, 229);
+    private static final DeviceRgb AMBER = new DeviceRgb(245, 158, 11);
+    private static final DeviceRgb AMBER_LIGHT = new DeviceRgb(254, 243, 199);
+    private static final DeviceRgb SLATE = new DeviceRgb(100, 116, 139);
+    private static final DeviceRgb LIGHT = new DeviceRgb(241, 245, 249);
+    private static final DeviceRgb WHITE = new DeviceRgb(255, 255, 255);
+    private static final DeviceRgb RED = new DeviceRgb(239, 68, 68);
 
     public static void generate(int year, DataStorage storage, String outputPath) throws Exception {
-        EmployeeInfo employee   = storage.loadEmployeeInfo();
-        List<Boss>   allBosses  = storage.loadBosses();
-        List<Boss>   selfBosses = allBosses.stream().filter(Boss::isSelfEmployed).toList();
-        List<Expenditure>     expenses = storage.loadExpenditures(String.valueOf(year));
-        List<ExpenseCategory> cats     = storage.loadExpenseCategories(String.valueOf(year));
-        List<KmTrip>          kmTrips  = storage.loadKmTrips(String.valueOf(year));
-        List<CcaAsset>        ccaAssets = storage.loadCcaAssets();
+        EmployeeInfo employee = storage.loadEmployeeInfo();
+        List<Boss> allBosses = storage.loadBosses();
+        List<Boss> selfBosses = allBosses.stream().filter(Boss::isSelfEmployed).toList();
+        List<Expenditure> expenses = storage.loadExpenditures(String.valueOf(year));
+        List<ExpenseCategory> cats = storage.loadExpenseCategories(String.valueOf(year));
+        List<KmTrip> kmTrips = storage.loadKmTrips(String.valueOf(year));
+        List<CcaAsset> ccaAssets = storage.loadCcaAssets();
 
         // Load all logs for the year
         List<LogEntry> allLogs = new ArrayList<>();
@@ -68,7 +68,8 @@ public class AnnualTaxReportGenerator {
 
         // ── Pre-compute income data ───────────────────────────────────────────
         // Per boss per month: [hours, hoursIncome, km, kmIncome, extras]
-        record BossMonthData(double hours, double hoursIncome, double km, double kmIncome, double extras) {}
+        record BossMonthData(double hours, double hoursIncome, double km, double kmIncome, double extras) {
+        }
         Map<String, BossMonthData[]> bossMonthly = new LinkedHashMap<>();
         for (Boss boss : selfBosses) {
             BossMonthData[] months = new BossMonthData[12];
@@ -126,15 +127,15 @@ public class AnnualTaxReportGenerator {
         }
 
         // ── Pre-compute expense data ──────────────────────────────────────────
-        double totalExpenses   = 0;
-        double totalGstITC     = 0;
+        double totalExpenses = 0;
+        double totalGstITC = 0;
         Map<String, Double> catTotals = new LinkedHashMap<>();
         for (ExpenseCategory cat : cats) catTotals.put(cat.getId(), 0.0);
         catTotals.put("__uncategorized__", 0.0);
 
         for (Expenditure exp : expenses) {
             totalExpenses += exp.getTotal();
-            totalGstITC   += exp.getGst();
+            totalGstITC += exp.getGst();
             String catId = exp.getCategoryId() != null ? exp.getCategoryId() : "__uncategorized__";
             catTotals.merge(catId, exp.getTotal(), Double::sum);
         }
@@ -173,12 +174,12 @@ public class AnnualTaxReportGenerator {
             .filter(a -> a.getPurchaseYear() == year)
             .mapToDouble(a -> a.getCost() * 0.05)
             .sum();
-        double netGstOwing   = totalGstCollected - totalGstITC - totalCcaGstITC;
+        double netGstOwing = totalGstCollected - totalGstITC - totalCcaGstITC;
 
         // ── Build PDF ─────────────────────────────────────────────────────────
-        PdfWriter   writer = new PdfWriter(outputPath);
-        PdfDocument pdf    = new PdfDocument(writer);
-        Document    doc    = new Document(pdf, PageSize.LETTER);
+        PdfWriter writer = new PdfWriter(outputPath);
+        PdfDocument pdf = new PdfDocument(writer);
+        Document doc = new Document(pdf, PageSize.LETTER);
         doc.setMargins(50, 50, 50, 50);
 
         // ═════════════════════════════════════════════════════════════════════
@@ -212,24 +213,27 @@ public class AnnualTaxReportGenerator {
                 if (rowTotal == 0 && m.hours() == 0 && m.km() == 0) continue;
                 String month = Month.of(mi + 1).getDisplayName(TextStyle.FULL, Locale.CANADA);
                 boolean alt = (mi % 2 == 0);
-                addDataRow(t, alt, TextAlignment.LEFT,   month);
-                addDataRow(t, alt, TextAlignment.RIGHT,  fmt2(m.hours()) + " hrs");
-                addDataRow(t, alt, TextAlignment.RIGHT,  fmtDollar(m.hoursIncome()));
-                addDataRow(t, alt, TextAlignment.RIGHT,  fmt2(m.km()) + " km");
-                addDataRow(t, alt, TextAlignment.RIGHT,  fmtDollar(m.kmIncome()));
-                addDataRow(t, alt, TextAlignment.RIGHT,  fmtDollar(m.extras()));
+                addDataRow(t, alt, TextAlignment.LEFT, month);
+                addDataRow(t, alt, TextAlignment.RIGHT, fmt2(m.hours()) + " hrs");
+                addDataRow(t, alt, TextAlignment.RIGHT, fmtDollar(m.hoursIncome()));
+                addDataRow(t, alt, TextAlignment.RIGHT, fmt2(m.km()) + " km");
+                addDataRow(t, alt, TextAlignment.RIGHT, fmtDollar(m.kmIncome()));
+                addDataRow(t, alt, TextAlignment.RIGHT, fmtDollar(m.extras()));
             }
 
             // Boss total row
             double bossHours = 0, bossHoursInc = 0, bossKm = 0, bossKmInc = 0, bossExt = 0;
             for (BossMonthData m : months) {
-                bossHours += m.hours(); bossHoursInc += m.hoursIncome();
-                bossKm += m.km(); bossKmInc += m.kmIncome(); bossExt += m.extras();
+                bossHours += m.hours();
+                bossHoursInc += m.hoursIncome();
+                bossKm += m.km();
+                bossKmInc += m.kmIncome();
+                bossExt += m.extras();
             }
             addTotalRow(t, new String[]{
                 "Total — " + boss.getName(),
                 fmt2(bossHours) + " hrs", fmtDollar(bossHoursInc),
-                fmt2(bossKm) + " km",     fmtDollar(bossKmInc),
+                fmt2(bossKm) + " km", fmtDollar(bossKmInc),
                 fmtDollar(bossExt)
             });
             doc.add(t);
@@ -265,14 +269,14 @@ public class AnnualTaxReportGenerator {
             String claimLabel = calc.isPartial(cat, year)
                 ? fmtDollar(catClaimable) + " (" + calc.percentLabel(cat, year) + ")"
                 : fmtDollar(catClaimable);
-            addDataRow(expTable, alt, TextAlignment.LEFT,  safe(cat.getT2125Line()));
-            addDataRow(expTable, alt, TextAlignment.LEFT,  cat.getLabel());
+            addDataRow(expTable, alt, TextAlignment.LEFT, safe(cat.getT2125Line()));
+            addDataRow(expTable, alt, TextAlignment.LEFT, cat.getLabel());
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(catTotal));
             addDataRow(expTable, alt, TextAlignment.RIGHT, claimLabel);
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(catITC));
-            runningExpTotal  += catTotal;
+            runningExpTotal += catTotal;
             runningClaimable += catClaimable;
-            runningITC       += catITC;
+            runningITC += catITC;
         }
 
         // Uncategorized
@@ -282,14 +286,14 @@ public class AnnualTaxReportGenerator {
                 .filter(e -> e.getCategoryId() == null)
                 .mapToDouble(Expenditure::getGst).sum();
             boolean alt = (rowIdx % 2 == 0);
-            addDataRow(expTable, alt, TextAlignment.LEFT,  "—");
-            addDataRow(expTable, alt, TextAlignment.LEFT,  "Uncategorized");
+            addDataRow(expTable, alt, TextAlignment.LEFT, "—");
+            addDataRow(expTable, alt, TextAlignment.LEFT, "Uncategorized");
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(uncatTotal));
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(uncatTotal));
             addDataRow(expTable, alt, TextAlignment.RIGHT, fmtDollar(uncatITC));
-            runningExpTotal  += uncatTotal;
+            runningExpTotal += uncatTotal;
             runningClaimable += uncatTotal;
-            runningITC       += uncatITC;
+            runningITC += uncatITC;
         }
 
         addTotalRow(expTable, new String[]{"Total Expenses", "", fmtDollar(runningExpTotal), fmtDollar(runningClaimable), fmtDollar(runningITC)});
@@ -299,13 +303,13 @@ public class AnnualTaxReportGenerator {
         doc.add(new Paragraph("\nGST / HST Reconciliation")
             .setFontSize(12).setBold().setFontColor(NAVY).setMarginTop(16));
         Table gstRecon = makeTable(new float[]{4, 1});
-        addSubtotalRow(gstRecon, "GST Collected (from clients)",      fmtDollar(totalGstCollected), BLUE,  BLUE_LIGHT);
-        addSubtotalRow(gstRecon, "GST Paid on Expenses (ITCs)",       fmtDollar(totalGstITC),       AMBER, AMBER_LIGHT);
+        addSubtotalRow(gstRecon, "GST Collected (from clients)", fmtDollar(totalGstCollected), BLUE, BLUE_LIGHT);
+        addSubtotalRow(gstRecon, "GST Paid on Expenses (ITCs)", fmtDollar(totalGstITC), AMBER, AMBER_LIGHT);
         if (totalCcaGstITC > 0) {
             addSubtotalRow(gstRecon, "GST Paid on Capital Assets (ITCs)", fmtDollar(totalCcaGstITC), AMBER, AMBER_LIGHT);
         }
         DeviceRgb netGstColor = netGstOwing >= 0 ? RED : GREEN;
-        DeviceRgb netGstBg    = netGstOwing >= 0 ? new DeviceRgb(254,226,226) : GREEN_LIGHT;
+        DeviceRgb netGstBg = netGstOwing >= 0 ? new DeviceRgb(254, 226, 226) : GREEN_LIGHT;
         addSubtotalRow(gstRecon,
             netGstOwing >= 0 ? "Net GST Owing to CRA" : "Net GST Refund from CRA",
             fmtDollar(Math.abs(netGstOwing)), netGstColor, netGstBg);
@@ -328,12 +332,12 @@ public class AnnualTaxReportGenerator {
                 byClass.computeIfAbsent(cls, k -> new java.util.ArrayList<>()).add(a);
             }
 
-            DeviceRgb PURPLE       = new DeviceRgb(139, 92,  246);
+            DeviceRgb PURPLE = new DeviceRgb(139, 92, 246);
             DeviceRgb PURPLE_LIGHT = new DeviceRgb(237, 233, 254);
 
-            double totalOpeningUcc  = 0;
-            double totalDeduction   = 0;
-            double totalClosingUcc  = 0;
+            double totalOpeningUcc = 0;
+            double totalDeduction = 0;
+            double totalClosingUcc = 0;
 
             Table ccaTable = makeTable(new float[]{3, 1, 1, 1, 1, 1});
             addHeaderRow(ccaTable, new String[]{"Asset (Purchase Date)", "Class / Rate", "Cost", "Opening UCC", "Deduction", "Closing UCC"});
@@ -347,23 +351,23 @@ public class AnnualTaxReportGenerator {
 
                 double classOpenUcc = 0, classDeduct = 0, classCloseUcc = 0;
                 for (CcaAsset a : entry.getValue()) {
-                    double deduction   = a.deductionForYear(year);
-                    double openingUcc  = a.openingUccForYear(year);
-                    double closingUcc  = a.closingUccForYear(year);
+                    double deduction = a.deductionForYear(year);
+                    double openingUcc = a.openingUccForYear(year);
+                    double closingUcc = a.closingUccForYear(year);
                     boolean alt = (ccaRow++ % 2 == 0);
 
                     String assetLabel = (a.getDescription() != null ? a.getDescription() : "—")
                         + (a.getPurchaseDate() != null ? "\n" + a.getPurchaseDate() : "");
-                    addDataRow(ccaTable, alt, TextAlignment.LEFT,  assetLabel);
+                    addDataRow(ccaTable, alt, TextAlignment.LEFT, assetLabel);
                     addDataRow(ccaTable, alt, TextAlignment.RIGHT,
                         a.getAssetClass() + " / " + String.format("%.0f%%", a.getClassRate() * 100));
-                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(a.getCost()));
-                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(openingUcc));
-                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(deduction));
-                    addDataRow(ccaTable, alt, TextAlignment.RIGHT,  fmtDollar(closingUcc));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT, fmtDollar(a.getCost()));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT, fmtDollar(openingUcc));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT, fmtDollar(deduction));
+                    addDataRow(ccaTable, alt, TextAlignment.RIGHT, fmtDollar(closingUcc));
 
-                    classOpenUcc  += openingUcc;
-                    classDeduct   += deduction;
+                    classOpenUcc += openingUcc;
+                    classDeduct += deduction;
                     classCloseUcc += closingUcc;
                 }
 
@@ -373,18 +377,18 @@ public class AnnualTaxReportGenerator {
                     "", fmtDollar(classOpenUcc), fmtDollar(classDeduct), fmtDollar(classCloseUcc)
                 });
 
-                totalOpeningUcc  += classOpenUcc;
-                totalDeduction   += classDeduct;
-                totalClosingUcc  += classCloseUcc;
+                totalOpeningUcc += classOpenUcc;
+                totalDeduction += classDeduct;
+                totalClosingUcc += classCloseUcc;
             }
             doc.add(ccaTable);
 
             // Grand total block
             doc.add(new Paragraph("\n"));
             Table ccaSummary = makeTable(new float[]{4, 1});
-            addSubtotalRow(ccaSummary, "Total Opening UCC",               fmtDollar(totalOpeningUcc),  PURPLE, PURPLE_LIGHT);
-            addSubtotalRow(ccaSummary, "Total CCA Deduction for " + year,  fmtDollar(totalDeduction),   PURPLE, PURPLE_LIGHT);
-            addSubtotalRow(ccaSummary, "Total Closing UCC",                fmtDollar(totalClosingUcc),  PURPLE, PURPLE_LIGHT);
+            addSubtotalRow(ccaSummary, "Total Opening UCC", fmtDollar(totalOpeningUcc), PURPLE, PURPLE_LIGHT);
+            addSubtotalRow(ccaSummary, "Total CCA Deduction for " + year, fmtDollar(totalDeduction), PURPLE, PURPLE_LIGHT);
+            addSubtotalRow(ccaSummary, "Total Closing UCC", fmtDollar(totalClosingUcc), PURPLE, PURPLE_LIGHT);
             doc.add(ccaSummary);
 
             // GST / ITC block — assets purchased in this tax year only
@@ -402,7 +406,7 @@ public class AnnualTaxReportGenerator {
                 doc.add(gstItcTable);
                 doc.add(new Paragraph(
                     "* Claim the above GST amount as an Input Tax Credit (ITC) on your "
-                    + year + " GST/HST return. Do not include in T2125 business expenses.")
+                        + year + " GST/HST return. Do not include in T2125 business expenses.")
                     .setFontSize(9).setFontColor(SLATE).setItalic().setMarginTop(6));
             }
 
@@ -423,8 +427,8 @@ public class AnnualTaxReportGenerator {
         int kmRow = 0;
         for (KmTrip trip : kmTrips.stream().sorted(Comparator.comparing(KmTrip::getDate)).toList()) {
             boolean alt = (kmRow++ % 2 == 0);
-            addDataRow(kmTable, alt, TextAlignment.LEFT,  trip.getDate());
-            addDataRow(kmTable, alt, TextAlignment.LEFT,  safe(trip.getNote()));
+            addDataRow(kmTable, alt, TextAlignment.LEFT, trip.getDate());
+            addDataRow(kmTable, alt, TextAlignment.LEFT, safe(trip.getNote()));
             addDataRow(kmTable, alt, TextAlignment.RIGHT, fmt2(trip.getKm()) + " km");
         }
         if (kmRow == 0) {
@@ -444,10 +448,13 @@ public class AnnualTaxReportGenerator {
         for (Boss boss : selfBosses) {
             BossMonthData[] months = bossMonthly.get(boss.getId());
             double bossKm = 0, bossKmInc = 0;
-            for (BossMonthData m : months) { bossKm += m.km(); bossKmInc += m.kmIncome(); }
+            for (BossMonthData m : months) {
+                bossKm += m.km();
+                bossKmInc += m.kmIncome();
+            }
             if (bossKm == 0) continue;
             boolean alt = (kbRow++ % 2 == 0);
-            addDataRow(kmBilledTable, alt, TextAlignment.LEFT,  boss.getName());
+            addDataRow(kmBilledTable, alt, TextAlignment.LEFT, boss.getName());
             addDataRow(kmBilledTable, alt, TextAlignment.RIGHT, fmt2(bossKm) + " km");
             addDataRow(kmBilledTable, alt, TextAlignment.RIGHT, "$" + fmt2(boss.getKmRate() != null ? boss.getKmRate() : 0) + "/km");
             addDataRow(kmBilledTable, alt, TextAlignment.RIGHT, fmtDollar(bossKmInc));
@@ -464,15 +471,15 @@ public class AnnualTaxReportGenerator {
         doc.add(new Paragraph("\n"));
         Table summary = makeTable(new float[]{4, 1});
 
-        addSubtotalRow(summary, "Gross Income (self-employed)",              fmtDollar(grossIncome),           GREEN,  GREEN_LIGHT);
-        addSubtotalRow(summary, "Total Expenses (paid)",                      fmtDollar(totalExpenses),          AMBER,  AMBER_LIGHT);
-        addSubtotalRow(summary, "Total Expenses (claimable after partial use)", fmtDollar(totalClaimableExpenses), AMBER,  AMBER_LIGHT);
+        addSubtotalRow(summary, "Gross Income (self-employed)", fmtDollar(grossIncome), GREEN, GREEN_LIGHT);
+        addSubtotalRow(summary, "Total Expenses (paid)", fmtDollar(totalExpenses), AMBER, AMBER_LIGHT);
+        addSubtotalRow(summary, "Total Expenses (claimable after partial use)", fmtDollar(totalClaimableExpenses), AMBER, AMBER_LIGHT);
         if (totalCcaDeduction > 0) {
             addSubtotalRow(summary, "CCA Deduction (Capital Cost Allowance)", fmtDollar(totalCcaDeduction), new DeviceRgb(139, 92, 246), new DeviceRgb(237, 233, 254));
         }
         DeviceRgb netColor = netIncome >= 0 ? GREEN : RED;
-        DeviceRgb netBg    = netIncome >= 0 ? GREEN_LIGHT : new DeviceRgb(254, 226, 226);
-        addSubtotalRow(summary, "Estimated Net Income",                   fmtDollar(netIncome),             netColor, netBg);
+        DeviceRgb netBg = netIncome >= 0 ? GREEN_LIGHT : new DeviceRgb(254, 226, 226);
+        addSubtotalRow(summary, "Estimated Net Income", fmtDollar(netIncome), netColor, netBg);
 
         doc.add(new Paragraph("\n"));
         doc.add(summary);
@@ -480,8 +487,8 @@ public class AnnualTaxReportGenerator {
         doc.add(new Paragraph("\nGST / HST")
             .setFontSize(12).setBold().setFontColor(NAVY).setMarginTop(20));
         Table summaryGst = makeTable(new float[]{4, 1});
-        addSubtotalRow(summaryGst, "GST Collected",         fmtDollar(totalGstCollected), BLUE,     BLUE_LIGHT);
-        addSubtotalRow(summaryGst, "GST Paid on Expenses (ITCs)", fmtDollar(totalGstITC), AMBER,    AMBER_LIGHT);
+        addSubtotalRow(summaryGst, "GST Collected", fmtDollar(totalGstCollected), BLUE, BLUE_LIGHT);
+        addSubtotalRow(summaryGst, "GST Paid on Expenses (ITCs)", fmtDollar(totalGstITC), AMBER, AMBER_LIGHT);
         if (totalCcaGstITC > 0) {
             addSubtotalRow(summaryGst, "GST Paid on Capital Assets (ITCs)", fmtDollar(totalCcaGstITC), AMBER, AMBER_LIGHT);
         }
@@ -493,8 +500,8 @@ public class AnnualTaxReportGenerator {
         doc.add(new Paragraph("\nKilometres")
             .setFontSize(12).setBold().setFontColor(NAVY).setMarginTop(20));
         Table summaryKm = makeTable(new float[]{4, 1});
-        addSubtotalRow(summaryKm, "Total KM Driven",  fmt2(totalKmDriven) + " km", NAVY, LIGHT);
-        addSubtotalRow(summaryKm, "Total KM Billed",  fmt2(totalKmBilled) + " km", BLUE, BLUE_LIGHT);
+        addSubtotalRow(summaryKm, "Total KM Driven", fmt2(totalKmDriven) + " km", NAVY, LIGHT);
+        addSubtotalRow(summaryKm, "Total KM Billed", fmt2(totalKmBilled) + " km", BLUE, BLUE_LIGHT);
         doc.add(summaryKm);
 
         // Disclaimer
@@ -640,7 +647,16 @@ public class AnnualTaxReportGenerator {
             .orElse(boss.getHourlyRate());
     }
 
-    private static String fmtDollar(double v) { return String.format("$%.2f", v); }
-    private static String fmt2(double v)       { return String.format("%.2f", v); }
-    private static String safe(String s)       { return s == null ? "" : s; }
+    private static String fmtDollar(double v) {
+        return String.format("$%.2f", v);
+    }
+
+    private static String fmt2(double v) {
+        return String.format("%.2f", v);
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s;
+    }
+
 }

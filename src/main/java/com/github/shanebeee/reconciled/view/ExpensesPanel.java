@@ -46,7 +46,7 @@ import java.util.TimerTask;
 
 public class ExpensesPanel extends JPanel {
 
-    private static final Color ACCENT     = new Color(245, 158, 11);  // amber
+    private static final Color ACCENT = new Color(245, 158, 11);  // amber
     private static final Color ACCENT_CCA = new Color(99, 102, 241);  // indigo
 
     private static final int ANIM_MS = 200;
@@ -71,7 +71,7 @@ public class ExpensesPanel extends JPanel {
 
     // ── Tab state ────────────────────────────────────────────────────────────
     private static final String TAB_EXPENSES = "EXPENSES";
-    private static final String TAB_CCA      = "CCA";
+    private static final String TAB_CCA = "CCA";
     private String activeTab = TAB_EXPENSES;
     private JButton tabExpensesBtn;
     private JButton tabCcaBtn;
@@ -79,7 +79,6 @@ public class ExpensesPanel extends JPanel {
     private JPanel headerRightWrapper;
     private CardLayout tabCards;
     private JPanel tabPanel;
-    private CcaPanel ccaPanel;
 
     public ExpensesPanel(DataStorage storage) {
         this.storage = storage;
@@ -112,8 +111,14 @@ public class ExpensesPanel extends JPanel {
         yearLabel = new JLabel(String.valueOf(currentYear), JLabel.CENTER);
         yearLabel.setFont(yearLabel.getFont().deriveFont(Font.BOLD, 14f));
         yearLabel.setPreferredSize(new Dimension(60, 20));
-        btnPrev.addActionListener(e -> { currentYear--; loadYear(); });
-        btnNext.addActionListener(e -> { currentYear++; loadYear(); });
+        btnPrev.addActionListener(e -> {
+            currentYear--;
+            loadYear();
+        });
+        btnNext.addActionListener(e -> {
+            currentYear++;
+            loadYear();
+        });
         yearNav.add(btnPrev);
         yearNav.add(yearLabel);
         yearNav.add(btnNext);
@@ -138,7 +143,7 @@ public class ExpensesPanel extends JPanel {
         headerRightWrapper = new JPanel(headerRightCards);
         headerRightWrapper.setOpaque(false);
         headerRightWrapper.add(expensesHeaderRight, TAB_EXPENSES);
-        headerRightWrapper.add(ccaHeaderRight,      TAB_CCA);
+        headerRightWrapper.add(ccaHeaderRight, TAB_CCA);
         headerRightCards.show(headerRightWrapper, TAB_EXPENSES);
         header.add(headerRightWrapper, BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
@@ -189,7 +194,7 @@ public class ExpensesPanel extends JPanel {
         tabPanel.add(expensesBody, TAB_EXPENSES);
 
         // — CCA body —
-        ccaPanel = new CcaPanel(storage);
+        CcaPanel ccaPanel = new CcaPanel(storage);
         tabPanel.add(ccaPanel, TAB_CCA);
 
         tabCards.show(tabPanel, TAB_EXPENSES);
@@ -203,8 +208,8 @@ public class ExpensesPanel extends JPanel {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         bar.setOpaque(false);
 
-        tabExpensesBtn = makeTabButton("Expenses",   TAB_EXPENSES, ACCENT);
-        tabCcaBtn      = makeTabButton("CCA Assets", TAB_CCA,      ACCENT_CCA);
+        tabExpensesBtn = makeTabButton("Expenses", TAB_EXPENSES, ACCENT);
+        tabCcaBtn = makeTabButton("CCA Assets", TAB_CCA, ACCENT_CCA);
 
         bar.add(tabExpensesBtn);
         bar.add(Box.createHorizontalStrut(4));
@@ -453,9 +458,19 @@ public class ExpensesPanel extends JPanel {
 
         if (!empty) {
             card.addMouseListener(new MouseAdapter() {
-                public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-                public void mouseExited (MouseEvent e) { hovered[0] = false; card.repaint(); }
-                public void mousePressed(MouseEvent e) { navigateToDetail(ym); }
+                public void mouseEntered(MouseEvent e) {
+                    hovered[0] = true;
+                    card.repaint();
+                }
+
+                public void mouseExited(MouseEvent e) {
+                    hovered[0] = false;
+                    card.repaint();
+                }
+
+                public void mousePressed(MouseEvent e) {
+                    navigateToDetail(ym);
+                }
             });
         }
 
@@ -579,7 +594,7 @@ public class ExpensesPanel extends JPanel {
             double total = byCategory.getOrDefault(cat.getId(), 0.0);
             if (total > 0) {
                 double claimable = deductionCalc.deductibleAmount(total, cat, currentYear);
-                boolean partial  = deductionCalc.isPartial(cat, currentYear);
+                boolean partial = deductionCalc.isPartial(cat, currentYear);
                 JPanel row = new JPanel(new BorderLayout(4, 0));
                 row.setOpaque(false);
                 row.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
@@ -600,7 +615,7 @@ public class ExpensesPanel extends JPanel {
                     claimLbl.setForeground(new Color(99, 102, 241));
                     valPanel.add(claimLbl, BorderLayout.SOUTH);
                 }
-                row.add(lbl,      BorderLayout.WEST);
+                row.add(lbl, BorderLayout.WEST);
                 row.add(valPanel, BorderLayout.EAST);
                 summaryCard.add(row);
             }
@@ -694,8 +709,8 @@ public class ExpensesPanel extends JPanel {
         // Claimable amount — show if category has partial deduction
         if (cat != null && deductionCalc.isPartial(cat, currentYear)) {
             double claimable = deductionCalc.deductibleAmount(exp.getTotal(), cat, currentYear);
-            String pctLabel  = deductionCalc.percentLabel(cat, currentYear);
-            JLabel claimLbl  = new JLabel(String.format("$%.2f (%s)", claimable, pctLabel), JLabel.RIGHT);
+            String pctLabel = deductionCalc.percentLabel(cat, currentYear);
+            JLabel claimLbl = new JLabel(String.format("$%.2f (%s)", claimable, pctLabel), JLabel.RIGHT);
             claimLbl.setFont(claimLbl.getFont().deriveFont(Font.PLAIN, 10f));
             claimLbl.setForeground(new Color(99, 102, 241));
             amtPanel.add(claimLbl, BorderLayout.CENTER);
@@ -707,13 +722,21 @@ public class ExpensesPanel extends JPanel {
             amtPanel.add(gstLbl, BorderLayout.SOUTH);
         }
 
-        card.add(icon,     BorderLayout.WEST);
-        card.add(text,     BorderLayout.CENTER);
+        card.add(icon, BorderLayout.WEST);
+        card.add(text, BorderLayout.CENTER);
         card.add(amtPanel, BorderLayout.EAST);
 
         card.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-            public void mouseExited (MouseEvent e) { hovered[0] = false; card.repaint(); }
+            public void mouseEntered(MouseEvent e) {
+                hovered[0] = true;
+                card.repaint();
+            }
+
+            public void mouseExited(MouseEvent e) {
+                hovered[0] = false;
+                card.repaint();
+            }
+
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 1) showExpenseDialog(exp, detailMonth);
             }
@@ -848,11 +871,14 @@ public class ExpensesPanel extends JPanel {
                 double gst = Math.round(sub * 0.05 * 100.0) / 100.0;
                 gstField[0].setText(String.format("%.2f", gst));
                 totalField[0].setText(String.format("%.2f", sub + gst));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         };
         subtotalField[0].addActionListener(e -> recalc.run());
         subtotalField[0].addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusLost(java.awt.event.FocusEvent e) { recalc.run(); }
+            public void focusLost(java.awt.event.FocusEvent e) {
+                recalc.run();
+            }
         });
         gstField[0].addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusLost(java.awt.event.FocusEvent e) {
@@ -860,7 +886,8 @@ public class ExpensesPanel extends JPanel {
                     double sub = Double.parseDouble(subtotalField[0].getText().trim());
                     double gst = Double.parseDouble(gstField[0].getText().trim());
                     totalField[0].setText(String.format("%.2f", sub + gst));
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
         });
 
@@ -884,7 +911,9 @@ public class ExpensesPanel extends JPanel {
                 String rel = storage.addReceiptFile(f, year, month, expId, desc, nextIdx);
                 if (rel != null) pendingReceipts.add(rel);
             }
-            SwingUtilities.invokeLater(() -> { if (refreshHolder[0] != null) refreshHolder[0].run(); });
+            SwingUtilities.invokeLater(() -> {
+                if (refreshHolder[0] != null) refreshHolder[0].run();
+            });
         };
 
         final boolean[] dropHover = {false};
@@ -913,17 +942,28 @@ public class ExpensesPanel extends JPanel {
         dropLabel.setForeground(new Color(148, 163, 184));
         dropZone.add(dropLabel, BorderLayout.CENTER);
         dropZone.setDropTarget(new DropTarget() {
-            public synchronized void dragEnter(java.awt.dnd.DropTargetDragEvent e) { dropHover[0] = true;  dropZone.repaint(); }
-            public synchronized void dragExit (java.awt.dnd.DropTargetEvent e)     { dropHover[0] = false; dropZone.repaint(); }
+            public synchronized void dragEnter(java.awt.dnd.DropTargetDragEvent e) {
+                dropHover[0] = true;
+                dropZone.repaint();
+            }
+
+            public synchronized void dragExit(java.awt.dnd.DropTargetEvent e) {
+                dropHover[0] = false;
+                dropZone.repaint();
+            }
+
             @SuppressWarnings("unchecked")
             public synchronized void drop(DropTargetDropEvent e) {
-                dropHover[0] = false; dropZone.repaint();
+                dropHover[0] = false;
+                dropZone.repaint();
                 try {
                     e.acceptDrop(DnDConstants.ACTION_COPY);
                     List<File> dropped = (List<File>) e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
                     addFiles.accept(dropped);
                     e.dropComplete(true);
-                } catch (Exception ex) { e.rejectDrop(); }
+                } catch (Exception ex) {
+                    e.rejectDrop();
+                }
             }
         });
 
@@ -949,7 +989,9 @@ public class ExpensesPanel extends JPanel {
                     File f = storage.getReceiptFile(rel);
                     if (f.exists()) f.delete();
                     pendingReceipts.remove(idx);
-                    SwingUtilities.invokeLater(() -> { if (refreshHolder[0] != null) refreshHolder[0].run(); });
+                    SwingUtilities.invokeLater(() -> {
+                        if (refreshHolder[0] != null) refreshHolder[0].run();
+                    });
                 });
                 row.add(openBtn, BorderLayout.CENTER);
                 row.add(removeBtn, BorderLayout.EAST);
@@ -982,38 +1024,63 @@ public class ExpensesPanel extends JPanel {
             if (chosen != null && chosen.length > 0) addFiles.accept(java.util.Arrays.asList(chosen));
         });
 
-        form.add(makeFormLabel("Date"), gbc); gbc.gridy++;
+        form.add(makeFormLabel("Date"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 12, 0);
-        form.add(dateBtn, gbc); gbc.gridy++;
+        form.add(dateBtn, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(makeFormLabel("Category"), gbc); gbc.gridy++;
+        form.add(makeFormLabel("Category"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 2, 0);
-        form.add(catCombo[0], gbc); gbc.gridy++;
+        form.add(catCombo[0], gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 12, 0);
-        form.add(hintLabel, gbc); gbc.gridy++;
+        form.add(hintLabel, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(makeFormLabel("Description"), gbc); gbc.gridy++;
+        form.add(makeFormLabel("Description"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 12, 0);
-        form.add(descField[0], gbc); gbc.gridy++;
+        form.add(descField[0], gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(makeFormLabel("Amount"), gbc); gbc.gridy++;
+        form.add(makeFormLabel("Amount"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 12, 0);
         JPanel amtRow = new JPanel(new GridBagLayout());
         amtRow.setOpaque(false);
         GridBagConstraints ag = new GridBagConstraints();
-        ag.fill = GridBagConstraints.HORIZONTAL; ag.weightx = 1.0; ag.gridy = 0;
-        ag.gridx = 0; ag.insets = new Insets(0, 0, 0, 0);   amtRow.add(makeAmtLabel("Subtotal"), ag);
-        ag.gridx = 1; ag.insets = new Insets(0, 8, 0, 8);   amtRow.add(makeAmtLabel("GST (5%)"), ag);
-        ag.gridx = 2; ag.insets = new Insets(0, 0, 0, 0);   amtRow.add(makeAmtLabel("Total"), ag);
+        ag.fill = GridBagConstraints.HORIZONTAL;
+        ag.weightx = 1.0;
+        ag.gridy = 0;
+        ag.gridx = 0;
+        ag.insets = new Insets(0, 0, 0, 0);
+        amtRow.add(makeAmtLabel("Subtotal"), ag);
+        ag.gridx = 1;
+        ag.insets = new Insets(0, 8, 0, 8);
+        amtRow.add(makeAmtLabel("GST (5%)"), ag);
+        ag.gridx = 2;
+        ag.insets = new Insets(0, 0, 0, 0);
+        amtRow.add(makeAmtLabel("Total"), ag);
         ag.gridy = 1;
-        ag.gridx = 0; ag.insets = new Insets(4, 0, 0, 0);   amtRow.add(subtotalField[0], ag);
-        ag.gridx = 1; ag.insets = new Insets(4, 8, 0, 8);   amtRow.add(gstField[0], ag);
-        ag.gridx = 2; ag.insets = new Insets(4, 0, 0, 0);   amtRow.add(totalField[0], ag);
-        form.add(amtRow, gbc); gbc.gridy++;
+        ag.gridx = 0;
+        ag.insets = new Insets(4, 0, 0, 0);
+        amtRow.add(subtotalField[0], ag);
+        ag.gridx = 1;
+        ag.insets = new Insets(4, 8, 0, 8);
+        amtRow.add(gstField[0], ag);
+        ag.gridx = 2;
+        ag.insets = new Insets(4, 0, 0, 0);
+        amtRow.add(totalField[0], ag);
+        form.add(amtRow, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 6, 0);
-        form.add(makeFormLabel("Receipts"), gbc); gbc.gridy++;
+        form.add(makeFormLabel("Receipts"), gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 4, 0);
-        form.add(receiptsContainer, gbc); gbc.gridy++;
+        form.add(receiptsContainer, gbc);
+        gbc.gridy++;
         gbc.insets = new Insets(0, 0, 0, 0);
         form.add(btnAddReceipt, gbc);
 
@@ -1025,7 +1092,7 @@ public class ExpensesPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(Color.WHITE);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(226, 232, 240)));
-        JPanel footerLeft  = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 12));
+        JPanel footerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 12));
         footerLeft.setOpaque(false);
         JPanel footerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         footerRight.setOpaque(false);
@@ -1067,8 +1134,8 @@ public class ExpensesPanel extends JPanel {
         btnSave.addActionListener(e -> {
             try {
                 double subtotal = Double.parseDouble(subtotalField[0].getText().trim());
-                double gst   = gstField[0].getText().trim().isEmpty()   ? 0 : Double.parseDouble(gstField[0].getText().trim());
-                double total = totalField[0].getText().trim().isEmpty()  ? subtotal + gst : Double.parseDouble(totalField[0].getText().trim());
+                double gst = gstField[0].getText().trim().isEmpty() ? 0 : Double.parseDouble(gstField[0].getText().trim());
+                double total = totalField[0].getText().trim().isEmpty() ? subtotal + gst : Double.parseDouble(totalField[0].getText().trim());
                 exp.setDate(dateBtn.getText());
                 ExpenseCategory selectedCat = (ExpenseCategory) catCombo[0].getSelectedItem();
                 exp.setCategory(null);
@@ -1119,7 +1186,7 @@ public class ExpensesPanel extends JPanel {
         footerLeft.add(btnSaveTemplate);
         footerRight.add(btnCancel);
         footerRight.add(btnSave);
-        footer.add(footerLeft,  BorderLayout.WEST);
+        footer.add(footerLeft, BorderLayout.WEST);
         footer.add(footerRight, BorderLayout.EAST);
         dialog.add(footer, BorderLayout.SOUTH);
 
@@ -1127,7 +1194,9 @@ public class ExpensesPanel extends JPanel {
         dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "cancel");
         dialog.getRootPane().getActionMap().put("cancel", new AbstractAction() {
-            public void actionPerformed(java.awt.event.ActionEvent e) { dialog.dispose(); }
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                dialog.dispose();
+            }
         });
 
         dialog.setLocationRelativeTo(this);
@@ -1174,7 +1243,11 @@ public class ExpensesPanel extends JPanel {
 
     private static Color hexColor(String hex) {
         if (hex == null || hex.isBlank()) return new Color(148, 163, 184);
-        try { return Color.decode(hex); }
-        catch (NumberFormatException e) { return new Color(148, 163, 184); }
+        try {
+            return Color.decode(hex);
+        } catch (NumberFormatException e) {
+            return new Color(148, 163, 184);
+        }
     }
+
 }

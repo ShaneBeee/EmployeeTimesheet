@@ -28,22 +28,22 @@ import java.awt.RenderingHints;
  */
 public class OnboardingWizard extends JDialog {
 
-    private static final Color BLUE  = new Color(59, 130, 246);
-    private static final Color NAVY  = new Color(30, 41, 59);
+    private static final Color BLUE = new Color(59, 130, 246);
+    private static final Color NAVY = new Color(30, 41, 59);
     private static final Color SLATE = new Color(100, 116, 139);
     private static final Color LIGHT = new Color(241, 245, 249);
 
     private final CardLayout cards = new CardLayout();
-    private final JPanel     deck  = new JPanel(cards);
+    private final JPanel deck = new JPanel(cards);
 
     // Step indices
-    private static final String STEP_WELCOME     = "WELCOME";
-    private static final String STEP_STORAGE     = "STORAGE";
-    private static final String STEP_PROFILE     = "PROFILE";
+    private static final String STEP_WELCOME = "WELCOME";
+    private static final String STEP_STORAGE = "STORAGE";
+    private static final String STEP_PROFILE = "PROFILE";
     private static final String STEP_HOME_OFFICE = "HOME_OFFICE";
-    private static final String STEP_CCA         = "CCA";
-    private static final String STEP_BOSS        = "BOSS";
-    private static final String STEP_DONE        = "DONE";
+    private static final String STEP_CCA = "CCA";
+    private static final String STEP_BOSS = "BOSS";
+    private static final String STEP_DONE = "DONE";
     private static final String[] STEPS = {
         STEP_WELCOME, STEP_STORAGE, STEP_PROFILE,
         STEP_HOME_OFFICE, STEP_CCA, STEP_BOSS, STEP_DONE
@@ -58,7 +58,7 @@ public class OnboardingWizard extends JDialog {
 
     // Home office step fields
     private JTextField homeOfficeSqFtField, homeTotalSqFtField;
-    private JLabel     homeOfficeCalcLabel;
+    private JLabel homeOfficeCalcLabel;
 
     // CCA step fields — list of assets added during onboarding
     private final java.util.List<com.github.shanebeee.reconciled.model.CcaAsset> onboardingCcaAssets = new java.util.ArrayList<>();
@@ -70,7 +70,7 @@ public class OnboardingWizard extends JDialog {
 
     // Nav buttons
     private JButton btnBack, btnNext;
-    private JLabel  stepLabel;
+    private JLabel stepLabel;
 
     // Holds path label for storage step (updated when user picks)
     private JLabel pathLabel;
@@ -90,13 +90,13 @@ public class OnboardingWizard extends JDialog {
 
         // ── Deck ─────────────────────────────────────────────────────────────
         deck.setOpaque(false);
-        deck.add(buildWelcomeStep(),    STEP_WELCOME);
-        deck.add(buildStorageStep(),    STEP_STORAGE);
-        deck.add(buildProfileStep(),    STEP_PROFILE);
+        deck.add(buildWelcomeStep(), STEP_WELCOME);
+        deck.add(buildStorageStep(), STEP_STORAGE);
+        deck.add(buildProfileStep(), STEP_PROFILE);
         deck.add(buildHomeOfficeStep(), STEP_HOME_OFFICE);
-        deck.add(buildCcaStep(),        STEP_CCA);
-        deck.add(buildBossStep(),       STEP_BOSS);
-        deck.add(buildDoneStep(),       STEP_DONE);
+        deck.add(buildCcaStep(), STEP_CCA);
+        deck.add(buildBossStep(), STEP_BOSS);
+        deck.add(buildDoneStep(), STEP_DONE);
         add(deck, BorderLayout.CENTER);
 
         // ── Footer ───────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ public class OnboardingWizard extends JDialog {
         navBtns.add(btnNext);
 
         footer.add(stepLabel, BorderLayout.WEST);
-        footer.add(navBtns,   BorderLayout.EAST);
+        footer.add(navBtns, BorderLayout.EAST);
         add(footer, BorderLayout.SOUTH);
 
         updateNav();
@@ -145,7 +145,7 @@ public class OnboardingWizard extends JDialog {
 
     private void updateNav() {
         boolean isFirst = currentStep == 0;
-        boolean isLast  = currentStep == STEPS.length - 1;
+        boolean isLast = currentStep == STEPS.length - 1;
         btnBack.setEnabled(!isFirst);
         btnNext.setText(isLast ? "Get Started!" : currentStep == STEPS.length - 2 ? "Finish" : "Next");
 
@@ -174,7 +174,9 @@ public class OnboardingWizard extends JDialog {
                     // No name entered — treat this step as skipped, nothing to validate.
                     yield true;
                 }
-                try { Double.parseDouble(hourlyField.getText().trim()); } catch (NumberFormatException e) {
+                try {
+                    Double.parseDouble(hourlyField.getText().trim());
+                } catch (NumberFormatException e) {
                     JOptionPane.showMessageDialog(this, "Please enter a valid hourly rate.", "Invalid", JOptionPane.WARNING_MESSAGE);
                     yield false;
                 }
@@ -199,8 +201,14 @@ public class OnboardingWizard extends JDialog {
         info.setPhoneNumber(phoneField.getText().trim());
         info.setEmail(emailField.getText().trim());
         // Home office
-        try { info.setHomeOfficeSqFt(Double.parseDouble(homeOfficeSqFtField.getText().trim())); } catch (NumberFormatException ignored) {}
-        try { info.setHomeTotalSqFt(Double.parseDouble(homeTotalSqFtField.getText().trim()));   } catch (NumberFormatException ignored) {}
+        try {
+            info.setHomeOfficeSqFt(Double.parseDouble(homeOfficeSqFtField.getText().trim()));
+        } catch (NumberFormatException ignored) {
+        }
+        try {
+            info.setHomeTotalSqFt(Double.parseDouble(homeTotalSqFtField.getText().trim()));
+        } catch (NumberFormatException ignored) {
+        }
         storage.saveEmployeeInfo(info);
 
         // 4. Save CCA assets if any were added
@@ -212,9 +220,18 @@ public class OnboardingWizard extends JDialog {
         String bossName = bossNameField.getText().trim();
         if (!bossName.isBlank()) {
             Boss boss = new Boss(bossName);
-            try { boss.setHourlyRate(Double.parseDouble(hourlyField.getText().trim())); } catch (NumberFormatException ignored) {}
-            try { boss.setKmRate(Double.parseDouble(kmField.getText().trim())); } catch (NumberFormatException ignored) {}
-            try { boss.setTaxRate(Double.parseDouble(taxField.getText().trim())); } catch (NumberFormatException ignored) {}
+            try {
+                boss.setHourlyRate(Double.parseDouble(hourlyField.getText().trim()));
+            } catch (NumberFormatException ignored) {
+            }
+            try {
+                boss.setKmRate(Double.parseDouble(kmField.getText().trim()));
+            } catch (NumberFormatException ignored) {
+            }
+            try {
+                boss.setTaxRate(Double.parseDouble(taxField.getText().trim()));
+            } catch (NumberFormatException ignored) {
+            }
             boss.setIncomeType((Boss.IncomeType) incomeTypeCombo.getSelectedItem());
             storage.saveBosses(java.util.List.of(boss));
         }
@@ -230,7 +247,8 @@ public class OnboardingWizard extends JDialog {
         p.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
         GridBagConstraints gc = new GridBagConstraints();
-        gc.gridx = 0; gc.gridy = 0;
+        gc.gridx = 0;
+        gc.gridy = 0;
         gc.fill = GridBagConstraints.HORIZONTAL;
         gc.weightx = 1.0;
         gc.insets = new Insets(0, 0, 12, 0);
@@ -240,7 +258,8 @@ public class OnboardingWizard extends JDialog {
         gc.insets = new Insets(0, 0, 20, 0);
         p.add(emoji, gc);
 
-        gc.gridy++; gc.insets = new Insets(0, 0, 12, 0);
+        gc.gridy++;
+        gc.insets = new Insets(0, 0, 12, 0);
         JLabel title = new JLabel("Welcome to Reconciled", JLabel.CENTER);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 22f));
         title.setForeground(NAVY);
@@ -284,7 +303,7 @@ public class OnboardingWizard extends JDialog {
         optionsRow.setAlignmentX(LEFT_ALIGNMENT);
 
         JButton btnICloud = makeStorageOptionButton("☁️", "iCloud Drive", "Recommended — syncs automatically", iCloudAvailable);
-        JButton btnLocal  = makeStorageOptionButton("💻", "Local Only", "Saved on this Mac only", true);
+        JButton btnLocal = makeStorageOptionButton("💻", "Local Only", "Saved on this Mac only", true);
 
         optionsRow.add(btnICloud);
         optionsRow.add(btnLocal);
@@ -357,7 +376,8 @@ public class OnboardingWizard extends JDialog {
 
     private JButton makeStorageOptionButton(String emoji, String label, String sub, boolean enabled) {
         JButton btn = new JButton() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 boolean selected = Boolean.TRUE.equals(getClientProperty("selected"));
@@ -421,11 +441,11 @@ public class OnboardingWizard extends JDialog {
         p.add(sub);
         p.add(Box.createVerticalStrut(20));
 
-        nameField    = new JTextField();
+        nameField = new JTextField();
         companyField = new JTextField();
         addressField = new JTextField();
-        phoneField   = new JTextField();
-        emailField   = new JTextField();
+        phoneField = new JTextField();
+        emailField = new JTextField();
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setOpaque(false);
@@ -434,14 +454,19 @@ public class OnboardingWizard extends JDialog {
         GridBagConstraints gc = new GridBagConstraints();
         gc.fill = GridBagConstraints.HORIZONTAL;
         gc.weightx = 1.0;
-        gc.gridx = 0; gc.gridy = 0;
+        gc.gridx = 0;
+        gc.gridy = 0;
         gc.insets = new Insets(0, 0, 4, 0);
 
-        addFormRow(form, gc, "Full Name *", nameField);    gc.gridy++;
-        addFormRow(form, gc, "Company",     companyField); gc.gridy++;
-        addFormRow(form, gc, "Address",     addressField); gc.gridy++;
-        addFormRow(form, gc, "Phone",       phoneField);   gc.gridy++;
-        addFormRow(form, gc, "Email",       emailField);
+        addFormRow(form, gc, "Full Name *", nameField);
+        gc.gridy++;
+        addFormRow(form, gc, "Company", companyField);
+        gc.gridy++;
+        addFormRow(form, gc, "Address", addressField);
+        gc.gridy++;
+        addFormRow(form, gc, "Phone", phoneField);
+        gc.gridy++;
+        addFormRow(form, gc, "Email", emailField);
 
         p.add(form);
         return p;
@@ -455,25 +480,28 @@ public class OnboardingWizard extends JDialog {
 
         JLabel title = new JLabel("Home Office Deduction");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
-        title.setForeground(NAVY); title.setAlignmentX(LEFT_ALIGNMENT);
+        title.setForeground(NAVY);
+        title.setAlignmentX(LEFT_ALIGNMENT);
         p.add(title);
         p.add(Box.createVerticalStrut(6));
 
         JLabel sub = new JLabel("<html>If you work from home, you can deduct a portion of your rent,<br>utilities, and other home expenses as a business expense.<br><br>Enter your home's total area and your dedicated office space.</html>");
         sub.setFont(sub.getFont().deriveFont(Font.PLAIN, 12f));
-        sub.setForeground(SLATE); sub.setAlignmentX(LEFT_ALIGNMENT);
+        sub.setForeground(SLATE);
+        sub.setAlignmentX(LEFT_ALIGNMENT);
         p.add(sub);
         p.add(Box.createVerticalStrut(8));
 
         JLabel skipNote = new JLabel("You can skip this step and set it later in Settings.");
         skipNote.setFont(skipNote.getFont().deriveFont(Font.ITALIC, 11f));
-        skipNote.setForeground(SLATE); skipNote.setAlignmentX(LEFT_ALIGNMENT);
+        skipNote.setForeground(SLATE);
+        skipNote.setAlignmentX(LEFT_ALIGNMENT);
         p.add(skipNote);
         p.add(Box.createVerticalStrut(20));
 
-        homeOfficeSqFtField  = new JTextField();
-        homeTotalSqFtField   = new JTextField();
-        homeOfficeCalcLabel  = new JLabel(" ");
+        homeOfficeSqFtField = new JTextField();
+        homeTotalSqFtField = new JTextField();
+        homeOfficeCalcLabel = new JLabel(" ");
         homeOfficeCalcLabel.setFont(homeOfficeCalcLabel.getFont().deriveFont(Font.ITALIC, 11f));
         homeOfficeCalcLabel.setForeground(new Color(99, 102, 241));
         homeOfficeCalcLabel.setAlignmentX(LEFT_ALIGNMENT);
@@ -481,26 +509,42 @@ public class OnboardingWizard extends JDialog {
         javax.swing.event.DocumentListener dl = new javax.swing.event.DocumentListener() {
             void update() {
                 try {
-                    double off  = Double.parseDouble(homeOfficeSqFtField.getText().trim());
+                    double off = Double.parseDouble(homeOfficeSqFtField.getText().trim());
                     double home = Double.parseDouble(homeTotalSqFtField.getText().trim());
-                    double pct  = home > 0 ? Math.min(100.0, off / home * 100) : 0;
+                    double pct = home > 0 ? Math.min(100.0, off / home * 100) : 0;
                     homeOfficeCalcLabel.setText(String.format("Deductible portion: %.1f%% of home expenses", pct));
-                } catch (NumberFormatException e) { homeOfficeCalcLabel.setText(" "); }
+                } catch (NumberFormatException e) {
+                    homeOfficeCalcLabel.setText(" ");
+                }
             }
-            public void insertUpdate(javax.swing.event.DocumentEvent e)  { update(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e)  { update(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                update();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                update();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                update();
+            }
         };
         homeOfficeSqFtField.getDocument().addDocumentListener(dl);
         homeTotalSqFtField.getDocument().addDocumentListener(dl);
 
         JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false); form.setAlignmentX(LEFT_ALIGNMENT);
+        form.setOpaque(false);
+        form.setAlignmentX(LEFT_ALIGNMENT);
         form.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
         GridBagConstraints gc = new GridBagConstraints();
-        gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
-        gc.gridx = 0; gc.gridy = 0; gc.insets = new Insets(0, 0, 4, 0);
-        addFormRow(form, gc, "Office Area (sq ft)",     homeOfficeSqFtField); gc.gridy++;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.gridx = 0;
+        gc.gridy = 0;
+        gc.insets = new Insets(0, 0, 4, 0);
+        addFormRow(form, gc, "Office Area (sq ft)", homeOfficeSqFtField);
+        gc.gridy++;
         addFormRow(form, gc, "Total Home Area (sq ft)", homeTotalSqFtField);
         p.add(form);
         p.add(Box.createVerticalStrut(8));
@@ -516,13 +560,15 @@ public class OnboardingWizard extends JDialog {
 
         JLabel title = new JLabel("Capital Cost Allowance (CCA)");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
-        title.setForeground(NAVY); title.setAlignmentX(LEFT_ALIGNMENT);
+        title.setForeground(NAVY);
+        title.setAlignmentX(LEFT_ALIGNMENT);
         p.add(title);
         p.add(Box.createVerticalStrut(6));
 
         JLabel sub = new JLabel("<html>Did you purchase any major business assets (laptop, vehicle, equipment)?<br>These are depreciated over time using CCA rather than expensed directly.<br><br>You can skip this and add assets later in Expenses → CCA Assets.</html>");
         sub.setFont(sub.getFont().deriveFont(Font.PLAIN, 12f));
-        sub.setForeground(SLATE); sub.setAlignmentX(LEFT_ALIGNMENT);
+        sub.setForeground(SLATE);
+        sub.setAlignmentX(LEFT_ALIGNMENT);
         p.add(sub);
         p.add(Box.createVerticalStrut(16));
 
@@ -546,37 +592,48 @@ public class OnboardingWizard extends JDialog {
     private void showQuickCcaDialog() {
         // Simple inline add dialog reusing the same preset classes as CcaPanel
         String[][] presets = {
-            {"Class 50",  "0.55", "Computers, laptops, tablets (55%)"},
-            {"Class 10",  "0.30", "Vehicles (30%)"},
-            {"Class 8",   "0.20", "Equipment, furniture, tools (20%)"},
-            {"Class 12",  "1.00", "Small tools under $500 (100%)"},
+            {"Class 50", "0.55", "Computers, laptops, tablets (55%)"},
+            {"Class 10", "0.30", "Vehicles (30%)"},
+            {"Class 8", "0.20", "Equipment, furniture, tools (20%)"},
+            {"Class 12", "1.00", "Small tools under $500 (100%)"},
         };
-        JTextField desc   = new JTextField();
-        JTextField date   = new JTextField(java.time.LocalDate.now().toString());
-        JTextField cost   = new JTextField();
+        JTextField desc = new JTextField();
+        JTextField date = new JTextField(java.time.LocalDate.now().toString());
+        JTextField cost = new JTextField();
         String[] classNames = new String[presets.length + 1];
         classNames[0] = "Custom";
-        for (int i = 0; i < presets.length; i++) classNames[i+1] = presets[i][0];
+        for (int i = 0; i < presets.length; i++) classNames[i + 1] = presets[i][0];
         JComboBox<String> classCombo = new JComboBox<>(classNames);
-        JTextField rateField  = new JTextField();
+        JTextField rateField = new JTextField();
         JTextField classField = new JTextField();
 
         classCombo.addActionListener(e -> {
             int sel = classCombo.getSelectedIndex();
-            if (sel > 0) { classField.setText(presets[sel-1][0]); rateField.setText(presets[sel-1][1]); }
-            else { classField.setText(""); rateField.setText(""); }
+            if (sel > 0) {
+                classField.setText(presets[sel - 1][0]);
+                rateField.setText(presets[sel - 1][1]);
+            } else {
+                classField.setText("");
+                rateField.setText("");
+            }
         });
         // Default to Class 50
         classCombo.setSelectedIndex(1);
 
         JPanel form = new JPanel(new GridBagLayout());
         GridBagConstraints gc = new GridBagConstraints();
-        gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
-        gc.gridx = 0; gc.gridy = 0; gc.insets = new Insets(0, 0, 4, 0);
-        addFormRow(form, gc, "Description",       desc);       gc.gridy++;
-        addFormRow(form, gc, "Purchase Date",     date);       gc.gridy++;
-        addFormRow(form, gc, "CCA Class",         classCombo); gc.gridy++;
-        addFormRow(form, gc, "Capital Cost ($)",  cost);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.gridx = 0;
+        gc.gridy = 0;
+        gc.insets = new Insets(0, 0, 4, 0);
+        addFormRow(form, gc, "Description", desc);
+        gc.gridy++;
+        addFormRow(form, gc, "Purchase Date", date);
+        gc.gridy++;
+        addFormRow(form, gc, "CCA Class", classCombo);
+        gc.gridy++;
+        addFormRow(form, gc, "Capital Cost ($)", cost);
 
         int result = JOptionPane.showConfirmDialog(this, form, "Add CCA Asset",
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -585,14 +642,21 @@ public class OnboardingWizard extends JDialog {
         String descStr = desc.getText().trim();
         if (descStr.isBlank()) return;
         double costVal;
-        try { costVal = Double.parseDouble(cost.getText().trim()); if (costVal <= 0) return; }
-        catch (NumberFormatException ex) { return; }
+        try {
+            costVal = Double.parseDouble(cost.getText().trim());
+            if (costVal <= 0) return;
+        } catch (NumberFormatException ex) {
+            return;
+        }
 
         com.github.shanebeee.reconciled.model.CcaAsset asset = new com.github.shanebeee.reconciled.model.CcaAsset();
         asset.setDescription(descStr);
         asset.setPurchaseDate(date.getText().trim());
         asset.setAssetClass(classField.getText().isBlank() ? classCombo.getSelectedItem().toString() : classField.getText().trim());
-        try { asset.setClassRate(Double.parseDouble(rateField.getText().trim())); } catch (NumberFormatException ignored) {}
+        try {
+            asset.setClassRate(Double.parseDouble(rateField.getText().trim()));
+        } catch (NumberFormatException ignored) {
+        }
         asset.setCost(costVal);
         onboardingCcaAssets.add(asset);
         refreshCcaList();
@@ -613,7 +677,10 @@ public class OnboardingWizard extends JDialog {
             del.putClientProperty("JButton.buttonType", "roundRect");
             del.setFont(del.getFont().deriveFont(Font.PLAIN, 10f));
             del.setPreferredSize(new Dimension(28, 24));
-            del.addActionListener(e -> { onboardingCcaAssets.remove(a); refreshCcaList(); });
+            del.addActionListener(e -> {
+                onboardingCcaAssets.remove(a);
+                refreshCcaList();
+            });
             row.add(lbl, BorderLayout.CENTER);
             row.add(del, BorderLayout.EAST);
             ccaListPanel.add(row);
@@ -651,9 +718,9 @@ public class OnboardingWizard extends JDialog {
         p.add(Box.createVerticalStrut(20));
 
         bossNameField = new JTextField();
-        hourlyField   = new JTextField("0.00");
-        kmField       = new JTextField("0.00");
-        taxField      = new JTextField("5.0");
+        hourlyField = new JTextField("0.00");
+        kmField = new JTextField("0.00");
+        taxField = new JTextField("5.0");
         incomeTypeCombo = new JComboBox<>(Boss.IncomeType.values());
 
         JPanel form = new JPanel(new GridBagLayout());
@@ -663,14 +730,19 @@ public class OnboardingWizard extends JDialog {
         GridBagConstraints gc = new GridBagConstraints();
         gc.fill = GridBagConstraints.HORIZONTAL;
         gc.weightx = 1.0;
-        gc.gridx = 0; gc.gridy = 0;
+        gc.gridx = 0;
+        gc.gridy = 0;
         gc.insets = new Insets(0, 0, 4, 0);
 
-        addFormRow(form, gc, "Name *",          bossNameField);   gc.gridy++;
-        addFormRow(form, gc, "Hourly Rate ($)*", hourlyField);    gc.gridy++;
-        addFormRow(form, gc, "KM Rate ($/km)",   kmField);        gc.gridy++;
-        addFormRow(form, gc, "Tax Rate (%)",      taxField);       gc.gridy++;
-        addFormRow(form, gc, "Income Type",       incomeTypeCombo);
+        addFormRow(form, gc, "Name *", bossNameField);
+        gc.gridy++;
+        addFormRow(form, gc, "Hourly Rate ($)*", hourlyField);
+        gc.gridy++;
+        addFormRow(form, gc, "KM Rate ($/km)", kmField);
+        gc.gridy++;
+        addFormRow(form, gc, "Tax Rate (%)", taxField);
+        gc.gridy++;
+        addFormRow(form, gc, "Income Type", incomeTypeCombo);
 
         p.add(form);
         return p;
@@ -682,14 +754,18 @@ public class OnboardingWizard extends JDialog {
         p.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
         GridBagConstraints gc = new GridBagConstraints();
-        gc.gridx = 0; gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
+        gc.gridx = 0;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
 
-        gc.gridy = 0; gc.insets = new Insets(0, 0, 20, 0);
+        gc.gridy = 0;
+        gc.insets = new Insets(0, 0, 20, 0);
         JLabel emoji = new JLabel("🎉", JLabel.CENTER);
         emoji.setFont(emoji.getFont().deriveFont(64f));
         p.add(emoji, gc);
 
-        gc.gridy++; gc.insets = new Insets(0, 0, 12, 0);
+        gc.gridy++;
+        gc.insets = new Insets(0, 0, 12, 0);
         JLabel title = new JLabel("You're all set!", JLabel.CENTER);
         title.setFont(title.getFont().deriveFont(Font.BOLD, 22f));
         title.setForeground(NAVY);
@@ -716,4 +792,5 @@ public class OnboardingWizard extends JDialog {
         gc.insets = new Insets(0, 0, 10, 0);
         form.add(field, gc);
     }
+
 }

@@ -99,7 +99,7 @@ public class AccountingPanel extends JPanel {
         yearSpinner.setEditor(yearEditor);
 
         yearCard.add(yearIconWrap, BorderLayout.WEST);
-        yearCard.add(yearText,    BorderLayout.CENTER);
+        yearCard.add(yearText, BorderLayout.CENTER);
         yearCard.add(yearSpinner, BorderLayout.EAST);
         body.add(yearCard, gbc);
 
@@ -156,18 +156,20 @@ public class AccountingPanel extends JPanel {
         gbc.gridy++;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        body.add(new JPanel() {{ setOpaque(false); }}, gbc);
+        body.add(new JPanel() {{
+            setOpaque(false);
+        }}, gbc);
 
         add(body, BorderLayout.CENTER);
     }
 
     private JPanel makeExportCard(String icon, String title, String subtitle,
-                                   Color accentColor, Runnable action) {
+                                  Color accentColor, Runnable action) {
         return makeExportCard(icon, title, subtitle, accentColor, "Export", action);
     }
 
     private JPanel makeExportCard(String icon, String title, String subtitle,
-                                   Color accentColor, String buttonLabel, Runnable action) {
+                                  Color accentColor, String buttonLabel, Runnable action) {
         JPanel card = makeCard();
         card.setLayout(new BorderLayout(16, 0));
 
@@ -214,8 +216,8 @@ public class AccountingPanel extends JPanel {
         btn.addActionListener(e -> action.run());
 
         card.add(iconCircle, BorderLayout.WEST);
-        card.add(text,       BorderLayout.CENTER);
-        card.add(btn,        BorderLayout.EAST);
+        card.add(text, BorderLayout.CENTER);
+        card.add(btn, BorderLayout.EAST);
         return card;
     }
 
@@ -263,8 +265,14 @@ public class AccountingPanel extends JPanel {
         wrapper.add(panel);
         dialog.add(wrapper);
 
-        btnExcel.addActionListener(e -> { dialog.dispose(); exportExcel(); });
-        btnCsv.addActionListener(e   -> { dialog.dispose(); exportCsv(); });
+        btnExcel.addActionListener(e -> {
+            dialog.dispose();
+            exportExcel();
+        });
+        btnCsv.addActionListener(e -> {
+            dialog.dispose();
+            exportCsv();
+        });
 
         dialog.setVisible(true);
     }
@@ -292,8 +300,11 @@ public class AccountingPanel extends JPanel {
                         "CSV files saved to:\n" + out.getAbsolutePath() + "\n\nOpen folder?",
                         "Export Complete", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (opt == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
-                        try { Desktop.getDesktop().open(out.getParentFile()); }
-                        catch (IOException ex) { ex.printStackTrace(); }
+                        try {
+                            Desktop.getDesktop().open(out.getParentFile());
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 });
             } catch (Exception ex) {
@@ -332,7 +343,11 @@ public class AccountingPanel extends JPanel {
                         "Excel file saved to:\n" + out.getAbsolutePath() + "\n\nOpen it now?",
                         "Export Complete", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (opt == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
-                        try { Desktop.getDesktop().open(out); } catch (IOException ex) { ex.printStackTrace(); }
+                        try {
+                            Desktop.getDesktop().open(out);
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 });
             } catch (Exception ex) {
@@ -383,8 +398,11 @@ public class AccountingPanel extends JPanel {
                             + zipFile.getAbsolutePath() + "\n\nOpen folder?",
                         "Archive Complete", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (opt == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
-                        try { Desktop.getDesktop().open(zipFile.getParentFile()); }
-                        catch (IOException ex) { ex.printStackTrace(); }
+                        try {
+                            Desktop.getDesktop().open(zipFile.getParentFile());
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 });
             } catch (Exception ex) {
@@ -422,8 +440,11 @@ public class AccountingPanel extends JPanel {
                         "Annual Tax Report saved to:\n" + path + "\n\nOpen it now?",
                         "Report Complete", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (opt == JOptionPane.YES_OPTION && Desktop.isDesktopSupported()) {
-                        try { Desktop.getDesktop().open(new File(path)); }
-                        catch (IOException ex) { ex.printStackTrace(); }
+                        try {
+                            Desktop.getDesktop().open(new File(path));
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 });
             } catch (Exception ex) {
@@ -473,12 +494,15 @@ public class AccountingPanel extends JPanel {
                         JOptionPane.INFORMATION_MESSAGE,
                         null,
                         canClear ? new String[]{"Open Folder", "Clear Local Data", "Done"}
-                                 : new String[]{"Open Folder", "Done"},
+                            : new String[]{"Open Folder", "Done"},
                         canClear ? "Done" : "Done");
 
                     if (opt == 0 && Desktop.isDesktopSupported()) {
-                        try { Desktop.getDesktop().open(new File(finalZipPath).getParentFile()); }
-                        catch (IOException ex) { ex.printStackTrace(); }
+                        try {
+                            Desktop.getDesktop().open(new File(finalZipPath).getParentFile());
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
                     } else if (canClear && opt == 1) {
                         confirmAndClearYear(year, finalZipPath);
                     }
@@ -499,8 +523,8 @@ public class AccountingPanel extends JPanel {
         // Safety: require typing the year to confirm
         String input = JOptionPane.showInputDialog(this,
             "This will permanently delete all local data for " + year + ".\n"
-            + "A backup exists at:\n" + archivePath + "\n\n"
-            + "Type " + year + " to confirm:",
+                + "A backup exists at:\n" + archivePath + "\n\n"
+                + "Type " + year + " to confirm:",
             "Confirm Delete", JOptionPane.WARNING_MESSAGE);
         if (input == null || !input.trim().equals(String.valueOf(year))) {
             JOptionPane.showMessageDialog(this, "Deletion cancelled.",
@@ -536,7 +560,7 @@ public class AccountingPanel extends JPanel {
                     progress.dispose();
                     JOptionPane.showMessageDialog(this,
                         result.fileCount() + " files restored for " + result.year() + ".\n"
-                        + "Switch to the relevant panel to view your data.",
+                            + "Switch to the relevant panel to view your data.",
                         "Import Complete", JOptionPane.INFORMATION_MESSAGE);
                     // Update year spinner to the imported year
                     yearSpinner.setValue(result.year());
@@ -546,8 +570,8 @@ public class AccountingPanel extends JPanel {
                     progress.dispose();
                     JOptionPane.showMessageDialog(this,
                         "Data already exists for " + ex.getYear() + ".\n"
-                        + "To import, first clear the existing " + ex.getYear() + " data\n"
-                        + "by exporting it as an archive and choosing 'Clear Local Data'.",
+                            + "To import, first clear the existing " + ex.getYear() + " data\n"
+                            + "by exporting it as an archive and choosing 'Clear Local Data'.",
                         "Import Conflict", JOptionPane.WARNING_MESSAGE);
                 });
             } catch (Exception ex) {
@@ -626,4 +650,5 @@ public class AccountingPanel extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
         return card;
     }
+
 }

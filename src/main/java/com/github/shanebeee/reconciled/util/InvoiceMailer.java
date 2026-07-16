@@ -21,7 +21,7 @@ public class InvoiceMailer {
      * @param invoice  The invoice record (for subject, numbers, dates)
      * @param boss     The boss (for email address and name)
      * @param employee The employee (for sign-off name)
-     * @throws IOException          If the AppleScript execution fails
+     * @throws IOException           If the AppleScript execution fails
      * @throws IllegalStateException If the PDF file doesn't exist or boss has no email
      */
     public static void composeEmail(Invoice invoice, Boss boss, EmployeeInfo employee)
@@ -96,4 +96,5 @@ public class InvoiceMailer {
     private static String escapeAppleScript(String s) {
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
+
 }

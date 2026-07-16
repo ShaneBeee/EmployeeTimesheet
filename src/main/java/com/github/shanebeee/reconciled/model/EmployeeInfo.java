@@ -83,4 +83,5 @@ public class EmployeeInfo {
         if (homeTotalSqFt <= 0) return 0;
         return Math.min(1.0, homeOfficeSqFt / homeTotalSqFt);
     }
+
 }

@@ -1,8 +1,8 @@
 package com.github.shanebeee.reconciled.util;
 
 import com.github.shanebeee.reconciled.model.Boss;
-import com.github.shanebeee.reconciled.model.ExpenseCategory;
 import com.github.shanebeee.reconciled.model.Expenditure;
+import com.github.shanebeee.reconciled.model.ExpenseCategory;
 import com.github.shanebeee.reconciled.model.KmTrip;
 import com.github.shanebeee.reconciled.model.LogEntry;
 import com.github.shanebeee.reconciled.storage.DataStorage;
@@ -24,7 +24,8 @@ public class SearchEngine {
         String panel,       // nav target e.g. "EXPENSES"
         String emoji,
         Object source       // the original model object
-    ) {}
+    ) {
+    }
 
     private final DataStorage storage;
 
@@ -80,9 +81,9 @@ public class SearchEngine {
                     .filter(b -> b.getId().equals(entry.getBossUuid()))
                     .map(Boss::getName).findFirst().orElse("");
                 String type = switch (entry.getType()) {
-                    case TIME      -> "Time entry";
+                    case TIME -> "Time entry";
                     case KILOMETER -> "KM entry";
-                    case EXTRA     -> "Extra entry";
+                    case EXTRA -> "Extra entry";
                 };
                 String searchable = (bossName + " " + type + " " + entry.getDate()).toLowerCase();
                 if (searchable.contains(q)) {
@@ -98,4 +99,5 @@ public class SearchEngine {
         results.sort(Comparator.comparing(SearchResult::date).reversed());
         return results.stream().limit(maxResults).toList();
     }
+
 }

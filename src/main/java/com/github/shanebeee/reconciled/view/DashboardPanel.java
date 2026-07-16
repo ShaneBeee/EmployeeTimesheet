@@ -34,13 +34,13 @@ import java.util.List;
 
 public class DashboardPanel extends JPanel {
 
-    private static final Color BLUE   = new Color(59,  130, 246);
-    private static final Color GREEN  = new Color(16,  185, 129);
-    private static final Color AMBER  = new Color(245, 158, 11);
-    private static final Color PURPLE = new Color(139, 92,  246);
-    private static final Color NAVY   = new Color(30,  41,  59);
-    private static final Color RED    = new Color(239, 68,  68);
-    private static final Color SLATE  = new Color(100, 116, 139);
+    private static final Color BLUE = new Color(59, 130, 246);
+    private static final Color GREEN = new Color(16, 185, 129);
+    private static final Color AMBER = new Color(245, 158, 11);
+    private static final Color PURPLE = new Color(139, 92, 246);
+    private static final Color NAVY = new Color(30, 41, 59);
+    private static final Color RED = new Color(239, 68, 68);
+    private static final Color SLATE = new Color(100, 116, 139);
 
     private final DataStorage storage;
     private MainFrame mainFrame;
@@ -57,14 +57,14 @@ public class DashboardPanel extends JPanel {
     public void refresh() {
         removeAll();
 
-        LocalDate today     = LocalDate.now();
-        int       year      = today.getYear();
+        LocalDate today = LocalDate.now();
+        int year = today.getYear();
         YearMonth thisMonth = YearMonth.from(today);
-        String    monthKey  = thisMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        String monthKey = thisMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
-        EmployeeInfo info        = storage.loadEmployeeInfo();
-        List<Boss>   bosses      = storage.loadBosses();
-        List<Boss>   selfEmployed = bosses.stream().filter(Boss::isSelfEmployed).toList();
+        EmployeeInfo info = storage.loadEmployeeInfo();
+        List<Boss> bosses = storage.loadBosses();
+        List<Boss> selfEmployed = bosses.stream().filter(Boss::isSelfEmployed).toList();
 
         // Header
         JPanel header = new JPanel(new BorderLayout());
@@ -112,12 +112,13 @@ public class DashboardPanel extends JPanel {
                             && entry.getBossPercentages().containsKey(boss.getId())) {
                             double perc = entry.getBossPercentages().get(boss.getId()) / 100.0;
                             monthIncome += hrs * boss.getHourlyRate() * perc;
-                            monthHours  += hrs * perc;
+                            monthHours += hrs * perc;
                         } else if (boss.getId().equals(entry.getBossUuid())) {
                             monthIncome += hrs * boss.getHourlyRate();
-                            monthHours  += hrs;
+                            monthHours += hrs;
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 } else if (entry.getType() == LogEntry.EntryType.KILOMETER
                     && boss.getId().equals(entry.getBossUuid())
                     && entry.getKilometers() != null) {
@@ -144,18 +145,21 @@ public class DashboardPanel extends JPanel {
         JPanel statsRow = new JPanel(new GridBagLayout());
         statsRow.setOpaque(false);
         GridBagConstraints sg = new GridBagConstraints();
-        sg.fill = GridBagConstraints.BOTH; sg.weighty = 1.0;
+        sg.fill = GridBagConstraints.BOTH;
+        sg.weighty = 1.0;
         sg.insets = new Insets(0, 0, 0, 12);
-        sg.weightx = 1.0; sg.gridx = 0;
-        statsRow.add(makeStatCard("Gross Income",  String.format("$%.2f", monthIncome),  "this month",       GREEN,  "Work Logs",  "LOGS"),       sg);
+        sg.weightx = 1.0;
+        sg.gridx = 0;
+        statsRow.add(makeStatCard("Gross Income", String.format("$%.2f", monthIncome), "this month", GREEN, "Work Logs", "LOGS"), sg);
         sg.gridx = 1;
-        statsRow.add(makeStatCard("Hours Logged",  String.format("%.1f hrs", monthHours), "this month",      BLUE,   "Work Logs",  "LOGS"),       sg);
+        statsRow.add(makeStatCard("Hours Logged", String.format("%.1f hrs", monthHours), "this month", BLUE, "Work Logs", "LOGS"), sg);
         sg.gridx = 2;
-        statsRow.add(makeStatCard("Expenses",      String.format("$%.2f", monthExpTotal), "this month",      AMBER,  "Expenses",   "EXPENSES"),   sg);
+        statsRow.add(makeStatCard("Expenses", String.format("$%.2f", monthExpTotal), "this month", AMBER, "Expenses", "EXPENSES"), sg);
         sg.gridx = 3;
-        statsRow.add(makeStatCard("KMs Driven",    String.format("%.1f km", monthKmTrips),"this month",      GREEN,  "KM Log",     "KM"),         sg);
-        sg.gridx = 4; sg.insets = new Insets(0, 0, 0, 0);
-        statsRow.add(makeStatCard("KMs Billed",    String.format("%.1f km", monthKmsBilled),"billed to clients", PURPLE, "Work Logs", "LOGS"),    sg);
+        statsRow.add(makeStatCard("KMs Driven", String.format("%.1f km", monthKmTrips), "this month", GREEN, "KM Log", "KM"), sg);
+        sg.gridx = 4;
+        sg.insets = new Insets(0, 0, 0, 0);
+        statsRow.add(makeStatCard("KMs Billed", String.format("%.1f km", monthKmsBilled), "billed to clients", PURPLE, "Work Logs", "LOGS"), sg);
         body.add(statsRow, gc);
         gc.gridy++;
         gc.insets = new Insets(0, 0, 16, 0);
@@ -180,7 +184,8 @@ public class DashboardPanel extends JPanel {
                             } else if (boss.getId().equals(entry.getBossUuid())) {
                                 ytdIncome += hrs * boss.getHourlyRate();
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     } else if (entry.getType() == LogEntry.EntryType.KILOMETER
                         && boss.getId().equals(entry.getBossUuid())
                         && entry.getKilometers() != null && boss.getKmRate() != null) {
@@ -203,13 +208,16 @@ public class DashboardPanel extends JPanel {
         JPanel ytdRow = new JPanel(new GridBagLayout());
         ytdRow.setOpaque(false);
         GridBagConstraints yg = new GridBagConstraints();
-        yg.fill = GridBagConstraints.BOTH; yg.weighty = 1.0;
+        yg.fill = GridBagConstraints.BOTH;
+        yg.weighty = 1.0;
         yg.insets = new Insets(0, 0, 0, 12);
-        yg.weightx = 1.0; yg.gridx = 0;
-        ytdRow.add(makeStatCard("Gross Income",   String.format("$%.2f", ytdIncome),  "self-employed only",                   BLUE,  "Accounting", "ACCOUNTING"), yg);
+        yg.weightx = 1.0;
+        yg.gridx = 0;
+        ytdRow.add(makeStatCard("Gross Income", String.format("$%.2f", ytdIncome), "self-employed only", BLUE, "Accounting", "ACCOUNTING"), yg);
         yg.gridx = 1;
-        ytdRow.add(makeStatCard("Total Expenses", String.format("$%.2f", ytdExpTotal),"all categories",                       AMBER, "Expenses",   "EXPENSES"),   yg);
-        yg.gridx = 2; yg.insets = new Insets(0, 0, 0, 0);
+        ytdRow.add(makeStatCard("Total Expenses", String.format("$%.2f", ytdExpTotal), "all categories", AMBER, "Expenses", "EXPENSES"), yg);
+        yg.gridx = 2;
+        yg.insets = new Insets(0, 0, 0, 0);
         ytdRow.add(makeNetCard(ytdNet), yg);
         body.add(ytdRow, gc);
         gc.gridy++;
@@ -217,7 +225,7 @@ public class DashboardPanel extends JPanel {
 
         // Year over Year
         String lastMonthKey = String.format("%d-%02d", year - 1, today.getMonthValue());
-        List<LogEntry>    lastLogs     = storage.loadLogs(lastMonthKey);
+        List<LogEntry> lastLogs = storage.loadLogs(lastMonthKey);
         List<Expenditure> lastExpenses = storage.loadExpenditures(String.valueOf(year - 1))
             .stream().filter(e -> e.getDate().startsWith(lastMonthKey)).toList();
 
@@ -236,12 +244,13 @@ public class DashboardPanel extends JPanel {
                                 && entry.getBossPercentages().containsKey(boss.getId())) {
                                 double perc = entry.getBossPercentages().get(boss.getId()) / 100.0;
                                 lastIncome += hrs * boss.getHourlyRate() * perc;
-                                lastHours  += hrs * perc;
+                                lastHours += hrs * perc;
                             } else if (boss.getId().equals(entry.getBossUuid())) {
                                 lastIncome += hrs * boss.getHourlyRate();
-                                lastHours  += hrs;
+                                lastHours += hrs;
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     } else if (entry.getType() == LogEntry.EntryType.KILOMETER
                         && boss.getId().equals(entry.getBossUuid())
                         && entry.getKilometers() != null && boss.getKmRate() != null) {
@@ -306,7 +315,9 @@ public class DashboardPanel extends JPanel {
         gc.gridy++;
         gc.weighty = 1.0;
         gc.fill = GridBagConstraints.BOTH;
-        body.add(new JPanel() {{ setOpaque(false); }}, gc);
+        body.add(new JPanel() {{
+            setOpaque(false);
+        }}, gc);
 
         JScrollPane scroll = new JScrollPane(body);
         scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -320,9 +331,9 @@ public class DashboardPanel extends JPanel {
 
     // Year over year card
     private JPanel makeYoyCard(int lastYear, int thisYear,
-                                double lastIncome, double thisIncome,
-                                double lastHours,  double thisHours,
-                                double lastExp,    double thisExp) {
+                               double lastIncome, double thisIncome,
+                               double lastHours, double thisHours,
+                               double lastExp, double thisExp) {
         JPanel card = makeCard();
         card.setLayout(new GridBagLayout());
         GridBagConstraints gc = new GridBagConstraints();
@@ -331,9 +342,11 @@ public class DashboardPanel extends JPanel {
 
         // Header row
         gc.gridy = 0;
-        gc.gridx = 0; gc.weightx = 2.0;
+        gc.gridx = 0;
+        gc.weightx = 2.0;
         card.add(makeYoyCell("", Font.BOLD, SLATE, false), gc);
-        gc.gridx = 1; gc.weightx = 1.0;
+        gc.gridx = 1;
+        gc.weightx = 1.0;
         card.add(makeYoyCell(String.valueOf(lastYear), Font.BOLD, SLATE, true), gc);
         gc.gridx = 2;
         card.add(makeYoyCell(String.valueOf(thisYear), Font.BOLD, SLATE, true), gc);
@@ -341,15 +354,21 @@ public class DashboardPanel extends JPanel {
         card.add(makeYoyCell("Change", Font.BOLD, SLATE, true), gc);
 
         // Divider
-        gc.gridy = 1; gc.gridx = 0; gc.gridwidth = 4; gc.insets = new Insets(4, 0, 4, 0);
+        gc.gridy = 1;
+        gc.gridx = 0;
+        gc.gridwidth = 4;
+        gc.insets = new Insets(4, 0, 4, 0);
         card.add(makeDivider(), gc);
-        gc.gridwidth = 1; gc.insets = new Insets(2, 4, 2, 4);
+        gc.gridwidth = 1;
+        gc.insets = new Insets(2, 4, 2, 4);
 
         // Income row
         gc.gridy = 2;
-        gc.gridx = 0; gc.weightx = 2.0;
+        gc.gridx = 0;
+        gc.weightx = 2.0;
         card.add(makeYoyCell("Gross Income", Font.PLAIN, NAVY, false), gc);
-        gc.gridx = 1; gc.weightx = 1.0;
+        gc.gridx = 1;
+        gc.weightx = 1.0;
         card.add(makeYoyCell(String.format("$%.2f", lastIncome), Font.PLAIN, NAVY, true), gc);
         gc.gridx = 2;
         card.add(makeYoyCell(String.format("$%.2f", thisIncome), Font.PLAIN, NAVY, true), gc);
@@ -358,9 +377,11 @@ public class DashboardPanel extends JPanel {
 
         // Hours row
         gc.gridy = 3;
-        gc.gridx = 0; gc.weightx = 2.0;
+        gc.gridx = 0;
+        gc.weightx = 2.0;
         card.add(makeYoyCell("Hours Logged", Font.PLAIN, NAVY, false), gc);
-        gc.gridx = 1; gc.weightx = 1.0;
+        gc.gridx = 1;
+        gc.weightx = 1.0;
         card.add(makeYoyCell(String.format("%.1f hrs", lastHours), Font.PLAIN, NAVY, true), gc);
         gc.gridx = 2;
         card.add(makeYoyCell(String.format("%.1f hrs", thisHours), Font.PLAIN, NAVY, true), gc);
@@ -369,9 +390,11 @@ public class DashboardPanel extends JPanel {
 
         // Expenses row
         gc.gridy = 4;
-        gc.gridx = 0; gc.weightx = 2.0;
+        gc.gridx = 0;
+        gc.weightx = 2.0;
         card.add(makeYoyCell("Expenses", Font.PLAIN, NAVY, false), gc);
-        gc.gridx = 1; gc.weightx = 1.0;
+        gc.gridx = 1;
+        gc.weightx = 1.0;
         card.add(makeYoyCell(String.format("$%.2f", lastExp), Font.PLAIN, NAVY, true), gc);
         gc.gridx = 2;
         card.add(makeYoyCell(String.format("$%.2f", thisExp), Font.PLAIN, NAVY, true), gc);
@@ -398,9 +421,9 @@ public class DashboardPanel extends JPanel {
         }
         double pct = oldVal == 0 ? 100.0 : ((newVal - oldVal) / oldVal) * 100.0;
         boolean increased = pct > 0;
-        boolean isGood    = upIsGood ? increased : !increased;
+        boolean isGood = upIsGood ? increased : !increased;
         String arrow = increased ? "\u25B2 " : "\u25BC ";
-        Color  color = pct == 0 ? SLATE : (isGood ? GREEN : RED);
+        Color color = pct == 0 ? SLATE : (isGood ? GREEN : RED);
         JLabel lbl = new JLabel(String.format("%s%.1f%%", arrow, Math.abs(pct)), JLabel.RIGHT);
         lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 12f));
         lbl.setForeground(color);
@@ -409,17 +432,18 @@ public class DashboardPanel extends JPanel {
 
     // Stat card
     private JPanel makeStatCard(String title, String value, String sub,
-                                 Color accent, String linkLabel, String navTarget) {
+                                Color accent, String linkLabel, String navTarget) {
         final boolean[] hovered = {false};
         JPanel card = new JPanel(new BorderLayout(0, 4)) {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(hovered[0] ? new Color(249, 250, 251) : Color.WHITE);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
                 g2.setColor(new Color(226, 232, 240));
                 g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 14, 14);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
                 g2.setColor(accent);
                 g2.fillRoundRect(0, 0, getWidth(), 4, 4, 4);
                 g2.dispose();
@@ -449,9 +473,19 @@ public class DashboardPanel extends JPanel {
         text.add(subLbl);
         card.add(text, BorderLayout.CENTER);
         card.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { hovered[0] = true;  card.repaint(); }
-            public void mouseExited(MouseEvent e)  { hovered[0] = false; card.repaint(); }
-            public void mousePressed(MouseEvent e) { if (mainFrame != null) mainFrame.showPanel(navTarget); }
+            public void mouseEntered(MouseEvent e) {
+                hovered[0] = true;
+                card.repaint();
+            }
+
+            public void mouseExited(MouseEvent e) {
+                hovered[0] = false;
+                card.repaint();
+            }
+
+            public void mousePressed(MouseEvent e) {
+                if (mainFrame != null) mainFrame.showPanel(navTarget);
+            }
         });
         return card;
     }
@@ -464,16 +498,18 @@ public class DashboardPanel extends JPanel {
     }
 
     // Recent activity
-    private record ActivityItem(String date, String title, String sub, Color accent, String emoji) {}
+    private record ActivityItem(String date, String title, String sub, Color accent, String emoji) {
+    }
 
     private List<ActivityItem> buildRecentActivity(int year, LocalDate today) {
         List<ActivityItem> items = new ArrayList<>();
         for (int m = today.getMonthValue(); m >= Math.max(1, today.getMonthValue() - 2); m--) {
             for (LogEntry entry : storage.loadLogs(String.format("%d-%02d", year, m))) {
                 String title = switch (entry.getType()) {
-                    case TIME      -> "Work log entry";
-                    case KILOMETER -> String.format("%.0f km billed", entry.getKilometers() != null ? entry.getKilometers() : 0);
-                    case EXTRA     -> "Extra billed";
+                    case TIME -> "Work log entry";
+                    case KILOMETER ->
+                        String.format("%.0f km billed", entry.getKilometers() != null ? entry.getKilometers() : 0);
+                    case EXTRA -> "Extra billed";
                 };
                 items.add(new ActivityItem(entry.getDate(), title, "Work Log", BLUE, "\uD83D\uDCC5"));
             }
@@ -507,12 +543,12 @@ public class DashboardPanel extends JPanel {
         subLbl.setFont(subLbl.getFont().deriveFont(Font.PLAIN, 11f));
         subLbl.setForeground(new Color(148, 163, 184));
         text.add(titleLbl, BorderLayout.NORTH);
-        text.add(subLbl,   BorderLayout.SOUTH);
+        text.add(subLbl, BorderLayout.SOUTH);
         JLabel dateLbl = new JLabel(item.date(), JLabel.RIGHT);
         dateLbl.setFont(dateLbl.getFont().deriveFont(Font.PLAIN, 11f));
         dateLbl.setForeground(new Color(148, 163, 184));
-        row.add(emoji,   BorderLayout.WEST);
-        row.add(text,    BorderLayout.CENTER);
+        row.add(emoji, BorderLayout.WEST);
+        row.add(text, BorderLayout.CENTER);
         row.add(dateLbl, BorderLayout.EAST);
         return row;
     }
@@ -557,7 +593,7 @@ public class DashboardPanel extends JPanel {
         });
         right.add(amtLbl);
         right.add(markPaid);
-        row.add(left,  BorderLayout.CENTER);
+        row.add(left, BorderLayout.CENTER);
         row.add(right, BorderLayout.EAST);
         return row;
     }
@@ -571,7 +607,9 @@ public class DashboardPanel extends JPanel {
                 return s.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
             return s.format(DateTimeFormatter.ofPattern("MMM d"))
                 + " \u2013 " + e.format(DateTimeFormatter.ofPattern("MMM d"));
-        } catch (Exception ex) { return start; }
+        } catch (Exception ex) {
+            return start;
+        }
     }
 
     private String greeting() {
@@ -590,16 +628,17 @@ public class DashboardPanel extends JPanel {
 
     private JPanel makeCard() {
         JPanel card = new JPanel() {
-            @Override protected void paintComponent(Graphics g) {
+            @Override
+            protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(0, 0, 0, 8));
-                g2.fillRoundRect(2, 3, getWidth()-4, getHeight()-2, 14, 14);
+                g2.fillRoundRect(2, 3, getWidth() - 4, getHeight() - 2, 14, 14);
                 g2.setColor(Color.WHITE);
-                g2.fillRoundRect(0, 0, getWidth()-3, getHeight()-3, 14, 14);
+                g2.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 14, 14);
                 g2.setColor(new Color(226, 232, 240));
                 g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, getWidth()-4, getHeight()-4, 14, 14);
+                g2.drawRoundRect(0, 0, getWidth() - 4, getHeight() - 4, 14, 14);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -618,4 +657,5 @@ public class DashboardPanel extends JPanel {
         div.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
         return div;
     }
+
 }

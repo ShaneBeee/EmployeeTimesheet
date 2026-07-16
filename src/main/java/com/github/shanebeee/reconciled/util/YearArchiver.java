@@ -20,15 +20,15 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Handles full-year archive export and import.
- *
+ * <p>
  * Archive structure inside the zip:
- *   manifest.json                     — metadata (year, app version, export date)
- *   logs/yyyy-MM.json                 — work log files for the year
- *   receipts/{year}/expenses.json     — expense records
- *   receipts/{year}/{month}/...       — receipt files
- *   km/{year}/trips.json              — KM trips
- *   km/{year}/odometer.json           — odometer readings
- *   invoices/...                      — any invoice PDFs whose filename contains the year
+ * manifest.json                     — metadata (year, app version, export date)
+ * logs/yyyy-MM.json                 — work log files for the year
+ * receipts/{year}/expenses.json     — expense records
+ * receipts/{year}/{month}/...       — receipt files
+ * km/{year}/trips.json              — KM trips
+ * km/{year}/odometer.json           — odometer readings
+ * invoices/...                      — any invoice PDFs whose filename contains the year
  */
 public class YearArchiver {
 
@@ -173,7 +173,10 @@ public class YearArchiver {
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                if (entry.getName().equals("manifest.json")) { zis.closeEntry(); continue; }
+                if (entry.getName().equals("manifest.json")) {
+                    zis.closeEntry();
+                    continue;
+                }
                 Path dest = Paths.get(baseDir, entry.getName());
                 if (entry.isDirectory()) {
                     Files.createDirectories(dest);
@@ -244,15 +247,23 @@ public class YearArchiver {
 
     // ── Result types ──────────────────────────────────────────────────────────
 
-    public record ExportResult(String path, int fileCount) {}
-    public record ImportResult(int year, int fileCount) {}
+    public record ExportResult(String path, int fileCount) {
+    }
+
+    public record ImportResult(int year, int fileCount) {
+    }
 
     public static class DataConflictException extends IOException {
         private final int year;
+
         public DataConflictException(int year) {
             super("Data already exists for " + year);
             this.year = year;
         }
-        public int getYear() { return year; }
+
+        public int getYear() {
+            return year;
+        }
     }
+
 }

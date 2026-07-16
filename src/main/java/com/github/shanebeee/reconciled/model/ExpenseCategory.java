@@ -21,41 +21,85 @@ public class ExpenseCategory {
     private DeductionType deductionType = DeductionType.FULL;
     private double fixedPercent = 1.0; // used when deductionType == FIXED_PERCENT
 
-    public ExpenseCategory() {}
-
-    public ExpenseCategory(String label, String hint, String t2125Line, String color, boolean builtIn) {
-        this.id       = UUID.randomUUID().toString();
-        this.label    = label;
-        this.hint     = hint;
-        this.t2125Line = t2125Line;
-        this.color    = color;
-        this.builtIn  = builtIn;
+    public ExpenseCategory() {
     }
 
-    public String getId()                    { return id; }
-    public void   setId(String id)           { this.id = id; }
+    public ExpenseCategory(String label, String hint, String t2125Line, String color, boolean builtIn) {
+        this.id = UUID.randomUUID().toString();
+        this.label = label;
+        this.hint = hint;
+        this.t2125Line = t2125Line;
+        this.color = color;
+        this.builtIn = builtIn;
+    }
 
-    public String getLabel()                 { return label; }
-    public void   setLabel(String label)     { this.label = label; }
+    public String getId() {
+        return id;
+    }
 
-    public String getHint()                  { return hint; }
-    public void   setHint(String hint)       { this.hint = hint; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getT2125Line()             { return t2125Line; }
-    public void   setT2125Line(String t)     { this.t2125Line = t; }
+    public String getLabel() {
+        return label;
+    }
 
-    public String getColor()                 { return color; }
-    public void   setColor(String color)     { this.color = color; }
+    public void setLabel(String label) {
+        this.label = label;
+    }
 
-    public boolean isBuiltIn()               { return builtIn; }
-    public void    setBuiltIn(boolean b)      { this.builtIn = b; }
+    public String getHint() {
+        return hint;
+    }
 
-    public DeductionType getDeductionType()              { return deductionType != null ? deductionType : DeductionType.FULL; }
-    public void          setDeductionType(DeductionType t) { this.deductionType = t; }
+    public void setHint(String hint) {
+        this.hint = hint;
+    }
 
-    public double getFixedPercent()           { return fixedPercent; }
-    public void   setFixedPercent(double v)   { this.fixedPercent = v; }
+    public String getT2125Line() {
+        return t2125Line;
+    }
+
+    public void setT2125Line(String t) {
+        this.t2125Line = t;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public boolean isBuiltIn() {
+        return builtIn;
+    }
+
+    public void setBuiltIn(boolean b) {
+        this.builtIn = b;
+    }
+
+    public DeductionType getDeductionType() {
+        return deductionType != null ? deductionType : DeductionType.FULL;
+    }
+
+    public void setDeductionType(DeductionType t) {
+        this.deductionType = t;
+    }
+
+    public double getFixedPercent() {
+        return fixedPercent;
+    }
+
+    public void setFixedPercent(double v) {
+        this.fixedPercent = v;
+    }
 
     @Override
-    public String toString()                 { return label; }
+    public String toString() {
+        return label;
+    }
+
 }
